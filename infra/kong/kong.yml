@@ -1,0 +1,4 @@
+# Empty declarative Kong config — routes/services are added starting Phase 8
+# (API contracts) once the backend has real endpoints to route to.
+_format_version: "3.0"
+services: []
