@@ -1,0 +1,157 @@
+{
+  "realm": "travindi",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 900,
+  "roles": {
+    "realm": [
+      {
+        "name": "tourist",
+        "description": "FR-01 base account type"
+      },
+      {
+        "name": "guide",
+        "description": "FR-01 base account type"
+      },
+      {
+        "name": "business",
+        "description": "FR-01 base account type"
+      },
+      {
+        "name": "authority_police",
+        "description": "docs/00-planning/08-role-permission-matrix.md"
+      },
+      {
+        "name": "authority_emergency_responder",
+        "description": "docs/00-planning/08-role-permission-matrix.md"
+      },
+      {
+        "name": "authority_tourism_dept",
+        "description": "docs/00-planning/08-role-permission-matrix.md"
+      },
+      {
+        "name": "authority_municipality",
+        "description": "docs/00-planning/08-role-permission-matrix.md"
+      },
+      {
+        "name": "authority_verifier",
+        "description": "docs/00-planning/08-role-permission-matrix.md"
+      },
+      {
+        "name": "authority_platform_admin",
+        "description": "docs/00-planning/08-role-permission-matrix.md"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "travindi-backend",
+      "name": "TravIndi backend (resource server + service account)",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "enabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "backend-service-secret-change-me-locally"
+    },
+    {
+      "clientId": "travindi-app",
+      "name": "TravIndi tourist/authority clients (mobile + web)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "enabled": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:19006/*"
+      ],
+      "webOrigins": [
+        "+"
+      ],
+      "protocolMappers": [
+        {
+          "name": "audience-travindi-backend",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "travindi-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-travindi-backend",
+      "enabled": true,
+      "serviceAccountClientId": "travindi-backend",
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "view-realm"]
+      }
+    },
+    {
+      "username": "test-tourist",
+      "enabled": true,
+      "email": "test-tourist@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Test1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "tourist"
+      ],
+      "firstName": "Test",
+      "lastName": "Tourist"
+    },
+    {
+      "username": "test-police",
+      "enabled": true,
+      "email": "test-police@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Test1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "authority_police"
+      ],
+      "firstName": "Test",
+      "lastName": "Police"
+    },
+    {
+      "username": "test-admin",
+      "enabled": true,
+      "email": "test-admin@example.com",
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Test1234!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "authority_platform_admin"
+      ],
+      "firstName": "Test",
+      "lastName": "Admin"
+    }
+  ]
+}

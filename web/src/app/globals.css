@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/*
+ * TravIndi visual language — a warm "sunset over a safe journey" palette:
+ * coral/saffron primary (evokes Indian sunsets, warmth, hospitality) paired
+ * with a deep teal accent (calm, trust, safety) on a cream/charcoal
+ * background. Replaces the earlier plain black/white utility theme.
+ */
+:root {
+  --background: #fbf7f0;
+  --foreground: #1f2430;
+  --surface: #ffffff;
+  --surface-muted: #f3ecdf;
+  --border: rgba(31, 36, 48, 0.1);
+  --primary: #e8622c;
+  --primary-foreground: #fffaf5;
+  --accent: #0f766e;
+  --accent-foreground: #ffffff;
+  --muted: #6b7280;
+  --danger: #dc2626;
+  --success: #15803d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #12151c;
+    --foreground: #f3f1ec;
+    --surface: #1a1e27;
+    --surface-muted: #232837;
+    --border: rgba(255, 255, 255, 0.09);
+    --primary: #f2864f;
+    --primary-foreground: #1a1408;
+    --accent: #2dd4bf;
+    --accent-foreground: #062a26;
+    --muted: #9aa1b0;
+    --danger: #f87171;
+    --success: #4ade80;
+  }
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease-out both;
+}
+
+/*
+ * Real accessibility preferences (FR-22) — applied as data-attributes on
+ * <html> by src/lib/accessibility-context.tsx, not just a stored-but-unused
+ * setting. High contrast overrides the palette with a true black/white/
+ * yellow scheme (WCAG AAA-oriented contrast, not just "darker"); large
+ * text scales the whole document; reduced motion turns off every
+ * transition/animation site-wide, including ones added later.
+ */
+[data-a11y-high-contrast="true"] {
+  --background: #000000;
+  --foreground: #ffffff;
+  --surface: #0a0a0a;
+  --surface-muted: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.6);
+  --primary: #ffd60a;
+  --primary-foreground: #000000;
+  --accent: #5ee1ff;
+  --accent-foreground: #000000;
+  --muted: #d4d4d4;
+  --danger: #ff6b6b;
+  --success: #6bff8f;
+}
+
+[data-a11y-large-text="true"] {
+  font-size: 118%;
+}
+
+[data-a11y-reduce-motion="true"] *,
+[data-a11y-reduce-motion="true"] *::before,
+[data-a11y-reduce-motion="true"] *::after {
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.001s !important;
+  scroll-behavior: auto !important;
+}

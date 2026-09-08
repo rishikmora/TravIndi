@@ -12,3 +12,5 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY 02-app-role.sh /docker-entrypoint-initdb.d/02-app-role.sh
+RUN chmod +x /docker-entrypoint-initdb.d/02-app-role.sh

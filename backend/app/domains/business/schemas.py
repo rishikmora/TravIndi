@@ -1,0 +1,91 @@
+import uuid
+from datetime import datetime
+
+from pydantic import BaseModel, Field
+
+from app.domains.business.models import BusinessCategory
+from app.domains.tourism.schemas import GeoPoint
+
+
+class BusinessCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    category: BusinessCategory
+    destination_id: uuid.UUID | None = None
+    lon: float | None = None
+    lat: float | None = None
+
+
+class BusinessProfileIn(BaseModel):
+    description: str | None = Field(default=None, max_length=4000)
+    contact_info: dict = Field(default_factory=dict)
+    accessibility_features: dict = Field(default_factory=dict)
+
+
+class BusinessProfileOut(BaseModel):
+    description: str | None
+    contact_info: dict
+    accessibility_features: dict
+    safety_score: float | None
+    women_friendly_score: float | None
+    family_friendly_score: float | None
+
+
+class BusinessOut(BaseModel):
+    id: uuid.UUID
+    owner_user_id: uuid.UUID
+    name: str
+    category: BusinessCategory
+    destination_id: uuid.UUID | None
+    location: GeoPoint | None
+    is_verified: bool
+    profile: BusinessProfileOut | None = None
+    created_at: datetime
+
+
+class ServiceCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    base_price: float | None = Field(default=None, ge=0)
+    currency: str = Field(default="INR", min_length=3, max_length=3)
+
+
+class ServiceOut(BaseModel):
+    id: uuid.UUID
+    business_id: uuid.UUID
+    name: str
+    description: str | None
+    base_price: float | None
+    currency: str
+
+
+class AvailabilityCreateIn(BaseModel):
+    starts_at: datetime
+    ends_at: datetime
+    capacity: int = Field(default=1, ge=1)
+
+
+class AvailabilityOut(BaseModel):
+    id: uuid.UUID
+    service_id: uuid.UUID
+    starts_at: datetime
+    ends_at: datetime
+    capacity: int
+    booked_count: int
+
+
+class GuideCreateIn(BaseModel):
+    languages: list[str] = Field(default_factory=list)
+    specialties: list[str] = Field(default_factory=list)
+    destination_id: uuid.UUID | None = None
+    bio: str | None = Field(default=None, max_length=2000)
+
+
+class GuideOut(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    languages: list[str]
+    specialties: list[str]
+    destination_id: uuid.UUID | None
+    is_verified: bool
+    bio: str | None
+    created_at: datetime

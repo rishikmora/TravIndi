@@ -7,6 +7,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
     ports:
       - "${POSTGRES_PORT}:5432"
     volumes:
@@ -45,18 +46,44 @@ services:
       retries: 10
 
   # --- Below: not started by default. `docker compose --profile full up -d` ---
-  # Not needed until Phase 9 (auth) / API gateway wiring. Included now so the
-  # target topology is visible, per docs/00-planning/01-project-master-model.md.
+  # keycloak + opa are needed from Phase 9 onward; kong stays deferred until
+  # there's a real gateway-routing need, per
+  # docs/00-planning/01-project-master-model.md.
 
   keycloak:
     image: quay.io/keycloak/keycloak:25.0
-    command: start-dev
+    command: start-dev --import-realm
     profiles: ["full"]
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
     ports:
       - "${KEYCLOAK_PORT}:8080"
+    healthcheck:
+      # Keycloak's dev-mode image ships bash but not curl/wget; a raw TCP
+      # check against the realm endpoint's port is enough to know the
+      # server (and therefore the realm import, which runs before it starts
+      # listening) has completed.
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  opa:
+    image: openpolicyagent/opa:latest-envoy
+    profiles: ["full"]
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+    volumes:
+      - ./opa/policies:/policies:ro
+    ports:
+      - "${OPA_PORT}:8181"
+    # No healthcheck: this image is distroless (no shell, no wget/curl), so
+    # no CMD-SHELL check is possible without adding a custom image just for
+    # this — not worth the complexity. Verified manually via
+    # `curl http://localhost:8181/health` instead; `docker compose ps` will
+    # still show it as running.
 
   kong:
     image: kong:3.7

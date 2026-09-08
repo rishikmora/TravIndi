@@ -6,15 +6,21 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
-    "pydantic>=2.8",
+    "pydantic[email]>=2.8",
     "pydantic-settings>=2.4",
     "sqlalchemy[asyncio]>=2.0",
     "asyncpg>=0.29",
     "alembic>=1.13",
     "geoalchemy2>=0.15",
+    "shapely>=2.0",
     "pgvector>=0.3",
     "redis>=5.0",
     "h3>=4.1",
+    "uuid6>=2024.7",
+    "pyjwt[crypto]>=2.9",
+    "httpx>=0.27",
+    "anthropic>=1.4",
+    "sentence-transformers>=6.0",
 ]
 
 [build-system]
@@ -28,16 +34,35 @@ include = ["app*"]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
-    "httpx>=0.27",
     "ruff>=0.6",
     "mypy>=1.11",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Default (function-scoped) event loops break the lru_cache'd async engine
+# singleton in app/db/session.py — the engine binds to whichever loop
+# created it, then the next test's fresh loop can't reuse those
+# connections and crashes on cleanup ("Event loop is closed", a Windows
+# Proactor + asyncpg interaction). Session-scoped loops match the engine's
+# actual (process) lifetime instead of fighting it.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# RUF012: SQLAlchemy's `__table_args__ = {...}` / `(..., {...})` idiom is a
+# class-level mutable-default by design — not the dataclass footgun this rule
+# targets. Ignoring it here rather than sprinkling `noqa` on every model.
+ignore = ["RUF012"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom is `param: T = Depends(fn)` — that's
+# the documented API, not the B008 mutable-default footgun. Tell ruff these
+# specific calls are safe as defaults instead of suppressing B008 everywhere.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Header", "fastapi.Query", "fastapi.Path", "fastapi.Body"]
