@@ -31,3 +31,13 @@ class TranslateImageIn(BaseModel):
     image_base64: str = Field(min_length=1)
     media_type: str
     target_language: str = Field(min_length=2, max_length=32)
+
+
+class HeritageStoryIn(BaseModel):
+    destination_id: uuid.UUID
+
+
+class HeritageStoryOut(BaseModel):
+    story: str
+    grounded: bool
+    sources: list[GuideSourceOut]

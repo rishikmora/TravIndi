@@ -57,6 +57,83 @@ _SEED_KNOWLEDGE = {
         "a popular day trip from the palace. Mysuru Zoo, one of India's older zoos, is "
         "also nearby."
     ),
+    "Taj Mahal": (
+        "The Taj Mahal in Agra, Uttar Pradesh, is a white marble mausoleum built by the "
+        "Mughal emperor Shah Jahan in memory of his wife Mumtaz Mahal. A UNESCO World "
+        "Heritage Site and one of the most recognized monuments in the world, it draws "
+        "large crowds year-round, with sunrise and sunset among the most popular (and "
+        "most crowded) viewing times. Agra Fort, another UNESCO-listed Mughal fortress a "
+        "short distance away, offers a distant view of the Taj Mahal across the Yamuna "
+        "River. Mehtab Bagh, a garden complex on the opposite riverbank, is a quieter spot "
+        "for viewing the monument. The city is hot for much of the year, and visitors are "
+        "advised to carry water and sun protection."
+    ),
+    "Dashashwamedh Ghat": (
+        "Dashashwamedh Ghat is the main and most visited ghat (riverfront steps) on the "
+        "Ganges in Varanasi, Uttar Pradesh — one of the oldest continuously inhabited "
+        "cities in the world and a major center of Hindu pilgrimage. It is best known for "
+        "the nightly Ganga Aarti, a ritual fire ceremony performed by priests on the "
+        "riverbank that draws large crowds of pilgrims and tourists. The nearby Kashi "
+        "Vishwanath Temple, dedicated to Lord Shiva, is one of the most important Hindu "
+        "temples in India. Sarnath, a Buddhist heritage site where the Buddha is said to "
+        "have given his first sermon, lies a short distance from the city center. The "
+        "ghats and surrounding old-city lanes are narrow and very crowded, especially "
+        "during evening aarti and religious festivals."
+    ),
+    "Amber Fort": (
+        "Amber Fort (Amer Fort) is a large hilltop fort-palace near Jaipur, Rajasthan, "
+        "built from pale yellow and pink sandstone and white marble, known for its "
+        "elaborate mirror-work hall (Sheesh Mahal) and courtyards. It is one of "
+        "Rajasthan's most visited forts and part of the Hill Forts of Rajasthan UNESCO "
+        "World Heritage Site. Jaigarh Fort, connected to Amber Fort by a walkway, sits "
+        "higher on the same ridge and overlooks the city. Jal Mahal, a palace that "
+        "appears to float in the middle of Man Sagar Lake, is a popular photo stop on the "
+        "road between Jaipur and Amber Fort. The fort involves significant walking on "
+        "uneven stone surfaces."
+    ),
+    "Khajuraho Group of Monuments": (
+        "The Khajuraho Group of Monuments, in Madhya Pradesh, is a UNESCO World Heritage "
+        "Site comprising Hindu and Jain temples built between roughly the 10th and 12th "
+        "centuries by the Chandela dynasty, renowned for their intricate sculptural "
+        "artwork. The Western Group of Temples is the largest and best-preserved cluster "
+        "and the main visitor area. Khajuraho is a relatively small town, and visitor "
+        "numbers are noticeably lower than at India's more famous monuments, making it a "
+        "quieter heritage destination. Raneh Falls, a canyon of volcanic rock on the Ken "
+        "River, is a natural-heritage day trip from the temple complex."
+    ),
+    "Hampi": (
+        "Hampi, in Karnataka, is a UNESCO World Heritage Site and the site of the ruined "
+        "city of Vijayanagara, once the capital of the Vijayanagara Empire. The site "
+        "spreads across a large, boulder-strewn landscape and includes the Virupaksha "
+        "Temple, an active temple dedicated to Shiva and one of the oldest structures at "
+        "the site, and the Vittala Temple, known for its ornate stone chariot and "
+        "musical pillars. Hampi is popular with both heritage tourists and travelers "
+        "drawn to its landscape for bouldering and cycling between monuments. Distances "
+        "between individual ruins can be significant, and much of the site involves "
+        "walking in open sun."
+    ),
+    "Golden Temple": (
+        "The Golden Temple (Harmandir Sahib) in Amritsar, Punjab, is the holiest "
+        "gurdwara of Sikhism, its upper floors gilded in gold and set within a sacred "
+        "pool (the Amrit Sarovar). It operates a langar (community kitchen) that serves "
+        "free meals to all visitors regardless of faith, one of the largest such kitchens "
+        "in the world. Jallianwala Bagh, a public garden and memorial to a 1919 massacre "
+        "during British colonial rule, is a short walk away. The Wagah Border, where a "
+        "daily flag-lowering ceremony is held between India and Pakistan, is a popular "
+        "day trip from Amritsar. Visitors to the Golden Temple are expected to cover "
+        "their heads and remove footwear before entering."
+    ),
+    "Meenakshi Amman Temple": (
+        "The Meenakshi Amman Temple in Madurai, Tamil Nadu, is a large, historic Hindu "
+        "temple dedicated to the goddess Meenakshi (a form of Parvati) and her consort "
+        "Sundareswarar, known for its towering, intricately carved gopurams (gateway "
+        "towers). Madurai is one of the oldest continuously inhabited cities in India, "
+        "and the temple sits at the heart of its old city. Thirumalai Nayakkar Palace, a "
+        "17th-century Indo-Saracenic palace, and the Gandhi Memorial Museum, housed in a "
+        "former palace and documenting the Indian independence movement, are both nearby. "
+        "The temple complex is crowded throughout the day, with photography restricted in "
+        "some inner areas."
+    ),
 }
 
 

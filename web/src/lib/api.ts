@@ -62,6 +62,7 @@ export interface Destination {
   location: GeoPoint;
   timezone: string;
   status: string;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -84,6 +85,7 @@ export interface Trip {
   budget: number | null;
   currency: string;
   status: string;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -99,6 +101,7 @@ export interface ItineraryItem {
   currency: string;
   reason_code: string | null;
   explanation: string | null;
+  nearest_accessible_facility_m: number | null;
 }
 
 export interface Itinerary {
@@ -209,6 +212,60 @@ export interface AuthorityDashboard {
   high_risk_cell_count: number;
 }
 
+// --- Administration (Feature Blueprint P1 FR-40) ---
+export const KNOWN_ROLES = [
+  "tourist",
+  "guide",
+  "business",
+  "authority_police",
+  "authority_emergency_responder",
+  "authority_tourism_dept",
+  "authority_municipality",
+  "authority_verifier",
+  "authority_platform_admin",
+] as const;
+export type KnownRole = (typeof KNOWN_ROLES)[number];
+
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  account_type: string;
+  status: "ACTIVE" | "SUSPENDED" | "DELETED";
+  created_at: string;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  realm_roles: string[];
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actor_user_id: string | null;
+  actor_type: string;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  outcome: string;
+  occurred_at: string;
+  audit_metadata: Record<string, unknown>;
+}
+
+export interface PolicyRegistryEntry {
+  id: string;
+  name: string;
+  description: string | null;
+  version: string;
+  active: boolean;
+}
+
+export interface RetentionRuleEntry {
+  id: string;
+  data_class: string;
+  retention_period_days: number | null;
+  description: string | null;
+}
+
 export interface SafetyScore {
   destination_id: string;
   score: number;
@@ -226,6 +283,9 @@ export interface CrowdCell {
 
 export type BusinessCategory = "HOTEL" | "RESTAURANT" | "TAXI" | "ARTISAN" | "TOUR_OPERATOR" | "OTHER";
 
+export type DietaryOption = "VEGETARIAN" | "VEGAN" | "JAIN" | "HALAL" | "GLUTEN_FREE" | "NON_VEGETARIAN";
+export type PriceRange = "BUDGET" | "MODERATE" | "PREMIUM";
+
 export interface BusinessProfile {
   description: string | null;
   contact_info: Record<string, unknown>;
@@ -233,6 +293,9 @@ export interface BusinessProfile {
   safety_score: number | null;
   women_friendly_score: number | null;
   family_friendly_score: number | null;
+  cuisines: string[];
+  dietary_options: DietaryOption[];
+  price_range: PriceRange | null;
 }
 
 export interface Business {
@@ -243,6 +306,7 @@ export interface Business {
   destination_id: string | null;
   location: GeoPoint | null;
   is_verified: boolean;
+  is_eco_certified: boolean;
   profile: BusinessProfile | null;
   created_at: string;
 }
@@ -357,6 +421,17 @@ export interface AccessibilityPreferences {
   reduce_motion: boolean;
 }
 
+// --- Disability-aware personalized experience (HIGH PRIORITY differentiator) ---
+export type TravelerType = "SOLO" | "ACCESSIBILITY" | "FAMILY";
+export type AccessibilityNeed = "WHEELCHAIR" | "VISUAL_IMPAIRMENT" | "HEARING_IMPAIRMENT" | "REDUCED_MOBILITY";
+
+export interface TravelPreferences {
+  traveler_type: TravelerType;
+  accessibility_needs: AccessibilityNeed[];
+  family_children_count: number;
+  family_seniors_count: number;
+}
+
 export interface DemandForecast {
   destination_id: string;
   planned_visits_next_30_days: number;
@@ -386,6 +461,250 @@ export interface TrendingDestination {
   destination_id: string;
   destination_name: string;
   itinerary_items_last_7_days: number;
+}
+
+export interface FeatureAdoption {
+  total_points_awarded: number;
+  total_badges_awarded: number;
+  total_check_ins: number;
+  total_lost_reports: number;
+  total_found_reports: number;
+  total_confirmed_lost_found_matches: number;
+  total_expenses_logged: number;
+  total_receipt_scans_used: number;
+  total_group_trips: number;
+  total_active_group_members: number;
+  total_discussion_posts: number;
+  total_public_trip_journals: number;
+  total_eco_certified_businesses: number;
+  computed_at: string;
+}
+
+// --- Gamification (Feature Blueprint P2 #15/#26) ---
+export type GamificationCategory = "EXPLORATION" | "HERITAGE" | "LOCAL_ECONOMY" | "RESPONSIBLE_TOURISM" | "COMMUNITY";
+
+export interface Badge {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: GamificationCategory;
+  icon_key: string;
+  points_value: number;
+}
+
+export interface UserBadge {
+  badge: Badge;
+  awarded_at: string;
+  awarded_reason: string;
+}
+
+export interface PointsSummary {
+  total_points: number;
+  by_category: Record<string, number>;
+}
+
+export interface MeGamification {
+  points: PointsSummary;
+  badges: UserBadge[];
+  destinations_visited: number;
+}
+
+export interface Challenge {
+  id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: GamificationCategory;
+  target_count: number;
+  points_reward: number;
+  badge: Badge | null;
+  my_progress_count: number;
+  my_completed_at: string | null;
+}
+
+export interface LeaderboardEntry {
+  display_name: string;
+  total_points: number;
+  rank: number;
+}
+
+export interface CheckIn {
+  id: string;
+  destination_id: string;
+  checked_in_at: string;
+  points_awarded: number;
+  new_badges: Badge[];
+}
+
+// --- Lost & Found (Feature Blueprint P2 #26) ---
+export type LostFoundCategory = "ELECTRONICS" | "DOCUMENTS" | "BAG_LUGGAGE" | "CLOTHING" | "JEWELRY" | "OTHER";
+export type LostItemStatus = "OPEN" | "MATCHED" | "RESOLVED" | "CLOSED";
+export type FoundItemStatus = "OPEN" | "CLAIMED" | "RETURNED";
+export type LostFoundMatchStatus = "SUGGESTED" | "CONFIRMED" | "REJECTED";
+
+export interface LostItem {
+  id: string;
+  reporter_user_id: string;
+  category: LostFoundCategory;
+  title: string;
+  description: string;
+  lost_at: string;
+  destination_id: string | null;
+  location: GeoPoint | null;
+  status: LostItemStatus;
+  created_at: string;
+}
+
+export interface FoundItem {
+  id: string;
+  finder_user_id: string;
+  category: LostFoundCategory;
+  title: string;
+  description: string;
+  found_at: string;
+  destination_id: string | null;
+  location: GeoPoint | null;
+  storage_location: string | null;
+  status: FoundItemStatus;
+  created_at: string;
+}
+
+export interface LostFoundMatchEntry {
+  id: string;
+  lost_item: LostItem;
+  found_item: FoundItem;
+  similarity_score: number;
+  status: LostFoundMatchStatus;
+  created_at: string;
+}
+
+// --- Financial Intelligence (Feature Blueprint P2 #14) ---
+export type ExpenseCategory = "ACCOMMODATION" | "FOOD" | "TRANSPORT" | "SHOPPING" | "ACTIVITIES" | "OTHER";
+export type ExpenseSource = "MANUAL" | "RECEIPT_SCAN";
+
+export interface Expense {
+  id: string;
+  user_id: string;
+  trip_id: string | null;
+  category: ExpenseCategory;
+  amount: number;
+  currency: string;
+  description: string | null;
+  incurred_at: string;
+  source: ExpenseSource;
+  created_at: string;
+}
+
+export interface ReceiptScanResult {
+  no_receipt_detected: boolean;
+  amount: number;
+  currency: string;
+  vendor: string;
+  category_guess: ExpenseCategory;
+  date_text: string;
+  model_version: string;
+}
+
+export interface TripFinancialSummary {
+  trip_id: string;
+  budget: number | null;
+  currency: string;
+  total_spent: number;
+  remaining: number | null;
+  is_over_budget: boolean;
+  by_category: Record<string, number>;
+}
+
+// --- Group & Family Travel (Feature Blueprint P2 #21) ---
+export type TripMemberRole = "OWNER" | "MEMBER";
+export type TripMemberStatus = "INVITED" | "ACTIVE" | "LEFT";
+
+export interface TripMember {
+  id: string;
+  trip_id: string;
+  user_id: string;
+  role: TripMemberRole;
+  status: TripMemberStatus;
+  invited_at: string;
+  joined_at: string | null;
+}
+
+export interface MemberLocation {
+  member_id: string;
+  user_id: string;
+  location: GeoPoint;
+  recorded_at: string;
+  distance_from_centroid_meters: number | null;
+  is_separated: boolean;
+}
+
+export interface GroupLocations {
+  centroid: GeoPoint | null;
+  members: MemberLocation[];
+}
+
+export interface GroupSafety {
+  average_safety_score: number | null;
+  members_covered: number;
+  members_total: number;
+  by_member: Record<string, number | null>;
+}
+
+// --- Smart Heritage / Culture (Feature Blueprint P2 #7) ---
+export interface TourismEvent {
+  id: string;
+  destination_id: string;
+  name: string;
+  starts_at: string;
+  ends_at: string;
+  expected_attendance: number | null;
+}
+
+export interface HeritageStory {
+  story: string;
+  grounded: boolean;
+  sources: GuideAnswerSource[];
+}
+
+// --- Social Tourism (Feature Blueprint P2 #16) ---
+export interface DiscussionPost {
+  id: string;
+  destination_id: string;
+  author_user_id: string;
+  body: string;
+  created_at: string;
+}
+
+// --- Destination "experience" (real weather + virtual-explore points) ---
+export interface DestinationWeather {
+  temperature_c: number | null;
+  condition: string | null;
+  is_day: boolean | null;
+  observed_at: string | null;
+}
+
+export interface ExploreResult {
+  destination_id: string;
+  points_awarded: number;
+  already_explored: boolean;
+}
+
+// --- Sustainability (Feature Blueprint P2 #12) ---
+export interface OvertourismSignal {
+  destination_id: string;
+  latest_density: number | null;
+  threshold: number;
+  is_overtouristed: boolean;
+  observed_at: string | null;
+}
+
+export interface CarbonFootprint {
+  trip_id: string;
+  total_distance_km: number;
+  estimated_kg_co2: number;
+  stops_counted: number;
+  method: string;
 }
 
 export interface Availability {
@@ -482,10 +801,12 @@ export const api = {
     (r) => r.data
   ),
 
-  updateTrip: (id: string, body: Partial<{ title: string; status: string }>, token: string) =>
+  updateTrip: (id: string, body: Partial<{ title: string; status: string; is_public: boolean }>, token: string) =>
     request<{ data: Trip }>(`/api/v1/trips/${id}`, { method: "PATCH", body: JSON.stringify(body), token }).then(
       (r) => r.data
     ),
+
+  listPublicTrips: () => request<{ data: Trip[] }>("/api/v1/trips/public").then((r) => r.data),
 
   cancelTrip: (id: string, token: string) =>
     request<void>(`/api/v1/trips/${id}`, { method: "DELETE", token }),
@@ -499,6 +820,10 @@ export const api = {
       end_date?: string;
       budget?: number;
       currency?: string;
+      traveler_type?: TravelerType;
+      accessibility_needs?: AccessibilityNeed[];
+      family_children_count?: number;
+      family_seniors_count?: number;
     },
     token: string
   ) =>
@@ -612,6 +937,49 @@ export const api = {
       token,
     }).then((r) => r.data),
 
+  // --- Administration ---
+  adminListUsers: (params: { q?: string; account_type?: string; limit?: number }, token: string) => {
+    const q = new URLSearchParams();
+    if (params.q) q.set("q", params.q);
+    if (params.account_type) q.set("account_type", params.account_type);
+    if (params.limit) q.set("limit", String(params.limit));
+    const qs = q.toString();
+    return request<{ data: AdminUser[] }>(`/api/v1/admin/users${qs ? `?${qs}` : ""}`, { token }).then((r) => r.data);
+  },
+
+  adminGetUser: (id: string, token: string) =>
+    request<{ data: AdminUserDetail }>(`/api/v1/admin/users/${id}`, { token }).then((r) => r.data),
+
+  adminChangeUserRole: (id: string, role: KnownRole, token: string) =>
+    request<{ data: AdminUser }>(`/api/v1/admin/users/${id}/role`, {
+      method: "PUT",
+      body: JSON.stringify({ role }),
+      token,
+    }).then((r) => r.data),
+
+  adminChangeUserStatus: (id: string, status: AdminUser["status"], token: string) =>
+    request<{ data: AdminUser }>(`/api/v1/admin/users/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+      token,
+    }).then((r) => r.data),
+
+  adminListAuditLog: (params: { resource_type?: string; limit?: number } | undefined, token: string) => {
+    const q = new URLSearchParams();
+    if (params?.resource_type) q.set("resource_type", params.resource_type);
+    if (params?.limit) q.set("limit", String(params.limit));
+    const qs = q.toString();
+    return request<{ data: AuditLogEntry[] }>(`/api/v1/admin/audit-log${qs ? `?${qs}` : ""}`, { token }).then(
+      (r) => r.data
+    );
+  },
+
+  adminListPolicies: (token: string) =>
+    request<{ data: PolicyRegistryEntry[] }>("/api/v1/admin/policies", { token }).then((r) => r.data),
+
+  adminListRetentionRules: (token: string) =>
+    request<{ data: RetentionRuleEntry[] }>("/api/v1/admin/retention-rules", { token }).then((r) => r.data),
+
   // --- Notifications ---
   listNotifications: (token: string) =>
     request<{ data: AppNotification[] }>("/api/v1/notifications", { token }).then((r) => r.data),
@@ -635,11 +1003,21 @@ export const api = {
     request<{ data: AuthorityDashboard }>("/api/v1/authority/dashboard", { token }).then((r) => r.data),
 
   // --- Business directory ---
-  listBusinesses: (params?: { destination_id?: string; category?: BusinessCategory; verified_only?: boolean }) => {
+  listBusinesses: (params?: {
+    destination_id?: string;
+    category?: BusinessCategory;
+    verified_only?: boolean;
+    dietary_option?: DietaryOption;
+    cuisine?: string;
+    accessible_only?: boolean;
+  }) => {
     const q = new URLSearchParams();
     if (params?.destination_id) q.set("destination_id", params.destination_id);
     if (params?.category) q.set("category", params.category);
     if (params?.verified_only) q.set("verified_only", "true");
+    if (params?.dietary_option) q.set("dietary_option", params.dietary_option);
+    if (params?.cuisine) q.set("cuisine", params.cuisine);
+    if (params?.accessible_only) q.set("accessible_only", "true");
     const qs = q.toString();
     return request<{ data: Business[] }>(`/api/v1/businesses${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
@@ -656,7 +1034,14 @@ export const api = {
 
   upsertBusinessProfile: (
     id: string,
-    body: { description?: string; contact_info?: Record<string, unknown>; accessibility_features?: Record<string, unknown> },
+    body: {
+      description?: string;
+      contact_info?: Record<string, unknown>;
+      accessibility_features?: Record<string, unknown>;
+      cuisines?: string[];
+      dietary_options?: DietaryOption[];
+      price_range?: PriceRange | null;
+    },
     token: string
   ) =>
     request<{ data: Business }>(`/api/v1/businesses/${id}/profile`, {
@@ -851,6 +1236,16 @@ export const api = {
       token,
     }).then((r) => r.data),
 
+  getTravelPreferences: (token: string) =>
+    request<{ data: TravelPreferences }>("/api/v1/users/me/travel-preferences", { token }).then((r) => r.data),
+
+  setTravelPreferences: (body: TravelPreferences, token: string) =>
+    request<{ data: TravelPreferences }>("/api/v1/users/me/travel-preferences", {
+      method: "PUT",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
   // --- Predictive tourism (FR-33) ---
   getDemandForecast: (destinationId: string) =>
     request<{ data: DemandForecast }>(`/api/v1/destinations/${destinationId}/demand-forecast`).then((r) => r.data),
@@ -863,4 +1258,201 @@ export const api = {
     request<{ data: TrendingDestination[] }>("/api/v1/analytics/trending-destinations", { token }).then(
       (r) => r.data
     ),
+
+  getFeatureAdoption: (token: string) =>
+    request<{ data: FeatureAdoption }>("/api/v1/analytics/feature-adoption", { token }).then((r) => r.data),
+
+  // --- Gamification ---
+  listBadges: () => request<{ data: Badge[] }>("/api/v1/gamification/badges").then((r) => r.data),
+
+  listChallenges: (token: string) =>
+    request<{ data: Challenge[] }>("/api/v1/gamification/challenges", { token }).then((r) => r.data),
+
+  getMyGamification: (token: string) =>
+    request<{ data: MeGamification }>("/api/v1/gamification/me", { token }).then((r) => r.data),
+
+  getLeaderboard: () =>
+    request<{ data: LeaderboardEntry[] }>("/api/v1/gamification/leaderboard").then((r) => r.data),
+
+  checkIn: (body: { destination_id: string; lon: number; lat: number }, token: string) =>
+    request<{ data: CheckIn }>("/api/v1/gamification/check-ins", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  // --- Lost & Found ---
+  reportLostItem: (
+    body: {
+      category: LostFoundCategory;
+      title: string;
+      description: string;
+      lost_at: string;
+      destination_id?: string;
+      lon?: number;
+      lat?: number;
+    },
+    token: string
+  ) =>
+    request<{ data: LostItem }>("/api/v1/lost-found/lost-items", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  listMyLostItems: (token: string) =>
+    request<{ data: LostItem[] }>("/api/v1/lost-found/lost-items", { token }).then((r) => r.data),
+
+  reportFoundItem: (
+    body: {
+      category: LostFoundCategory;
+      title: string;
+      description: string;
+      found_at: string;
+      destination_id?: string;
+      lon?: number;
+      lat?: number;
+      storage_location?: string;
+    },
+    token: string
+  ) =>
+    request<{ data: FoundItem }>("/api/v1/lost-found/found-items", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  listFoundItems: () => request<{ data: FoundItem[] }>("/api/v1/lost-found/found-items").then((r) => r.data),
+
+  listMatchesForLostItem: (lostItemId: string, token: string) =>
+    request<{ data: LostFoundMatchEntry[] }>(`/api/v1/lost-found/lost-items/${lostItemId}/matches`, { token }).then(
+      (r) => r.data
+    ),
+
+  confirmMatch: (matchId: string, token: string) =>
+    request<{ data: LostFoundMatchEntry }>(`/api/v1/lost-found/matches/${matchId}/confirm`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
+
+  rejectMatch: (matchId: string, token: string) =>
+    request<{ data: LostFoundMatchEntry }>(`/api/v1/lost-found/matches/${matchId}/reject`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
+
+  // --- Financial Intelligence ---
+  createExpense: (
+    body: {
+      trip_id?: string;
+      category: ExpenseCategory;
+      amount: number;
+      currency?: string;
+      description?: string;
+      incurred_at: string;
+      source?: ExpenseSource;
+    },
+    token: string
+  ) =>
+    request<{ data: Expense }>("/api/v1/financial/expenses", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  listExpenses: (token: string, tripId?: string) =>
+    request<{ data: Expense[] }>(`/api/v1/financial/expenses${tripId ? `?trip_id=${tripId}` : ""}`, { token }).then(
+      (r) => r.data
+    ),
+
+  deleteExpense: (id: string, token: string) =>
+    request<void>(`/api/v1/financial/expenses/${id}`, { method: "DELETE", token }),
+
+  scanReceipt: (body: { image_base64: string; media_type: string }, token: string) =>
+    request<{ data: ReceiptScanResult }>("/api/v1/financial/receipts/scan", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  getTripFinancialSummary: (tripId: string, token: string) =>
+    request<{ data: TripFinancialSummary }>(`/api/v1/financial/trips/${tripId}/summary`, { token }).then(
+      (r) => r.data
+    ),
+
+  // --- Group & Family Travel ---
+  inviteTripMember: (tripId: string, email: string, token: string) =>
+    request<{ data: TripMember }>(`/api/v1/group-travel/trips/${tripId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+      token,
+    }).then((r) => r.data),
+
+  listTripMembers: (tripId: string, token: string) =>
+    request<{ data: TripMember[] }>(`/api/v1/group-travel/trips/${tripId}/members`, { token }).then((r) => r.data),
+
+  acceptTripInvite: (memberId: string, token: string) =>
+    request<{ data: TripMember }>(`/api/v1/group-travel/members/${memberId}/accept`, { method: "POST", token }).then(
+      (r) => r.data
+    ),
+
+  leaveTripGroup: (memberId: string, token: string) =>
+    request<{ data: TripMember }>(`/api/v1/group-travel/members/${memberId}/leave`, { method: "POST", token }).then(
+      (r) => r.data
+    ),
+
+  updateMyTripLocation: (tripId: string, body: { lon: number; lat: number }, token: string) =>
+    request<{ data: MemberLocation }>(`/api/v1/group-travel/trips/${tripId}/location`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  getGroupLocations: (tripId: string, token: string) =>
+    request<{ data: GroupLocations }>(`/api/v1/group-travel/trips/${tripId}/locations`, { token }).then(
+      (r) => r.data
+    ),
+
+  getGroupSafety: (tripId: string, token: string) =>
+    request<{ data: GroupSafety }>(`/api/v1/group-travel/trips/${tripId}/safety`, { token }).then((r) => r.data),
+
+  // --- Smart Heritage / Culture ---
+  listTourismEvents: (destinationId: string) =>
+    request<{ data: TourismEvent[] }>(`/api/v1/destinations/${destinationId}/events`).then((r) => r.data),
+
+  getHeritageStory: (destinationId: string, token: string) =>
+    request<{ data: HeritageStory }>("/api/v1/ai/heritage/story", {
+      method: "POST",
+      body: JSON.stringify({ destination_id: destinationId }),
+      token,
+    }).then((r) => r.data),
+
+  // --- Social Tourism ---
+  listDiscussionPosts: (destinationId: string) =>
+    request<{ data: DiscussionPost[] }>(`/api/v1/social/destinations/${destinationId}/discussions`).then(
+      (r) => r.data
+    ),
+
+  createDiscussionPost: (destinationId: string, body: string, token: string) =>
+    request<{ data: DiscussionPost }>(`/api/v1/social/destinations/${destinationId}/discussions`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+      token,
+    }).then((r) => r.data),
+
+  getDestinationWeather: (destinationId: string) =>
+    request<{ data: DestinationWeather }>(`/api/v1/destinations/${destinationId}/weather`).then((r) => r.data),
+
+  exploreDestination: (destinationId: string, token: string) =>
+    request<{ data: ExploreResult }>(`/api/v1/destinations/${destinationId}/explore`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
+
+  // --- Sustainability ---
+  getOvertourismSignal: (destinationId: string) =>
+    request<{ data: OvertourismSignal }>(`/api/v1/destinations/${destinationId}/overtourism`).then((r) => r.data),
+
+  getTripCarbonFootprint: (tripId: string, token: string) =>
+    request<{ data: CarbonFootprint }>(`/api/v1/trips/${tripId}/carbon-footprint`, { token }).then((r) => r.data),
 };

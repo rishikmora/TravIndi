@@ -61,6 +61,11 @@ class Trip(UUIDPKMixin, TimestampMixin, Base):
     status: Mapped[TripStatus] = mapped_column(
         Enum(TripStatus, name="trip_status", schema="travel"), nullable=False, default=TripStatus.DRAFT
     )
+    is_public: Mapped[bool] = mapped_column(nullable=False, default=False)
+    """Feature Blueprint P2 "Public trip journals"/"Verified travel stories"
+    — a trip owner opts in to sharing their real itinerary as inspiration
+    for others (app/domains/social/router.py's public-journals feed). False
+    by default; never flips on its own."""
 
     itineraries: Mapped[list["Itinerary"]] = relationship(back_populates="trip")
 

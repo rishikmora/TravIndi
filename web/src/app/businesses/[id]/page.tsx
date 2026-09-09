@@ -2,18 +2,218 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import {
   api,
   type Availability,
   type Booking,
   type Business,
+  type DietaryOption,
+  type PriceRange,
   type Review,
   type Service,
   type Verification,
 } from "@/lib/api";
 import { QrTicket } from "@/components/QrTicket";
-import { CalendarIcon, StarIcon, TicketIcon } from "@/components/icons";
+import { BuildingIcon, CalendarIcon, MinusIcon, PlusIcon, StarIcon, TicketIcon } from "@/components/icons";
+
+const DIETARY_OPTIONS: DietaryOption[] = ["VEGETARIAN", "VEGAN", "JAIN", "HALAL", "GLUTEN_FREE", "NON_VEGETARIAN"];
+const DIETARY_LABELS: Record<DietaryOption, string> = {
+  VEGETARIAN: "Vegetarian",
+  VEGAN: "Vegan",
+  JAIN: "Jain",
+  HALAL: "Halal",
+  GLUTEN_FREE: "Gluten-free",
+  NON_VEGETARIAN: "Non-vegetarian",
+};
+const PRICE_RANGES: PriceRange[] = ["BUDGET", "MODERATE", "PREMIUM"];
+const PRICE_LABELS: Record<PriceRange, string> = { BUDGET: "₹ Budget", MODERATE: "₹₹ Moderate", PREMIUM: "₹₹₹ Premium" };
+
+function FoodProfileSection({ business, onUpdated }: { business: Business; onUpdated: (b: Business) => void }) {
+  const { token } = useAuth();
+  const [cuisinesText, setCuisinesText] = useState(business.profile?.cuisines.join(", ") ?? "");
+  const [dietary, setDietary] = useState<Set<DietaryOption>>(new Set(business.profile?.dietary_options ?? []));
+  const [priceRange, setPriceRange] = useState<PriceRange | "">(business.profile?.price_range ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  function toggleDietary(option: DietaryOption) {
+    setDietary((prev) => {
+      const next = new Set(prev);
+      if (next.has(option)) next.delete(option);
+      else next.add(option);
+      return next;
+    });
+  }
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const updated = await api.upsertBusinessProfile(
+        business.id,
+        {
+          description: business.profile?.description ?? undefined,
+          cuisines: cuisinesText
+            .split(",")
+            .map((c) => c.trim())
+            .filter(Boolean),
+          dietary_options: Array.from(dietary),
+          price_range: priceRange || null,
+          // The upsert endpoint replaces the whole profile, not a partial
+          // patch — carry through fields this form doesn't own so saving
+          // food info can't silently wipe a saved accessibility profile.
+          accessibility_features: business.profile?.accessibility_features ?? {},
+        },
+        token
+      );
+      onUpdated(updated);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not update the food profile.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSave} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 text-sm">
+      <h3 className="font-medium">Cuisine & dietary options</h3>
+      <label className="flex flex-col gap-1">
+        Cuisines (comma-separated)
+        <input
+          value={cuisinesText}
+          onChange={(e) => setCuisinesText(e.target.value)}
+          placeholder="e.g. North Indian, Street food, Chaat"
+          className="rounded-lg border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {DIETARY_OPTIONS.map((d) => (
+          <label
+            key={d}
+            className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition ${
+              dietary.has(d) ? "border-accent bg-accent/10 text-accent" : "border-border text-foreground/60"
+            }`}
+          >
+            <input type="checkbox" className="hidden" checked={dietary.has(d)} onChange={() => toggleDietary(d)} />
+            {DIETARY_LABELS[d]}
+          </label>
+        ))}
+      </div>
+      <label className="flex flex-col gap-1">
+        Price range
+        <select
+          value={priceRange}
+          onChange={(e) => setPriceRange(e.target.value as PriceRange | "")}
+          className="rounded-lg border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+        >
+          <option value="">Not set</option>
+          {PRICE_RANGES.map((p) => (
+            <option key={p} value={p}>
+              {PRICE_LABELS[p]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {error && <p className="text-danger">{error}</p>}
+      <button
+        type="submit"
+        disabled={submitting}
+        className="self-start rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        {submitting ? "Saving…" : "Save"}
+      </button>
+    </form>
+  );
+}
+
+const ACCESSIBILITY_FLAGS: { key: string; label: string }[] = [
+  { key: "wheelchair_accessible", label: "Wheelchair accessible" },
+  { key: "step_free_access", label: "Step-free access" },
+  { key: "accessible_parking", label: "Accessible parking" },
+];
+
+function AccessibilityProfileSection({ business, onUpdated }: { business: Business; onUpdated: (b: Business) => void }) {
+  const { token } = useAuth();
+  const initial = (business.profile?.accessibility_features ?? {}) as Record<string, unknown>;
+  const [flags, setFlags] = useState<Set<string>>(
+    new Set(ACCESSIBILITY_FLAGS.map((f) => f.key).filter((k) => initial[k] === true))
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  function toggle(key: string) {
+    setFlags((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      const accessibility_features: Record<string, boolean> = {};
+      for (const f of ACCESSIBILITY_FLAGS) accessibility_features[f.key] = flags.has(f.key);
+      const updated = await api.upsertBusinessProfile(
+        business.id,
+        {
+          description: business.profile?.description ?? undefined,
+          // Same reasoning as FoodProfileSection: carry through fields this
+          // form doesn't own so this save can't wipe the food profile.
+          cuisines: business.profile?.cuisines ?? [],
+          dietary_options: business.profile?.dietary_options ?? [],
+          price_range: business.profile?.price_range ?? null,
+          accessibility_features,
+        },
+        token
+      );
+      onUpdated(updated);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not update the accessibility profile.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSave} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 text-sm">
+      <h3 className="font-medium">Accessibility</h3>
+      <p className="text-xs text-foreground/55">
+        Self-declared, like the rest of this directory — no inspection data source exists, so
+        only what you state here is ever shown to travelers with accessibility needs.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {ACCESSIBILITY_FLAGS.map((f) => (
+          <label
+            key={f.key}
+            className={`cursor-pointer rounded-full border px-3 py-1 text-xs font-medium transition ${
+              flags.has(f.key) ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground/60"
+            }`}
+          >
+            <input type="checkbox" className="hidden" checked={flags.has(f.key)} onChange={() => toggle(f.key)} />
+            {f.label}
+          </label>
+        ))}
+      </div>
+      {error && <p className="text-danger">{error}</p>}
+      <button
+        type="submit"
+        disabled={submitting}
+        className="self-start rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        {submitting ? "Saving…" : "Save"}
+      </button>
+    </form>
+  );
+}
 
 function AddAvailabilityForm({ serviceId, onAdded }: { serviceId: string; onAdded: (a: Availability) => void }) {
   const { token } = useAuth();
@@ -88,19 +288,54 @@ function AddAvailabilityForm({ serviceId, onAdded }: { serviceId: string; onAdde
   );
 }
 
-function BookSlotButton({ service, slot, onBooked }: { service: Service; slot: Availability; onBooked: (b: Booking) => void }) {
+function Stepper({ value, min, max, onChange }: { value: number; min: number; max: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={value <= min}
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-foreground/70 disabled:opacity-30"
+        aria-label="Decrease party size"
+      >
+        <MinusIcon width={13} height={13} />
+      </button>
+      <span className="w-5 text-center text-sm font-semibold">{value}</span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
+        className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-foreground/70 disabled:opacity-30"
+        aria-label="Increase party size"
+      >
+        <PlusIcon width={13} height={13} />
+      </button>
+    </div>
+  );
+}
+
+function SlotBookingRow({ service, slot, onBooked }: { service: Service; slot: Availability; onBooked: (b: Booking) => void }) {
   const { token } = useAuth();
+  const remaining = slot.capacity - slot.booked_count;
+  const [expanded, setExpanded] = useState(false);
+  const [partySize, setPartySize] = useState(1);
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const remaining = slot.capacity - slot.booked_count;
 
-  async function onBook() {
+  const total = service.base_price != null ? service.base_price * partySize : null;
+
+  async function onConfirm() {
     if (!token) return;
     setError(null);
     setSubmitting(true);
     try {
-      const booking = await api.createBooking({ service_id: service.id, availability_id: slot.id, party_size: 1 }, token);
+      const booking = await api.createBooking(
+        { service_id: service.id, availability_id: slot.id, party_size: partySize, notes: notes || undefined },
+        token
+      );
       onBooked(booking);
+      setExpanded(false);
     } catch (err) {
       setError(isApiError(err) ? err.message : "Could not book this slot.");
     } finally {
@@ -109,15 +344,69 @@ function BookSlotButton({ service, slot, onBooked }: { service: Service; slot: A
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <button
-        onClick={onBook}
-        disabled={submitting || remaining <= 0 || !token}
-        className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-40"
-      >
-        {remaining <= 0 ? "Full" : submitting ? "Booking…" : "Book"}
-      </button>
-      {error && <p className="text-xs text-danger">{error}</p>}
+    <div className="rounded-lg border border-border">
+      <div className="flex items-center justify-between px-3 py-2 text-xs">
+        <span className="flex items-center gap-1.5">
+          <CalendarIcon width={13} height={13} className="text-foreground/50" />
+          {new Date(slot.starts_at).toLocaleString(undefined, {
+            weekday: "short",
+            hour: "numeric",
+            minute: "2-digit",
+            month: "short",
+            day: "numeric",
+          })}
+          <span className="text-foreground/50">
+            · {remaining}/{slot.capacity} open
+          </span>
+        </span>
+        {token ? (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            disabled={remaining <= 0}
+            className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-40"
+          >
+            {remaining <= 0 ? "Full" : expanded ? "Cancel" : "Book"}
+          </button>
+        ) : (
+          <span className="text-foreground/40">Sign in to book</span>
+        )}
+      </div>
+      {expanded && (
+        <div className="flex flex-col gap-3 border-t border-border bg-surface-muted/60 p-3 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-foreground/70">Party size</span>
+            <Stepper value={partySize} min={1} max={remaining} onChange={setPartySize} />
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="font-medium text-foreground/70">Notes (optional)</span>
+            <input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. arriving by taxi, need a wheelchair-accessible table"
+              className="rounded-lg border border-border bg-background px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </label>
+          <div className="flex items-center justify-between border-t border-border pt-2">
+            <span className="text-foreground/60">
+              {total != null ? (
+                <>
+                  Total: <span className="font-semibold text-foreground">{service.currency} {total}</span>
+                </>
+              ) : (
+                "No listed price — confirmed on arrival"
+              )}
+            </span>
+            <button
+              onClick={onConfirm}
+              disabled={submitting}
+              className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+            >
+              {submitting ? "Booking…" : "Confirm booking"}
+            </button>
+          </div>
+          {error && <p className="text-danger">{error}</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -131,7 +420,7 @@ function ServiceCard({
   isOwner: boolean;
   onBooked: (b: Booking) => void;
 }) {
-  const [slots, setSlots] = useState<Availability[]>([]);
+  const [slots, setSlots] = useState<Availability[] | null>(null);
 
   function refresh() {
     api.listAvailability(service.id).then(setSlots);
@@ -154,34 +443,37 @@ function ServiceCard({
       {isOwner && <div className="mt-3">{<AddAvailabilityForm serviceId={service.id} onAdded={() => refresh()} />}</div>}
 
       <div className="mt-3 flex flex-col gap-1.5">
-        {slots.length === 0 && <p className="text-xs text-foreground/50">No time slots open yet.</p>}
-        {slots.map((slot) => (
-          <div key={slot.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs">
-            <span className="flex items-center gap-1.5">
-              <CalendarIcon width={13} height={13} className="text-foreground/50" />
-              {new Date(slot.starts_at).toLocaleString(undefined, {
-                weekday: "short",
-                hour: "numeric",
-                minute: "2-digit",
-                month: "short",
-                day: "numeric",
-              })}
-              <span className="text-foreground/50">
-                · {slot.capacity - slot.booked_count}/{slot.capacity} open
+        {slots === null && <p className="text-xs text-foreground/50">Loading availability…</p>}
+        {slots?.length === 0 && <p className="text-xs text-foreground/50">No time slots open yet.</p>}
+        {slots?.map((slot) =>
+          isOwner ? (
+            <div key={slot.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs">
+              <span className="flex items-center gap-1.5">
+                <CalendarIcon width={13} height={13} className="text-foreground/50" />
+                {new Date(slot.starts_at).toLocaleString(undefined, {
+                  weekday: "short",
+                  hour: "numeric",
+                  minute: "2-digit",
+                  month: "short",
+                  day: "numeric",
+                })}
+                <span className="text-foreground/50">
+                  · {slot.capacity - slot.booked_count}/{slot.capacity} open
+                </span>
               </span>
-            </span>
-            {!isOwner && (
-              <BookSlotButton
-                service={service}
-                slot={slot}
-                onBooked={(b) => {
-                  refresh();
-                  onBooked(b);
-                }}
-              />
-            )}
-          </div>
-        ))}
+            </div>
+          ) : (
+            <SlotBookingRow
+              key={slot.id}
+              service={service}
+              slot={slot}
+              onBooked={(b) => {
+                refresh();
+                onBooked(b);
+              }}
+            />
+          )
+        )}
       </div>
     </li>
   );
@@ -255,7 +547,7 @@ function AddServiceForm({ businessId, onAdded }: { businessId: string; onAdded: 
 
 function ServicesSection({ business, isOwner }: { business: Business; isOwner: boolean }) {
   const { token } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<Service[] | null>(null);
   const [justBooked, setJustBooked] = useState<Booking | null>(null);
 
   useEffect(() => {
@@ -264,20 +556,31 @@ function ServicesSection({ business, isOwner }: { business: Business; isOwner: b
 
   return (
     <div className="flex flex-col gap-3">
-      {isOwner && <AddServiceForm businessId={business.id} onAdded={(s) => setServices((prev) => [...prev, s])} />}
+      {isOwner && <AddServiceForm businessId={business.id} onAdded={(s) => setServices((prev) => [...(prev ?? []), s])} />}
       {justBooked && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-success/30 bg-success/5 p-5 text-center">
           <p className="flex items-center gap-1.5 text-sm font-medium text-success">
             <TicketIcon width={16} height={16} />
             Booked! Here&apos;s your ticket.
           </p>
+          {justBooked.total_amount != null && (
+            <p className="text-xs text-foreground/60">
+              Party of {justBooked.party_size} · {justBooked.currency} {justBooked.total_amount}
+            </p>
+          )}
           {justBooked.ticket && <QrTicket token={justBooked.ticket.qr_token} />}
-          <p className="text-xs text-foreground/60">Show this at check-in — no payment gateway is wired up in this prototype, so the booking is confirmed immediately.</p>
+          <p className="text-xs text-foreground/60">
+            Show this at check-in — no payment gateway is wired up in this prototype, so the booking is confirmed
+            immediately.{" "}
+            <Link href="/bookings" className="font-medium text-primary underline">
+              View all your bookings
+            </Link>
+          </p>
         </div>
       )}
-      {services.length === 0 ? (
-        <p className="text-sm text-foreground/60">No services listed yet.</p>
-      ) : (
+      {services === null && <p className="text-sm text-foreground/60">Loading services…</p>}
+      {services?.length === 0 && <p className="text-sm text-foreground/60">No services listed yet.</p>}
+      {services && services.length > 0 && (
         <ul className="flex flex-col gap-2">
           {services.map((s) => (
             <ServiceCard key={s.id} service={s} isOwner={isOwner} onBooked={setJustBooked} />
@@ -473,13 +776,11 @@ function VerificationSection({ business }: { business: Business }) {
     }
   }
 
-  if (!isOwner) return null;
+  if (!isOwner || business.is_verified) return null;
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-      {business.is_verified ? (
-        <p className="font-medium text-success">This business is verified.</p>
-      ) : verification ? (
+      {verification ? (
         <p>
           Verification status: <span className="font-medium">{verification.status}</span>
           {verification.rejection_reason && ` — ${verification.rejection_reason}`}
@@ -506,6 +807,7 @@ export default function BusinessDetailPage() {
   const params = useParams<{ id: string }>();
   const businessId = params.id;
   const [business, setBusiness] = useState<Business | null>(null);
+  const [destinationName, setDestinationName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -516,32 +818,77 @@ export default function BusinessDetailPage() {
       .catch(() => setError("Business not found."));
   }, [businessId]);
 
-  if (error) return <p className="mx-auto max-w-lg text-sm text-danger">{error}</p>;
-  if (!business) return <p className="mx-auto max-w-lg text-sm text-foreground/60">Loading…</p>;
+  useEffect(() => {
+    if (!business?.destination_id) return;
+    api.getDestination(business.destination_id).then((d) => setDestinationName(d.name)).catch(() => {});
+  }, [business?.destination_id]);
+
+  if (error) return <p className="text-sm text-danger">{error}</p>;
+  if (!business) return <p className="text-sm text-foreground/60">Loading…</p>;
 
   const isOwner = me?.id === business.owner_user_id;
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
-          {business.is_verified && (
-            <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Verified</span>
-          )}
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 sm:flex-row sm:items-start">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <BuildingIcon width={26} height={26} />
+        </span>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold tracking-tight">{business.name}</h1>
+            {business.is_verified && (
+              <span className="rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Verified</span>
+            )}
+            {business.is_eco_certified && (
+              <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">Eco-certified</span>
+            )}
+            {business.profile?.accessibility_features?.wheelchair_accessible === true && (
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">♿ Accessible</span>
+            )}
+          </div>
+          <p className="text-sm text-foreground/60">
+            {business.category}
+            {destinationName ? ` · ${destinationName}` : ""}
+          </p>
+          {business.profile?.description && <p className="mt-2 text-sm">{business.profile.description}</p>}
+          {business.profile &&
+            (business.profile.cuisines.length > 0 || business.profile.dietary_options.length > 0 || business.profile.price_range) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {business.profile.cuisines.map((c) => (
+                  <span key={c} className="rounded-full bg-surface-muted px-2.5 py-1 text-xs text-foreground/70">
+                    {c}
+                  </span>
+                ))}
+                {business.profile.price_range && (
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                    {PRICE_LABELS[business.profile.price_range]}
+                  </span>
+                )}
+                {business.profile.dietary_options.map((d) => (
+                  <span key={d} className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+                    {DIETARY_LABELS[d]}
+                  </span>
+                ))}
+              </div>
+            )}
         </div>
-        <p className="text-sm text-foreground/60">{business.category}</p>
-        {business.profile?.description && <p className="mt-2 text-sm">{business.profile.description}</p>}
       </div>
 
       <VerificationSection business={business} />
 
-      <section>
-        <h2 className="mb-2 text-lg font-medium">Services & booking</h2>
-        <ServicesSection business={business} isOwner={isOwner} />
-      </section>
+      <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
+        <section>
+          <h2 className="mb-2 text-lg font-medium">Services & booking</h2>
+          <ServicesSection business={business} isOwner={isOwner} />
+        </section>
 
-      {isOwner && <OwnerBookingsPanel businessId={business.id} />}
+        <div className="flex flex-col gap-6">
+          {isOwner && (business.category === "RESTAURANT" ? <FoodProfileSection business={business} onUpdated={setBusiness} /> : null)}
+          {isOwner && <AccessibilityProfileSection business={business} onUpdated={setBusiness} />}
+          {isOwner && <OwnerBookingsPanel businessId={business.id} />}
+        </div>
+      </div>
 
       <section>
         <h2 className="mb-2 text-lg font-medium">Reviews</h2>

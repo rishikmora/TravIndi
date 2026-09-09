@@ -18,10 +18,15 @@ from app.domains.booking import models as booking_models  # noqa: F401
 from app.domains.business import models as business_models  # noqa: F401
 from app.domains.crowd import models as crowd_models  # noqa: F401
 from app.domains.emergency import models as emergency_models  # noqa: F401
+from app.domains.financial import models as financial_models  # noqa: F401
+from app.domains.gamification import models as gamification_models  # noqa: F401
 from app.domains.governance import models as governance_models  # noqa: F401
+from app.domains.group_travel import models as group_travel_models  # noqa: F401
 from app.domains.identity import models as identity_models  # noqa: F401
 from app.domains.knowledge import models as knowledge_models  # noqa: F401
+from app.domains.lost_found import models as lost_found_models  # noqa: F401
 from app.domains.safety import models as safety_models  # noqa: F401
+from app.domains.social import models as social_models  # noqa: F401
 from app.domains.tourism import models as tourism_models  # noqa: F401
 from app.domains.travel import models as travel_models  # noqa: F401
 from app.domains.trust import models as trust_models  # noqa: F401
@@ -37,14 +42,24 @@ config.set_main_option(
 
 target_metadata = Base.metadata
 
-# The 14 confirmed application schemas (docs/00-planning/09-database-schema-plan.md).
-# Postgres also has `public`, plus `tiger`/`tiger_data`/`topology` installed by the
-# postgis extension itself — without this filter, autogenerate would propose
-# dropping PostGIS's own system tables, since they aren't part of our metadata.
+# The 14 confirmed application schemas (docs/00-planning/09-database-schema-plan.md)
+# plus `gamification`, `lost_found`, and `financial` (added 2026-09-08 for
+# the P2 feature-blueprint pass — see
+# docs/00-planning/04-feature-priority-matrix.md, not part of the original
+# frozen P0/P1 schema plan). `financial` is deliberately separate from the
+# existing `payment` schema — `payment` is reserved for a real payment
+# gateway integration that was never built (see
+# app/domains/booking/models.py); `financial` is user-logged expense
+# bookkeeping, a different concept that never touches real money. Postgres
+# also has `public`, plus `tiger`/`tiger_data`/`topology` installed by the
+# postgis extension itself — without this filter, autogenerate would
+# propose dropping PostGIS's own system tables, since they aren't part of
+# our metadata.
 OWNED_SCHEMAS = {
     "identity", "tourism", "travel", "safety", "emergency", "crowd",
     "business", "booking", "payment", "trust", "knowledge", "analytics",
-    "integration", "governance",
+    "integration", "governance", "gamification", "lost_found", "financial",
+    "group_travel", "social",
 }
 
 

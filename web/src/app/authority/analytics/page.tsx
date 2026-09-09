@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
-import { api, type AnalyticsOverview, type TrendingDestination } from "@/lib/api";
+import { api, type AnalyticsOverview, type FeatureAdoption, type TrendingDestination } from "@/lib/api";
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -19,14 +19,16 @@ function AnalyticsPanel() {
   const { token } = useAuth();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [trending, setTrending] = useState<TrendingDestination[]>([]);
+  const [adoption, setAdoption] = useState<FeatureAdoption | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
-    Promise.all([api.getAnalyticsOverview(token), api.getTrendingDestinations(token)])
-      .then(([o, t]) => {
+    Promise.all([api.getAnalyticsOverview(token), api.getTrendingDestinations(token), api.getFeatureAdoption(token)])
+      .then(([o, t, a]) => {
         setOverview(o);
         setTrending(t);
+        setAdoption(a);
       })
       .catch((err) => {
         setError(
@@ -97,6 +99,31 @@ function AnalyticsPanel() {
           {trending.length === 0 && <p className="text-sm text-foreground/60">No recent planning activity yet.</p>}
         </ul>
       </section>
+
+      {adoption && (
+        <section>
+          <h2 className="mb-2 text-lg font-medium">Feature adoption</h2>
+          <p className="mb-3 text-xs text-foreground/50">
+            Real usage counts across gamification, lost &amp; found, financial tools, group travel, social and
+            sustainability — not a fabricated engagement metric.
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatTile label="Points awarded" value={adoption.total_points_awarded} />
+            <StatTile label="Badges awarded" value={adoption.total_badges_awarded} />
+            <StatTile label="Check-ins" value={adoption.total_check_ins} />
+            <StatTile label="Lost reports" value={adoption.total_lost_reports} />
+            <StatTile label="Found reports" value={adoption.total_found_reports} />
+            <StatTile label="Confirmed matches" value={adoption.total_confirmed_lost_found_matches} />
+            <StatTile label="Expenses logged" value={adoption.total_expenses_logged} />
+            <StatTile label="Receipt scans used" value={adoption.total_receipt_scans_used} />
+            <StatTile label="Group trips" value={adoption.total_group_trips} />
+            <StatTile label="Active group members" value={adoption.total_active_group_members} />
+            <StatTile label="Discussion posts" value={adoption.total_discussion_posts} />
+            <StatTile label="Public trip journals" value={adoption.total_public_trip_journals} />
+            <StatTile label="Eco-certified businesses" value={adoption.total_eco_certified_businesses} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

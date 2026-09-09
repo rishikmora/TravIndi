@@ -18,7 +18,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import Principal, get_current_principal, get_pagination, require_idempotency_key
@@ -28,29 +28,24 @@ from app.db.session import get_db_session
 from app.domains.booking.models import Booking, BookingStatus, Ticket, TicketStatus
 from app.domains.booking.schemas import BookingCreateIn, BookingOut, TicketOut, TicketVerifyIn
 from app.domains.business.models import Availability, Business, Service
+from app.domains.gamification.engine import (
+    BOOKING_ECO_CERTIFIED_BONUS_POINTS,
+    BOOKING_VERIFIED_BUSINESS_POINTS,
+    advance_challenge_progress,
+    award_points,
+)
+from app.domains.gamification.models import GamificationCategory
 from app.schemas.common import DataResponse, ListResponse, Pagination
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 tickets_router = APIRouter(prefix="/tickets", tags=["bookings"])
 
 
-async def _to_booking_out(session: AsyncSession, booking: Booking, ticket: Ticket | None = None) -> BookingOut:
-    """Denormalizes service/business name and the slot's real start/end time
-    for display — same reasoning as `_to_itinerary_out`'s `attraction_name`
-    batch lookup in app/domains/travel/router.py: an id alone isn't
-    human-readable without a second round trip. Trusts referential
-    integrity (service/business/availability rows are never hard-deleted in
-    this app) rather than defensively coding around an impossible null."""
-    service = await session.get(Service, booking.service_id)
-    assert service is not None, "booking.service_id is a NOT NULL FK — the referenced row always exists"
-    business = await session.get(Business, service.business_id)
-    assert business is not None, "service.business_id is a NOT NULL FK — the referenced row always exists"
-    availability = await session.get(Availability, booking.availability_id)
-    assert availability is not None, "booking.availability_id is a NOT NULL FK — the referenced row always exists"
-    if ticket is None:
-        ticket = (
-            await session.execute(select(Ticket).where(Ticket.booking_id == booking.id))
-        ).scalar_one_or_none()
+def _build_booking_out(
+    booking: Booking, service: Service, business: Business, availability: Availability, ticket: Ticket | None
+) -> BookingOut:
+    """Pure construction, no I/O — shared by the single-row and batch fetch
+    paths below so the two can't drift out of sync."""
     return BookingOut(
         id=booking.id,
         user_id=booking.user_id,
@@ -73,6 +68,68 @@ async def _to_booking_out(session: AsyncSession, booking: Booking, ticket: Ticke
             else None
         ),
     )
+
+
+async def _to_booking_out(session: AsyncSession, booking: Booking, ticket: Ticket | None = None) -> BookingOut:
+    """Denormalizes service/business name and the slot's real start/end time
+    for display — same reasoning as `_to_itinerary_out`'s `attraction_name`
+    batch lookup in app/domains/travel/router.py: an id alone isn't
+    human-readable without a second round trip. Trusts referential
+    integrity (service/business/availability rows are never hard-deleted in
+    this app) rather than defensively coding around an impossible null.
+
+    Single-row only — for a list of bookings, use `_to_booking_outs_batch`
+    instead, which fetches all of these in a fixed number of queries rather
+    than up to 4 round trips per row."""
+    service = await session.get(Service, booking.service_id)
+    assert service is not None, "booking.service_id is a NOT NULL FK — the referenced row always exists"
+    business = await session.get(Business, service.business_id)
+    assert business is not None, "service.business_id is a NOT NULL FK — the referenced row always exists"
+    availability = await session.get(Availability, booking.availability_id)
+    assert availability is not None, "booking.availability_id is a NOT NULL FK — the referenced row always exists"
+    if ticket is None:
+        ticket = (
+            await session.execute(select(Ticket).where(Ticket.booking_id == booking.id))
+        ).scalar_one_or_none()
+    return _build_booking_out(booking, service, business, availability, ticket)
+
+
+async def _to_booking_outs_batch(session: AsyncSession, bookings: list[Booking]) -> list[BookingOut]:
+    """Batch version of `_to_booking_out` for list endpoints — a fixed 4
+    queries total (services, businesses, availabilities, tickets) instead of
+    up to 4 queries *per booking*. `list_bookings`/`list_business_bookings`
+    used to call `_to_booking_out` in a loop, which was a real N+1: a
+    20-item page could issue up to 80 sequential round trips."""
+    if not bookings:
+        return []
+
+    service_ids = {b.service_id for b in bookings}
+    availability_ids = {b.availability_id for b in bookings}
+    booking_ids = [b.id for b in bookings]
+
+    services = {
+        s.id: s for s in (await session.execute(select(Service).where(Service.id.in_(service_ids)))).scalars()
+    }
+    business_ids = {s.business_id for s in services.values()}
+    businesses = {
+        biz.id: biz for biz in (await session.execute(select(Business).where(Business.id.in_(business_ids)))).scalars()
+    }
+    availabilities = {
+        a.id: a
+        for a in (await session.execute(select(Availability).where(Availability.id.in_(availability_ids)))).scalars()
+    }
+    tickets = {
+        t.booking_id: t
+        for t in (await session.execute(select(Ticket).where(Ticket.booking_id.in_(booking_ids)))).scalars()
+    }
+
+    out = []
+    for b in bookings:
+        service = services[b.service_id]
+        business = businesses[service.business_id]
+        availability = availabilities[b.availability_id]
+        out.append(_build_booking_out(b, service, business, availability, tickets.get(b.id)))
+    return out
 
 
 async def _get_booking_or_404(session: AsyncSession, booking_id: uuid.UUID) -> Booking:
@@ -125,6 +182,61 @@ async def create_booking(
     session.add(ticket)
     await session.flush()
 
+    business = await session.get(Business, service.business_id)
+    if business is not None and business.is_verified:
+        # Real gamification hook (Feature Blueprint P2 #9 Local Economy) —
+        # only fires for an already-verified business, so it's a genuine
+        # reward for supporting real KYC-checked local commerce, not a
+        # blanket "every booking earns points" freebie.
+        await award_points(
+            session,
+            user_id=booking.user_id,
+            points=BOOKING_VERIFIED_BUSINESS_POINTS,
+            category=GamificationCategory.LOCAL_ECONOMY,
+            reason=f"Booked a verified local business: {business.name}",
+            related_entity_type="booking",
+            related_entity_id=booking.id,
+        )
+        verified_booking_count = (
+            await session.execute(
+                select(func.count(Booking.id.distinct()))
+                .join(Service, Service.id == Booking.service_id)
+                .join(Business, Business.id == Service.business_id)
+                .where(Booking.user_id == booking.user_id, Business.is_verified.is_(True))
+            )
+        ).scalar_one()  # includes this booking — it was already flushed above
+        await advance_challenge_progress(
+            session, user_id=booking.user_id, category=GamificationCategory.LOCAL_ECONOMY, distinct_count=verified_booking_count
+        )
+
+        if business.is_eco_certified:
+            # Real gamification hook (Feature Blueprint P2 Sustainability
+            # "Eco rewards") — bonus points on top of the local-economy
+            # ones, only for a business an authority has actually
+            # certified eco-friendly (app/domains/business/router.py's
+            # certify_business_eco_friendly), never self-declared.
+            await award_points(
+                session,
+                user_id=booking.user_id,
+                points=BOOKING_ECO_CERTIFIED_BONUS_POINTS,
+                category=GamificationCategory.RESPONSIBLE_TOURISM,
+                reason=f"Booked an eco-certified business: {business.name}",
+                related_entity_type="booking",
+                related_entity_id=booking.id,
+            )
+            eco_booking_count = (
+                await session.execute(
+                    select(func.count(Booking.id.distinct()))
+                    .join(Service, Service.id == Booking.service_id)
+                    .join(Business, Business.id == Service.business_id)
+                    .where(Booking.user_id == booking.user_id, Business.is_eco_certified.is_(True))
+                )
+            ).scalar_one()
+            await advance_challenge_progress(
+                session, user_id=booking.user_id, category=GamificationCategory.RESPONSIBLE_TOURISM,
+                distinct_count=eco_booking_count,
+            )
+
     await session.commit()
     await session.refresh(booking)
     await session.refresh(ticket)
@@ -144,7 +256,7 @@ async def list_bookings(
         .limit(pagination.limit)
     )
     rows = result.scalars().all()
-    return ListResponse(data=[await _to_booking_out(session, b) for b in rows])
+    return ListResponse(data=await _to_booking_outs_batch(session, list(rows)))
 
 
 @router.get("/business/{business_id}", response_model=ListResponse[BookingOut])
@@ -169,7 +281,7 @@ async def list_business_bookings(
         .limit(pagination.limit)
     )
     rows = (await session.execute(query)).scalars().all()
-    return ListResponse(data=[await _to_booking_out(session, b) for b in rows])
+    return ListResponse(data=await _to_booking_outs_batch(session, list(rows)))
 
 
 @router.get("/{booking_id}", response_model=DataResponse[BookingOut])

@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 /*
- * TravIndi visual language — a warm "sunset over a safe journey" palette:
- * coral/saffron primary (evokes Indian sunsets, warmth, hospitality) paired
- * with a deep teal accent (calm, trust, safety) on a cream/charcoal
- * background. Replaces the earlier plain black/white utility theme.
+ * TravIndi visual language — "heritage" palette: stone-cream ground, deep
+ * ink-navy for text and intentionally dark sections, terracotta primary and
+ * teal accent (India's built heritage + calm/trust), gold reserved for
+ * accents on dark ink surfaces. Marcellus for display headings, Manrope for
+ * body/UI — matches the approved SIH 26204 design direction.
  */
 :root {
-  --background: #fbf7f0;
-  --foreground: #1f2430;
+  --background: #f5efe3;
+  --foreground: #0e2942;
   --surface: #ffffff;
-  --surface-muted: #f3ecdf;
-  --border: rgba(31, 36, 48, 0.1);
-  --primary: #e8622c;
-  --primary-foreground: #fffaf5;
-  --accent: #0f766e;
+  --surface-muted: #efe7d6;
+  --border: rgba(14, 41, 66, 0.12);
+  --primary: #b76a32;
+  --primary-foreground: #fbf3e7;
+  --accent: #1e806d;
   --accent-foreground: #ffffff;
-  --muted: #6b7280;
-  --danger: #dc2626;
-  --success: #15803d;
+  --muted: #6d7e8c;
+  --danger: #d94e4e;
+  --success: #3f7e56;
+  --ink: #081a2f;
+  --ink-2: #0e2942;
+  --gold: #d9b56d;
 }
 
 @theme inline {
@@ -34,24 +38,28 @@
   --color-muted: var(--muted);
   --color-danger: var(--danger);
   --color-success: var(--success);
-  --font-sans: var(--font-geist-sans);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-marcellus);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #12151c;
-    --foreground: #f3f1ec;
-    --surface: #1a1e27;
-    --surface-muted: #232837;
-    --border: rgba(255, 255, 255, 0.09);
-    --primary: #f2864f;
-    --primary-foreground: #1a1408;
-    --accent: #2dd4bf;
-    --accent-foreground: #062a26;
-    --muted: #9aa1b0;
-    --danger: #f87171;
-    --success: #4ade80;
+    --background: #081a2f;
+    --foreground: #f5efe3;
+    --surface: #0e2942;
+    --surface-muted: #123356;
+    --border: rgba(217, 181, 109, 0.22);
+    --primary: #d9b56d;
+    --primary-foreground: #081a2f;
+    --accent: #2dae95;
+    --accent-foreground: #081a2f;
+    --muted: #9fb0be;
+    --danger: #ff8a8a;
+    --success: #74d19a;
   }
 }
 
@@ -63,6 +71,27 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: rgba(183, 106, 50, 0.25);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 @keyframes fade-in-up {
@@ -78,6 +107,13 @@ body {
 
 .animate-fade-in-up {
   animation: fade-in-up 0.35s ease-out both;
+}
+
+/* The image treatment used across hero/decorative photography — desaturated
+   and lifted slightly so it sits back into the warm page. Positioning is
+   left to the caller's own utility classes (e.g. `relative`/`absolute`). */
+.washed img {
+  filter: saturate(0.85) contrast(0.96);
 }
 
 /*

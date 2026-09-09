@@ -418,6 +418,60 @@ excluded-P2/P3 stance on crowd-forecasting ML from the P1 pass).
   reflect real counts (businesses, bookings, trending destinations by real planning
   activity), and confirmed the demand-forecast numbers on India Gate's page.
 
+## Lovable frontend bridge + booking N+1 fix (2026-09-08)
+
+- `cors_allowed_origins` (`app/core/config.py`) gained `http://localhost:5173` —
+  the Lovable-generated frontend, adapted to run locally as a plain Vite SPA in
+  `../web-lovable/` (see that directory's README) while Lovable's own hosted
+  editor is blocked on credits. Verified live: a real account registered and
+  logged in against this backend from that app (`POST /auth/register` → 201,
+  `POST /auth/login` → 200), not mocked.
+- **Real N+1 found and fixed**: `list_bookings`/`list_business_bookings`
+  (`app/domains/booking/router.py`) called `_to_booking_out` in a Python loop,
+  and each call did up to 4 sequential queries (service, business,
+  availability, ticket) — a 20-row page could issue up to 80 round trips.
+  Added `_to_booking_outs_batch`, which fetches each of those four in one
+  `WHERE id IN (...)` query regardless of list size, and a shared
+  `_build_booking_out` pure-construction function so the single-row
+  (`_to_booking_out`) and batch paths can't drift apart. 95/95 tests still
+  pass, ruff/mypy clean.
+
+## Richer demo data (2026-09-08)
+
+So the demo doesn't look sparse with only 3 destinations and no business/trust/booking
+activity:
+
+- `app/db/seed.py` gained 7 more real destinations (Taj Mahal, Dashashwamedh Ghat/
+  Varanasi, Amber Fort, Khajuraho, Hampi, Golden Temple, Meenakshi Amman Temple/
+  Madurai) with real attractions, plus `tourism.facilities` rows (wheelchair
+  ramps/accessible toilets/elevators/first-aid posts) for all 10 destinations —
+  Round 3's accessibility feature had no seed data until now.
+- `app/db/seed_knowledge.py` gained one real, general, publicly-known editorial
+  paragraph per new destination (same "no fabricated statistics" rule as the
+  original 3), so the AI Tourist Guide's RAG retrieval has something to find for
+  all 10, not just the original 3.
+- New `app/db/seed_demo.py`: 5 businesses (hotel/tour operator/restaurant/artisan/
+  taxi) across 5 of the new destinations, each with a service + availability
+  slots; 3 guides; a deliberately mixed verification queue (3 approved, 1
+  pending, 1 rejected business; 2 approved, 1 pending guide) going through the
+  exact same approve/reject state changes `trust/router.py` performs (real
+  `Credential` rows, `is_verified` only flipped on approval); 8 reviews and 3
+  fraud reports that call the real `app/domains/trust/moderation.py` functions
+  (genuine Claude API calls — one review is deliberately generic/superlative-
+  heavy and scored 0.25 authenticity with real `generic_language`/
+  `excessive_superlatives` flags, versus 0.90+ for the genuine ones — not
+  fabricated to look differentiated); 3 bookings + tickets. All demo accounts
+  (5 business owners, 3 guides, 3 tourists, 1 `authority_verifier`) are
+  provisioned through the real Keycloak Admin API + local `identity.users` rows,
+  same as a real `/auth/register` would produce — password `Test1234!` for all,
+  matching the existing `test-tourist`/`test-police`/`test-admin` convention.
+  Added `get_user_id_by_email` to `app/core/keycloak_admin.py` (small addition,
+  same client pattern as `create_user`) so the script can look up an
+  already-provisioned demo account instead of failing on a 409 when re-run.
+  Verified live end-to-end: logged in as the new `tourist.demo1@travindi-demo.in`
+  account against the running API and confirmed the businesses list shows the
+  intended verified/pending/rejected mix (`GET /businesses`), not just DB rows.
+
 ## Local setup
 
 ```bash
@@ -556,3 +610,14 @@ Separate from the script above because it needs a local embedding model loaded (
 key, but the first run downloads `all-MiniLM-L6-v2`'s weights) — kept out of the main
 seed script so that one stays instant and dependency-light. Also idempotent (skips any
 destination it's already embedded a document for).
+
+```bash
+python -m app.db.seed_demo   # richer demo data — run after the two above
+```
+
+Adds 5 businesses, 3 guides, a real approve/pending/reject mix of verifications, 8
+reviews with genuine Claude-scored authenticity analysis, 3 fraud reports with genuine
+Claude triage classification, and a few bookings/tickets — see
+"Richer demo data" below. Needs `ANTHROPIC_API_KEY` and the Keycloak admin service
+account configured (same env as the running API), since it provisions real accounts
+through the Keycloak Admin API and makes real Claude calls. Idempotent; safe to re-run.

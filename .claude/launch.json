@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "mobile", "run", "web", "--", "--port", "8081"],
       "port": 8081
+    },
+    {
+      "name": "web-lovable",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "web-lovable", "run", "dev", "--", "--port", "5173"],
+      "port": 5173
     }
   ]
 }

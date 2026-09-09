@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.domains.identity.schemas import AccessibilityNeed, TravelerType
 
 
 class TripCreateIn(BaseModel):
@@ -19,6 +21,20 @@ class TripUpdateIn(BaseModel):
     budget: float | None = None
     currency: str | None = None
     status: str | None = None
+    is_public: bool | None = None
+
+
+class CarbonFootprintOut(BaseModel):
+    """A rough, honestly-labeled heuristic — real distances between the
+    trip's real itinerary stops, times a documented illustrative emission
+    factor, never a certified carbon calculation. See
+    app/domains/travel/router.py's `get_trip_carbon_footprint` docstring."""
+
+    trip_id: uuid.UUID
+    total_distance_km: float
+    estimated_kg_co2: float
+    stops_counted: int
+    method: str = "distance_heuristic_v1"
 
 
 class TripOut(BaseModel):
@@ -30,6 +46,7 @@ class TripOut(BaseModel):
     budget: float | None
     currency: str
     status: str
+    is_public: bool
     created_at: datetime
     updated_at: datetime
 
@@ -41,6 +58,13 @@ class TripPlanRequestIn(BaseModel):
     end_date: datetime | None = None
     budget: float | None = None
     currency: str = "INR"
+    # Disability-aware personalized planning — when omitted, `generate_itinerary`
+    # falls back to the traveler's own saved `travel_preferences` profile
+    # (PUT /users/me/travel-preferences) rather than assuming SOLO/no needs.
+    traveler_type: TravelerType | None = None
+    accessibility_needs: list[AccessibilityNeed] | None = None
+    family_children_count: int | None = Field(default=None, ge=0, le=20)
+    family_seniors_count: int | None = Field(default=None, ge=0, le=20)
 
 
 class ItineraryGenerateIn(BaseModel):
@@ -55,6 +79,10 @@ class ItineraryGenerateIn(BaseModel):
     trip_id: uuid.UUID
     destination_id: uuid.UUID | None = None
     prompt: str
+    traveler_type: TravelerType | None = None
+    accessibility_needs: list[AccessibilityNeed] | None = None
+    family_children_count: int | None = Field(default=None, ge=0, le=20)
+    family_seniors_count: int | None = Field(default=None, ge=0, le=20)
 
 
 class ItineraryItemOut(BaseModel):
@@ -68,6 +96,12 @@ class ItineraryItemOut(BaseModel):
     currency: str
     reason_code: str | None
     explanation: str | None
+    nearest_accessible_facility_m: float | None = None
+    """Surfaced from `ItineraryItem.score_snapshot` — the same real
+    haversine distance (never fabricated) the disability-aware planner
+    (app/domains/travel/planner.py) grounded its `explanation` in, so the
+    frontend can show it as a structured badge, not just buried in prose.
+    `None` when the item wasn't planned for an accessibility need."""
 
 
 class ItineraryOut(BaseModel):

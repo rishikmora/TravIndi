@@ -30,6 +30,28 @@ class BusinessCategory(enum.StrEnum):
     OTHER = "OTHER"
 
 
+class DietaryOption(enum.StrEnum):
+    """Feature Blueprint P2 Food Intelligence — self-declared by the
+    business (same posture as everything else in this domain: no vendor
+    feed, no inspection/hygiene data source exists, so only what the
+    business itself states is ever recorded). A closed set so `dietary_option`
+    search filtering on `GET /businesses` stays exact-match rather than
+    fuzzy-matching free text."""
+
+    VEGETARIAN = "VEGETARIAN"
+    VEGAN = "VEGAN"
+    JAIN = "JAIN"
+    HALAL = "HALAL"
+    GLUTEN_FREE = "GLUTEN_FREE"
+    NON_VEGETARIAN = "NON_VEGETARIAN"
+
+
+class PriceRange(enum.StrEnum):
+    BUDGET = "BUDGET"
+    MODERATE = "MODERATE"
+    PREMIUM = "PREMIUM"
+
+
 class Business(UUIDPKMixin, TimestampMixin, Base):
     __tablename__ = "businesses"
     __table_args__ = {"schema": "business"}
@@ -46,6 +68,12 @@ class Business(UUIDPKMixin, TimestampMixin, Base):
     a join on every destination/search listing query) — kept in sync by the
     verification-approval code path (app/domains/trust/router.py), the only
     place allowed to flip it true."""
+    is_eco_certified: Mapped[bool] = mapped_column(nullable=False, default=False)
+    """Feature Blueprint P2 Sustainability "Sustainable business
+    verification" — authority-only flag (same curator-role gate pattern as
+    `tourism.Facility`/`TourismEvent`), never self-declared by the business
+    itself. Set via `app/domains/business/router.py`'s
+    `certify_business_eco_friendly`."""
 
     profile: Mapped["BusinessProfile | None"] = relationship(back_populates="business", uselist=False)
     services: Mapped[list["Service"]] = relationship(back_populates="business")
@@ -64,6 +92,15 @@ class BusinessProfile(UUIDPKMixin, TimestampMixin, Base):
     safety_score: Mapped[float | None] = mapped_column(Numeric(4, 3))
     women_friendly_score: Mapped[float | None] = mapped_column(Numeric(4, 3))
     family_friendly_score: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    cuisines: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    """Feature Blueprint P2 Food Intelligence — free-text cuisine tags
+    (e.g. "North Indian", "Street food"), self-declared, only meaningful for
+    RESTAURANT-category businesses but not enforced at the schema level
+    (a hotel with an in-house restaurant is a real, plausible case)."""
+    dietary_options: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    price_range: Mapped[PriceRange | None] = mapped_column(
+        Enum(PriceRange, name="price_range", schema="business")
+    )
 
     business: Mapped["Business"] = relationship(back_populates="profile")
 

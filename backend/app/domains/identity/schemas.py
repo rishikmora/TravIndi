@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
 class SelfRegisterableAccountType(enum.StrEnum):
@@ -130,3 +130,39 @@ class AccessibilityPreferencesIn(BaseModel):
     high_contrast: bool = False
     large_text: bool = False
     reduce_motion: bool = False
+
+
+class TravelerType(enum.StrEnum):
+    """Feature Blueprint HIGH-PRIORITY "disability-aware personalized
+    experience": who a trip is for, not just a UI toggle — read by the AI
+    trip planner (app/domains/travel/planner.py) to change which real
+    attraction/facility/crowd signals it weighs, not merely which panel is
+    shown."""
+
+    SOLO = "SOLO"
+    ACCESSIBILITY = "ACCESSIBILITY"
+    FAMILY = "FAMILY"
+
+
+class AccessibilityNeed(enum.StrEnum):
+    WHEELCHAIR = "WHEELCHAIR"
+    VISUAL_IMPAIRMENT = "VISUAL_IMPAIRMENT"
+    HEARING_IMPAIRMENT = "HEARING_IMPAIRMENT"
+    REDUCED_MOBILITY = "REDUCED_MOBILITY"
+
+
+class TravelPreferencesIn(BaseModel):
+    """Written into the existing `user_profiles.travel_preferences` JSONB
+    column (real since Phase 7, previously unused for anything but a bare
+    read-through in `MeOut`) — a standing profile the AI planner falls back
+    on when a specific trip-plan request doesn't override it, and the
+    business directory can use to default an "accessible only" filter."""
+
+    traveler_type: TravelerType = TravelerType.SOLO
+    accessibility_needs: list[AccessibilityNeed] = Field(default_factory=list)
+    family_children_count: int = Field(default=0, ge=0, le=20)
+    family_seniors_count: int = Field(default=0, ge=0, le=20)
+
+
+class TravelPreferencesOut(TravelPreferencesIn):
+    pass

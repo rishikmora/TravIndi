@@ -1,9 +1,11 @@
-"""Keycloak Admin API client — used only for user provisioning on
-`/auth/register` (Phase 10). Authenticates as the `travindi-backend`
-service account (client_credentials grant) — a distinct service identity
-from any user's own token, per the "separate credential models" rule
-(docs/00-planning/01-project-master-model.md §M). Never uses a user's own
-token to call the admin API.
+"""Keycloak Admin API client — used for user provisioning on `/auth/register`
+(Phase 10) and, since the Feature Blueprint P1 Administration pass, real
+role/account management from `app/api/v1/admin.py` (change a user's realm
+role, suspend/reactivate a Keycloak account). Authenticates as the
+`travindi-backend` service account (client_credentials grant) — a distinct
+service identity from any user's own token, per the "separate credential
+models" rule (docs/00-planning/01-project-master-model.md §M). Never uses a
+user's own token to call the admin API.
 """
 
 import time
@@ -51,6 +53,26 @@ async def _get_admin_token() -> str:
     _cached_admin_token["token"] = body["access_token"]
     _cached_admin_token["expires_at"] = time.monotonic() + body["expires_in"] - 30
     return body["access_token"]
+
+
+async def get_user_id_by_email(email: str) -> str | None:
+    """Looks up an existing Keycloak user's id by exact username match.
+    Used only by `app/db/seed_demo.py` to make demo-account provisioning
+    idempotent (re-running the seed script after a partial failure — e.g. the
+    Keycloak user was created but the local `identity.users` row wasn't —
+    should reuse the existing Keycloak account rather than fail on a 409)."""
+    settings = get_settings()
+    admin_token = await _get_admin_token()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    base = f"{settings.keycloak_url}/admin/realms/{settings.keycloak_realm}"
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        response = await client.get(
+            f"{base}/users", params={"username": email, "exact": "true"}, headers=headers
+        )
+    response.raise_for_status()
+    users = response.json()
+    return users[0]["id"] if users else None
 
 
 async def create_user(*, email: str | None, phone: str | None, password: str, realm_role: str) -> str:
@@ -107,3 +129,63 @@ async def create_user(*, email: str | None, phone: str | None, password: str, re
         assign_response.raise_for_status()
 
     return user_id
+
+
+async def get_user_realm_roles(user_id: str) -> list[str]:
+    """Real current realm-role assignment for one Keycloak user — used by
+    the admin role-change endpoint to know exactly which role(s) to remove
+    before assigning the new one (a principal is expected to hold exactly
+    one recognized role, per `app/core/security.py`'s `extract_role`)."""
+    settings = get_settings()
+    admin_token = await _get_admin_token()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    base = f"{settings.keycloak_url}/admin/realms/{settings.keycloak_realm}"
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        response = await client.get(f"{base}/users/{user_id}/role-mappings/realm", headers=headers)
+    response.raise_for_status()
+    return [role["name"] for role in response.json()]
+
+
+async def set_user_realm_role(user_id: str, new_role: str) -> None:
+    """Replaces every application role currently assigned to this user with
+    exactly `new_role` — removes any of `KNOWN_ROLES` still attached (a
+    principal is expected to carry exactly one) and assigns the new one."""
+    from app.core.security import KNOWN_ROLES  # local import: avoids a module-level cycle
+
+    settings = get_settings()
+    admin_token = await _get_admin_token()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    base = f"{settings.keycloak_url}/admin/realms/{settings.keycloak_realm}"
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        current = await client.get(f"{base}/users/{user_id}/role-mappings/realm", headers=headers)
+        current.raise_for_status()
+        to_remove = [r for r in current.json() if r["name"] in KNOWN_ROLES]
+        if to_remove:
+            remove_response = await client.request(
+                "DELETE", f"{base}/users/{user_id}/role-mappings/realm", json=to_remove, headers=headers
+            )
+            remove_response.raise_for_status()
+
+        role_response = await client.get(f"{base}/roles/{new_role}", headers=headers)
+        role_response.raise_for_status()
+        assign_response = await client.post(
+            f"{base}/users/{user_id}/role-mappings/realm", json=[role_response.json()], headers=headers
+        )
+        assign_response.raise_for_status()
+
+
+async def set_user_enabled(user_id: str, enabled: bool) -> None:
+    """Real account suspension — a disabled Keycloak user cannot obtain a
+    new access token (password grant fails at the IdP), so this is genuine
+    enforcement, not a cosmetic flag. Any token issued before the change
+    remains valid only until it naturally expires (short-lived by design)."""
+    settings = get_settings()
+    admin_token = await _get_admin_token()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    base = f"{settings.keycloak_url}/admin/realms/{settings.keycloak_realm}"
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        response = await client.put(f"{base}/users/{user_id}", json={"enabled": enabled}, headers=headers)
+    response.raise_for_status()

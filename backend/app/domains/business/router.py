@@ -32,6 +32,7 @@ from app.domains.business.models import (
     Business,
     BusinessCategory,
     BusinessProfile,
+    DietaryOption,
     Guide,
     Service,
 )
@@ -72,6 +73,9 @@ def _to_profile_out(profile: BusinessProfile | None) -> BusinessProfileOut | Non
         safety_score=profile.safety_score,
         women_friendly_score=profile.women_friendly_score,
         family_friendly_score=profile.family_friendly_score,
+        cuisines=profile.cuisines,
+        dietary_options=profile.dietary_options,
+        price_range=profile.price_range,
     )
 
 
@@ -84,6 +88,7 @@ def _to_business_out(row: Business) -> BusinessOut:
         destination_id=row.destination_id,
         location=_to_geo_point(row.location),
         is_verified=row.is_verified,
+        is_eco_certified=row.is_eco_certified,
         profile=_to_profile_out(row.profile),
         created_at=row.created_at,
     )
@@ -176,11 +181,38 @@ async def create_business(
     return DataResponse(data=_to_business_out(business))
 
 
+@router.post("/{business_id}/eco-certify", response_model=DataResponse[BusinessOut])
+async def certify_business_eco_friendly(
+    business_id: uuid.UUID,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> DataResponse[BusinessOut]:
+    """Feature Blueprint P2 Sustainability "Sustainable business
+    verification" — same curator-role gate as `tourism.Facility`/
+    `TourismEvent` (authority-only, never self-declared). Real gamification
+    hook lives in `app/domains/booking/router.py`'s `create_booking`: a
+    booking on an eco-certified *and* KYC-verified business earns bonus
+    RESPONSIBLE_TOURISM points."""
+    if principal.role not in {"authority_tourism_dept", "authority_platform_admin"}:
+        raise AppError(
+            code="FORBIDDEN", message="Only a tourism-department authority may certify a business as eco-friendly.",
+            status_code=403,
+        )
+    business = await _get_business_or_404(session, business_id)
+    business.is_eco_certified = True
+    await session.commit()
+    await session.refresh(business, attribute_names=["profile"])
+    return DataResponse(data=_to_business_out(business))
+
+
 @router.get("", response_model=ListResponse[BusinessOut])
 async def list_businesses(
     destination_id: uuid.UUID | None = None,
     category: BusinessCategory | None = None,
     verified_only: bool = False,
+    dietary_option: DietaryOption | None = None,
+    cuisine: str | None = None,
+    accessible_only: bool = False,
     pagination: Pagination = Depends(get_pagination),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResponse[BusinessOut]:
@@ -196,6 +228,18 @@ async def list_businesses(
         query = query.where(Business.category == category)
     if verified_only:
         query = query.where(Business.is_verified.is_(True))
+    if dietary_option is not None or cuisine is not None or accessible_only:
+        query = query.join(BusinessProfile, Business.profile)
+        if dietary_option is not None:
+            query = query.where(BusinessProfile.dietary_options.contains([dietary_option]))
+        if cuisine is not None:
+            query = query.where(BusinessProfile.cuisines.contains([cuisine]))
+        if accessible_only:
+            # Self-declared like every other business-directory attribute in
+            # this domain (no vendor/inspection data source exists) — real
+            # key convention, not a fabricated flag: businesses set this
+            # themselves via PUT /businesses/{id}/profile.
+            query = query.where(BusinessProfile.accessibility_features["wheelchair_accessible"].astext == "true")
     rows = (await session.execute(query)).scalars().all()
     return ListResponse(data=[_to_business_out(r) for r in rows])
 
@@ -225,12 +269,18 @@ async def upsert_business_profile(
             description=body.description,
             contact_info=body.contact_info,
             accessibility_features=body.accessibility_features,
+            cuisines=body.cuisines,
+            dietary_options=list(body.dietary_options),
+            price_range=body.price_range,
         )
         session.add(business.profile)
     else:
         business.profile.description = body.description
         business.profile.contact_info = body.contact_info
         business.profile.accessibility_features = body.accessibility_features
+        business.profile.cuisines = body.cuisines
+        business.profile.dietary_options = list(body.dietary_options)
+        business.profile.price_range = body.price_range
     await session.commit()
     await session.refresh(business, attribute_names=["profile"])
     return DataResponse(data=_to_business_out(business))

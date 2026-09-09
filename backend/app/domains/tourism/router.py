@@ -20,17 +20,24 @@ from app.domains.booking.models import Booking, BookingStatus
 from app.domains.business.models import Availability, Business, Service
 from app.domains.crowd.models import CrowdCell
 from app.domains.crowd.schemas import CrowdCellOut
+from app.domains.gamification.engine import record_virtual_explore
 from app.domains.safety.models import SafetyScore
 from app.domains.safety.schemas import SafetyScoreOut
-from app.domains.tourism.models import Attraction, Destination, Facility
+from app.domains.tourism.models import Attraction, Destination, Facility, TourismEvent
 from app.domains.tourism.schemas import (
     AttractionOut,
     DemandForecastOut,
     DestinationOut,
+    ExploreOut,
     FacilityCreateIn,
     FacilityOut,
     GeoPoint,
+    OvertourismOut,
+    TourismEventCreateIn,
+    TourismEventOut,
+    WeatherOut,
 )
+from app.domains.tourism.weather import get_current_weather
 from app.domains.travel.models import ItemType, ItineraryItem
 from app.schemas.common import DataResponse, ListResponse, Pagination
 
@@ -61,6 +68,7 @@ def _to_destination_out(row: Destination) -> DestinationOut:
         location=_to_geo_point(row.location),
         timezone=row.timezone,
         status=row.status,
+        image_url=row.image_url,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -182,6 +190,69 @@ async def get_destination_crowd(
     )
 
 
+_OVERTOURISM_DENSITY_THRESHOLD = 0.75
+"""Feature Blueprint P2 Sustainability "Overtourism detection" — a plain,
+documented threshold on real `crowd.crowd_cells.density` (same 0-1 scale
+`app/db/seed.py`'s demo data uses), not a trained capacity model. Chosen
+as an illustrative cutoff, not a scientifically derived carrying-capacity
+number — this is exactly the kind of honest-heuristic-vs-real-ML distinction
+`demand-forecast`'s `method: "heuristic_v1"` already makes elsewhere."""
+
+
+@router.get("/{destination_id}/overtourism", response_model=DataResponse[OvertourismOut])
+async def get_overtourism_signal(
+    destination_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
+) -> DataResponse[OvertourismOut]:
+    latest = (
+        await session.execute(
+            select(CrowdCell)
+            .where(CrowdCell.destination_id == destination_id)
+            .order_by(CrowdCell.observed_at.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    density = float(latest.density) if latest is not None and latest.density is not None else None
+    return DataResponse(
+        data=OvertourismOut(
+            destination_id=destination_id,
+            latest_density=density,
+            threshold=_OVERTOURISM_DENSITY_THRESHOLD,
+            is_overtouristed=density is not None and density >= _OVERTOURISM_DENSITY_THRESHOLD,
+            observed_at=latest.observed_at if latest is not None else None,
+        )
+    )
+
+
+@router.get("/{destination_id}/weather", response_model=DataResponse[WeatherOut])
+async def get_destination_weather(
+    destination_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
+) -> DataResponse[WeatherOut]:
+    destination = await session.get(Destination, destination_id)
+    if destination is None:
+        raise AppError(code="DESTINATION_NOT_FOUND", message="No destination with that id.", status_code=404)
+    point = _to_geo_point(destination.location)
+    weather = await get_current_weather(lon=point.lon, lat=point.lat)
+    return DataResponse(data=weather)
+
+
+@router.post("/{destination_id}/explore", response_model=DataResponse[ExploreOut])
+async def explore_destination(
+    destination_id: uuid.UUID,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> DataResponse[ExploreOut]:
+    destination = await session.get(Destination, destination_id)
+    if destination is None:
+        raise AppError(code="DESTINATION_NOT_FOUND", message="No destination with that id.", status_code=404)
+    points_awarded = await record_virtual_explore(
+        session, user_id=uuid.UUID(principal.user_id), destination_id=destination_id
+    )
+    await session.commit()
+    return DataResponse(
+        data=ExploreOut(destination_id=destination_id, points_awarded=points_awarded, already_explored=points_awarded == 0)
+    )
+
+
 @router.post("/{destination_id}/facilities", response_model=DataResponse[FacilityOut], status_code=201)
 async def create_facility(
     destination_id: uuid.UUID,
@@ -226,6 +297,49 @@ async def list_facilities(
     query = query.order_by(Facility.name).limit(pagination.limit)
     rows = (await session.execute(query)).scalars().all()
     return ListResponse(data=[_to_facility_out(r) for r in rows])
+
+
+@router.post("/{destination_id}/events", response_model=DataResponse[TourismEventOut], status_code=201)
+async def create_tourism_event(
+    destination_id: uuid.UUID,
+    body: TourismEventCreateIn,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> DataResponse[TourismEventOut]:
+    """Feature Blueprint P2 "Local festival discovery"/"Cultural calendar" —
+    real, curated event/festival records, same curator-role gate as
+    `create_facility` (destination content is authority-curated, not
+    user-generated)."""
+    if principal.role not in _FACILITY_CURATOR_ROLES:
+        raise AppError(
+            code="FORBIDDEN", message="Only a tourism-department authority may add event records.", status_code=403
+        )
+    destination = await session.get(Destination, destination_id)
+    if destination is None:
+        raise AppError(code="DESTINATION_NOT_FOUND", message="No destination with that id.", status_code=404)
+    event = TourismEvent(
+        destination_id=destination_id, name=body.name, starts_at=body.starts_at, ends_at=body.ends_at,
+        expected_attendance=body.expected_attendance,
+    )
+    session.add(event)
+    await session.commit()
+    await session.refresh(event)
+    return DataResponse(data=TourismEventOut.model_validate(event))
+
+
+@router.get("/{destination_id}/events", response_model=ListResponse[TourismEventOut])
+async def list_tourism_events(
+    destination_id: uuid.UUID,
+    upcoming_only: bool = True,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[TourismEventOut]:
+    """Public — a destination's real cultural calendar (festivals, heritage
+    events) is browsable by anyone, same as attractions/facilities."""
+    query = select(TourismEvent).where(TourismEvent.destination_id == destination_id)
+    if upcoming_only:
+        query = query.where(TourismEvent.ends_at >= datetime.now(UTC))
+    rows = (await session.execute(query.order_by(TourismEvent.starts_at))).scalars().all()
+    return ListResponse(data=[TourismEventOut.model_validate(r) for r in rows])
 
 
 @router.get("/{destination_id}/demand-forecast", response_model=DataResponse[DemandForecastOut])

@@ -11,11 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import Principal, get_current_principal
 from app.db.session import get_db_session
-from app.domains.knowledge import guide, translation
+from app.domains.knowledge import guide, heritage, translation
 from app.domains.knowledge.schemas import (
     GuideAskIn,
     GuideAskOut,
     GuideSourceOut,
+    HeritageStoryIn,
+    HeritageStoryOut,
     TranslateImageIn,
     TranslateOut,
     TranslateTextIn,
@@ -37,6 +39,22 @@ async def ask_tourist_guide(
     return DataResponse(
         data=GuideAskOut(
             answer=result.answer,
+            sources=[GuideSourceOut(chunk_id=s.chunk_id, document_title=s.document_title) for s in result.sources],
+        )
+    )
+
+
+@router.post("/heritage/story", response_model=DataResponse[HeritageStoryOut])
+async def get_heritage_story(
+    body: HeritageStoryIn,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> DataResponse[HeritageStoryOut]:
+    result = await heritage.tell_heritage_story(session, user_id=principal.user_id, destination_id=body.destination_id)
+    return DataResponse(
+        data=HeritageStoryOut(
+            story=result.story,
+            grounded=result.grounded,
             sources=[GuideSourceOut(chunk_id=s.chunk_id, document_title=s.document_title) for s in result.sources],
         )
     )

@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.domains.business.models import BusinessCategory
+from app.domains.business.models import BusinessCategory, DietaryOption, PriceRange
 from app.domains.tourism.schemas import GeoPoint
 
 
@@ -19,6 +19,9 @@ class BusinessProfileIn(BaseModel):
     description: str | None = Field(default=None, max_length=4000)
     contact_info: dict = Field(default_factory=dict)
     accessibility_features: dict = Field(default_factory=dict)
+    cuisines: list[str] = Field(default_factory=list, max_length=20)
+    dietary_options: list[DietaryOption] = Field(default_factory=list)
+    price_range: PriceRange | None = None
 
 
 class BusinessProfileOut(BaseModel):
@@ -28,6 +31,9 @@ class BusinessProfileOut(BaseModel):
     safety_score: float | None
     women_friendly_score: float | None
     family_friendly_score: float | None
+    cuisines: list[str]
+    dietary_options: list[str]
+    price_range: str | None
 
 
 class BusinessOut(BaseModel):
@@ -38,6 +44,7 @@ class BusinessOut(BaseModel):
     destination_id: uuid.UUID | None
     location: GeoPoint | None
     is_verified: bool
+    is_eco_certified: bool
     profile: BusinessProfileOut | None = None
     created_at: datetime
 

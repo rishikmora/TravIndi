@@ -21,3 +21,8 @@ CREATE SCHEMA IF NOT EXISTS knowledge;   -- AI / RAG tables
 CREATE SCHEMA IF NOT EXISTS analytics;
 CREATE SCHEMA IF NOT EXISTS integration;
 CREATE SCHEMA IF NOT EXISTS governance;
+CREATE SCHEMA IF NOT EXISTS gamification; -- P2 feature-blueprint pass, added 2026-09-08
+CREATE SCHEMA IF NOT EXISTS lost_found; -- P2 feature-blueprint pass, added 2026-09-08
+CREATE SCHEMA IF NOT EXISTS financial; -- P2 feature-blueprint pass, added 2026-09-08
+CREATE SCHEMA IF NOT EXISTS group_travel; -- P2 feature-blueprint pass, added 2026-09-08
+CREATE SCHEMA IF NOT EXISTS social; -- P2 feature-blueprint pass, added 2026-09-08

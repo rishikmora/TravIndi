@@ -67,6 +67,7 @@ class Settings(BaseSettings):
 
     cors_allowed_origins: list[str] = [
         "http://localhost:3000",  # web/ (Next.js dev server)
+        "http://localhost:5173",  # web-lovable/ (Vite dev server — local bridge for the Lovable-generated frontend)
         "http://localhost:8081",  # mobile/ (Expo web dev server)
         "http://localhost:19006",  # mobile/ (Expo web, classic port)
     ]

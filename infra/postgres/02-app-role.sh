@@ -12,7 +12,7 @@
 # MIGRATIONS_DATABASE_URL — see backend/.env.example.
 set -euo pipefail
 
-SCHEMAS="identity tourism travel safety emergency crowd business booking payment trust knowledge analytics integration governance"
+SCHEMAS="identity tourism travel safety emergency crowd business booking payment trust knowledge analytics integration governance gamification lost_found financial group_travel social"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
     DO \$\$

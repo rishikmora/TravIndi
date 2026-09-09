@@ -33,6 +33,8 @@ from app.domains.identity.schemas import (
     RegisterIn,
     TokenOut,
     TokenRefreshIn,
+    TravelPreferencesIn,
+    TravelPreferencesOut,
     TrustedContactIn,
     TrustedContactOut,
 )
@@ -155,6 +157,34 @@ async def set_accessibility_preferences(
         raise AppError(code="PROFILE_NOT_FOUND", message="No profile for this account.", status_code=404)
     await session.commit()
     return DataResponse(data=body)
+
+
+@users_router.get("/me/travel-preferences", response_model=DataResponse[TravelPreferencesOut])
+async def get_travel_preferences(
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_rls_session),
+) -> DataResponse[TravelPreferencesOut]:
+    result = await session.execute(select(UserProfile).where(UserProfile.user_id == uuid.UUID(principal.user_id)))
+    profile = result.scalar_one_or_none()
+    stored = profile.travel_preferences if profile else {}
+    return DataResponse(data=TravelPreferencesOut(**stored))
+
+
+@users_router.put("/me/travel-preferences", response_model=DataResponse[TravelPreferencesOut])
+async def set_travel_preferences(
+    body: TravelPreferencesIn,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_rls_session),
+) -> DataResponse[TravelPreferencesOut]:
+    result = await session.execute(
+        update(UserProfile)
+        .where(UserProfile.user_id == uuid.UUID(principal.user_id))
+        .values(travel_preferences=body.model_dump())
+    )
+    if result.rowcount == 0:
+        raise AppError(code="PROFILE_NOT_FOUND", message="No profile for this account.", status_code=404)
+    await session.commit()
+    return DataResponse(data=TravelPreferencesOut(**body.model_dump()))
 
 
 @users_router.get("/me/consents", response_model=ListResponse[ConsentOut])

@@ -22,7 +22,10 @@ from typing import Literal
 
 from app.core.config import get_settings
 
-TaskType = Literal["planner", "tourist_guide", "translation", "review_moderation", "fraud_detection"]
+TaskType = Literal[
+    "planner", "tourist_guide", "translation", "review_moderation", "fraud_detection", "receipt_ocr",
+    "heritage_storytelling",
+]
 
 
 @dataclass(frozen=True)
@@ -33,6 +36,9 @@ class ModelRoute:
 
 def route_for_task(task: TaskType) -> ModelRoute:
     settings = get_settings()
-    if task in ("planner", "tourist_guide", "translation", "review_moderation", "fraud_detection"):
+    if task in (
+        "planner", "tourist_guide", "translation", "review_moderation", "fraud_detection", "receipt_ocr",
+        "heritage_storytelling",
+    ):
         return ModelRoute(provider="anthropic", model=settings.anthropic_model)
     raise ValueError(f"No route configured for task {task!r}")

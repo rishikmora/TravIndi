@@ -20,7 +20,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -29,6 +29,9 @@ from app.core.errors import AppError
 from app.core.opa import require_allowed
 from app.db.session import get_db_session
 from app.domains.business.models import Business, Guide
+from app.domains.gamification.engine import REVIEW_POINTS, advance_challenge_progress, award_points
+from app.domains.gamification.models import GamificationCategory
+from app.domains.governance.audit import write_audit_log
 from app.domains.knowledge.models import AiPrediction
 from app.domains.trust import moderation
 from app.domains.trust.models import (
@@ -242,6 +245,14 @@ async def approve_verification(
         subject = await session.get(Guide, verification.subject_id)
     if subject is not None:
         subject.is_verified = True
+    await write_audit_log(
+        session,
+        actor_user_id=principal.user_id,
+        action="VERIFICATION_APPROVED",
+        resource_type="verification",
+        resource_id=verification.id,
+        metadata={"subject_type": verification.subject_type, "subject_id": str(verification.subject_id)},
+    )
     await session.commit()
     await session.refresh(verification)
     return DataResponse(data=_to_verification_out(verification))
@@ -264,6 +275,18 @@ async def reject_verification(
     verification.reviewed_by_user_id = uuid.UUID(principal.user_id)
     verification.reviewed_at = datetime.now(UTC)
     verification.rejection_reason = body.reason
+    await write_audit_log(
+        session,
+        actor_user_id=principal.user_id,
+        action="VERIFICATION_REJECTED",
+        resource_type="verification",
+        resource_id=verification.id,
+        metadata={
+            "subject_type": verification.subject_type,
+            "subject_id": str(verification.subject_id),
+            "reason": body.reason,
+        },
+    )
     await session.commit()
     await session.refresh(verification)
     return DataResponse(data=_to_verification_out(verification))
@@ -315,6 +338,22 @@ async def create_review(
         # Best-effort enrichment (see module docstring) — the review write
         # itself must not fail just because AI screening is unavailable.
         pass
+
+    await award_points(
+        session,
+        user_id=review.author_user_id,
+        points=REVIEW_POINTS,
+        category=GamificationCategory.COMMUNITY,
+        reason="Wrote a review",
+        related_entity_type="review",
+        related_entity_id=review.id,
+    )
+    review_count = (
+        await session.execute(select(func.count(Review.id)).where(Review.author_user_id == review.author_user_id))
+    ).scalar_one()  # includes this review — it was already flushed above
+    await advance_challenge_progress(
+        session, user_id=review.author_user_id, category=GamificationCategory.COMMUNITY, distinct_count=review_count
+    )
 
     await session.commit()
     await session.refresh(review, attribute_names=["analysis"])

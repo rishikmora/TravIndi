@@ -26,6 +26,7 @@ class Destination(UUIDPKMixin, TimestampMixin, Base):
     location: Mapped[str] = mapped_column(Geography(geometry_type="POINT", srid=4326), nullable=False)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="Asia/Kolkata")
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="ACTIVE")
+    image_url: Mapped[str | None] = mapped_column(String(500))
 
     attractions: Mapped[list["Attraction"]] = relationship(back_populates="destination")
 

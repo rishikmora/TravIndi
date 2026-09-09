@@ -40,6 +40,7 @@ from app.domains.emergency.schemas import (
     TrustedContactTokenOut,
     TrustedContactVerifyIn,
 )
+from app.domains.group_travel.models import TripMember, TripMemberStatus
 from app.domains.identity.models import TrustedContact, TrustedContactAccessToken
 from app.domains.tourism.schemas import GeoPoint
 from app.schemas.common import DataResponse, ListResponse
@@ -150,6 +151,39 @@ async def create_sos(
                 trusted_contact_id=contact.id, trusted_contact_name=contact.name, token=raw_token, expires_at=expires_at
             )
         )
+
+    # Real "group SOS" alert (Feature Blueprint P2 #21) — if the reporter is
+    # an active member of any group trip, every *other* active member on
+    # that same trip gets a real in-app notification. Query-only, no new
+    # write path; reuses app.core.notify's existing side-effect mechanism.
+    my_trip_ids = (
+        await session.execute(
+            select(TripMember.trip_id).where(
+                TripMember.user_id == uuid.UUID(principal.user_id), TripMember.status == TripMemberStatus.ACTIVE
+            )
+        )
+    ).scalars().all()
+    if my_trip_ids:
+        fellow_members = (
+            await session.execute(
+                select(TripMember).where(
+                    TripMember.trip_id.in_(my_trip_ids),
+                    TripMember.status == TripMemberStatus.ACTIVE,
+                    TripMember.user_id != uuid.UUID(principal.user_id),
+                )
+            )
+        ).scalars().all()
+        for fellow in fellow_members:
+            await notify(
+                session,
+                user_id=fellow.user_id,
+                title="Travel group SOS alert",
+                body="A member of your group trip has triggered an SOS.",
+                notification_type="group_sos",
+                priority="high",
+                related_entity_type="sos",
+                related_entity_id=sos.id,
+            )
 
     # Refresh *before* commit, while the RLS session GUCs get_rls_session
     # set are still valid for this transaction: `location` was assigned as
