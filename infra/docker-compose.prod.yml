@@ -1,0 +1,79 @@
+# Production compose file for a single VPS: the FastAPI backend, Keycloak,
+# OPA, and a Caddy reverse proxy for automatic HTTPS. See ../DEPLOYMENT.md
+# for the full setup.
+#
+# Deliberately does NOT include postgres/redis/minio from docker-compose.yml
+# — Postgres is Supabase (external, see memory/docs on the Supabase
+# migration), and Redis/S3 are declared-but-unused config values (grep
+# confirms no code path reads them yet), so nothing needs to run for them.
+#
+# Keycloak and OPA are never published to the host/internet on purpose: the
+# backend is their only caller (app/core/keycloak_client.py,
+# app/core/keycloak_admin.py, app/core/opa.py) — browsers never talk to
+# either directly — so they stay reachable only on the compose-internal
+# network, as http://keycloak:8080 and http://opa:8181.
+name: travindi-prod
+
+services:
+  backend:
+    build:
+      context: ../backend
+    env_file: ../backend/.env
+    environment:
+      # Override whatever KEYCLOAK_URL/OPA_URL are in backend/.env (those
+      # are for local dev against the `--profile full` compose stack on
+      # localhost) with the in-network service names.
+      KEYCLOAK_URL: http://keycloak:8080
+      OPA_URL: http://opa:8181
+      ENVIRONMENT: production
+    expose:
+      - "8000"
+    depends_on:
+      - keycloak
+      - opa
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    volumes:
+      - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080'"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    restart: unless-stopped
+
+  opa:
+    image: openpolicyagent/opa:latest-envoy
+    command: ["run", "--server", "--addr=0.0.0.0:8181", "/policies"]
+    volumes:
+      - ./opa/policies:/policies:ro
+    expose:
+      - "8181"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

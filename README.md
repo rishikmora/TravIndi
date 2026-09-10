@@ -190,6 +190,13 @@ get a test token.
 
 Backend setup: see [backend/README.md](backend/README.md).
 
+## Deployment
+
+`web/` deploys to Vercel; `backend/` (+ Keycloak + OPA) deploys to a VPS via
+`infra/docker-compose.prod.yml` and a bundled Caddy for automatic HTTPS —
+Postgres is already external (Supabase). See [DEPLOYMENT.md](DEPLOYMENT.md)
+for the full, verified step-by-step.
+
 ## Architecture at a glance
 
 FastAPI modular monolith · PostgreSQL + PostGIS + pgvector · Redis · S3/MinIO ·

@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Resolved relative to this file, not the process's current working
@@ -71,8 +72,20 @@ class Settings(BaseSettings):
         "http://localhost:8081",  # mobile/ (Expo web dev server)
         "http://localhost:19006",  # mobile/ (Expo web, classic port)
     ]
-    """Phase 11 frontend dev servers. Not meant to be exhaustive for
-    production — revisit alongside real deployment origins."""
+    """Phase 11 frontend dev servers plus whatever real deployment origins
+    are added via env (e.g. the Vercel domain — see DEPLOYMENT.md)."""
+
+    @field_validator("cors_allowed_origins", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, value: object) -> object:
+        """pydantic-settings expects a `list[str]` env var to be JSON
+        (`CORS_ALLOWED_ORIGINS=["https://a","https://b"]`), which is easy to
+        get wrong in a plain `.env` file or a hosting platform's env-var UI.
+        Accept a plain comma-separated string too, e.g.
+        `CORS_ALLOWED_ORIGINS=https://travindi.vercel.app,http://localhost:3000`."""
+        if isinstance(value, str) and not value.strip().startswith("["):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
 
     anthropic_api_key: str | None = None
     anthropic_model: str = "claude-sonnet-5"
