@@ -64,3 +64,25 @@ class MeGamificationOut(BaseModel):
     points: PointsSummaryOut
     badges: list[UserBadgeOut]
     destinations_visited: int
+
+
+class PointsHistoryEntryOut(BaseModel):
+    id: uuid.UUID
+    points: int
+    category: GamificationCategory
+    reason: str
+    related_entity_type: str | None
+    created_at: datetime
+
+
+class VisitedDestinationOut(BaseModel):
+    destination_id: uuid.UUID
+    destination_name: str
+    first_checked_in_at: datetime
+    check_in_count: int
+
+
+class MyRankOut(BaseModel):
+    rank: int | None
+    total_points: int
+    category: GamificationCategory | None

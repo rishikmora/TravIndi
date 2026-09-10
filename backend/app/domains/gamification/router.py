@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import Principal, get_current_principal
+from app.api.deps import Principal, get_current_principal, get_pagination
 from app.core.errors import AppError
 from app.db.session import get_db_session
 from app.domains.gamification.engine import record_check_in
@@ -33,11 +33,14 @@ from app.domains.gamification.schemas import (
     CheckInOut,
     LeaderboardEntryOut,
     MeGamificationOut,
+    MyRankOut,
+    PointsHistoryEntryOut,
     PointsSummaryOut,
     UserBadgeOut,
+    VisitedDestinationOut,
 )
 from app.domains.tourism.models import Destination
-from app.schemas.common import DataResponse, ListResponse
+from app.schemas.common import DataResponse, ListResponse, Pagination
 
 router = APIRouter(prefix="/gamification", tags=["gamification"])
 
@@ -155,6 +158,100 @@ async def get_leaderboard(
         data=[
             LeaderboardEntryOut(display_name=f"Traveler #{str(user_id)[:8]}", total_points=int(total), rank=rank)
             for rank, (user_id, total) in enumerate(rows, start=1)
+        ]
+    )
+
+
+@router.get("/leaderboard/me", response_model=DataResponse[MyRankOut])
+async def get_my_leaderboard_rank(
+    category: GamificationCategory | None = None,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> DataResponse[MyRankOut]:
+    """The top-20 `GET /leaderboard` above has no way to tell a user their
+    own real rank once they're outside that window — this computes it as a
+    genuine count of distinct users with a strictly higher real point total,
+    not an estimate."""
+    user_id = uuid.UUID(principal.user_id)
+    totals_query = select(PointsLedger.user_id, func.sum(PointsLedger.points).label("total")).group_by(
+        PointsLedger.user_id
+    )
+    if category is not None:
+        totals_query = totals_query.where(PointsLedger.category == category)
+    totals = totals_query.subquery()
+
+    my_total = (await session.execute(select(totals.c.total).where(totals.c.user_id == user_id))).scalar_one_or_none()
+    if my_total is None:
+        return DataResponse(data=MyRankOut(rank=None, total_points=0, category=category))
+
+    higher_count = (
+        await session.execute(select(func.count()).select_from(totals).where(totals.c.total > my_total))
+    ).scalar_one()
+    return DataResponse(data=MyRankOut(rank=higher_count + 1, total_points=int(my_total), category=category))
+
+
+@router.get("/points/history", response_model=ListResponse[PointsHistoryEntryOut])
+async def list_my_points_history(
+    principal: Principal = Depends(get_current_principal),
+    pagination: Pagination = Depends(get_pagination),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[PointsHistoryEntryOut]:
+    """The append-only ledger this domain's whole "no fabricated counter"
+    design rests on (module docstring) had no read endpoint of its own —
+    only the pre-summed total via `/me`. A real timeline of *why* each
+    point was earned is a genuine feature this data already supports."""
+    user_id = uuid.UUID(principal.user_id)
+    rows = (
+        await session.execute(
+            select(PointsLedger)
+            .where(PointsLedger.user_id == user_id)
+            .order_by(PointsLedger.created_at.desc())
+            .limit(pagination.limit)
+        )
+    ).scalars().all()
+    return ListResponse(
+        data=[
+            PointsHistoryEntryOut(
+                id=r.id, points=r.points, category=r.category, reason=r.reason,
+                related_entity_type=r.related_entity_type, created_at=r.created_at,
+            )
+            for r in rows
+        ]
+    )
+
+
+@router.get("/check-ins", response_model=ListResponse[VisitedDestinationOut])
+async def list_my_check_ins(
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[VisitedDestinationOut]:
+    """`MeGamificationOut.destinations_visited` (`/me` above) only ever
+    returned a bare count — real per-destination check-in rows (with real
+    GPS-verified timestamps) already exist but were never listable, so a
+    "digital passport" style visited-places view had nothing to read from."""
+    user_id = uuid.UUID(principal.user_id)
+    first_at = func.min(DestinationCheckIn.checked_in_at)
+    rows = (
+        await session.execute(
+            select(
+                DestinationCheckIn.destination_id,
+                Destination.name,
+                first_at.label("first_checked_in_at"),
+                func.count(DestinationCheckIn.id).label("check_in_count"),
+            )
+            .join(Destination, Destination.id == DestinationCheckIn.destination_id)
+            .where(DestinationCheckIn.user_id == user_id)
+            .group_by(DestinationCheckIn.destination_id, Destination.name)
+            .order_by(first_at.desc())
+        )
+    ).all()
+    return ListResponse(
+        data=[
+            VisitedDestinationOut(
+                destination_id=destination_id, destination_name=name,
+                first_checked_in_at=first_checked_in_at, check_in_count=check_in_count,
+            )
+            for destination_id, name, first_checked_in_at, check_in_count in rows
         ]
     )
 

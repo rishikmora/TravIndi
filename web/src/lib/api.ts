@@ -538,6 +538,28 @@ export interface CheckIn {
   new_badges: Badge[];
 }
 
+export interface PointsHistoryEntry {
+  id: string;
+  points: number;
+  category: GamificationCategory;
+  reason: string;
+  related_entity_type: string | null;
+  created_at: string;
+}
+
+export interface VisitedDestination {
+  destination_id: string;
+  destination_name: string;
+  first_checked_in_at: string;
+  check_in_count: number;
+}
+
+export interface MyRank {
+  rank: number | null;
+  total_points: number;
+  category: GamificationCategory | null;
+}
+
 // --- Lost & Found (Feature Blueprint P2 #26) ---
 export type LostFoundCategory = "ELECTRONICS" | "DOCUMENTS" | "BAG_LUGGAGE" | "CLOTHING" | "JEWELRY" | "OTHER";
 export type LostItemStatus = "OPEN" | "MATCHED" | "RESOLVED" | "CLOSED";
@@ -1310,6 +1332,18 @@ export const api = {
     request<{ data: LeaderboardEntry[] }>(
       `/api/v1/gamification/leaderboard${category ? `?category=${category}` : ""}`
     ).then((r) => r.data),
+
+  getMyLeaderboardRank: (category: GamificationCategory | undefined, token: string) =>
+    request<{ data: MyRank }>(
+      `/api/v1/gamification/leaderboard/me${category ? `?category=${category}` : ""}`,
+      { token }
+    ).then((r) => r.data),
+
+  listMyPointsHistory: (token: string) =>
+    request<{ data: PointsHistoryEntry[] }>("/api/v1/gamification/points/history", { token }).then((r) => r.data),
+
+  listMyCheckIns: (token: string) =>
+    request<{ data: VisitedDestination[] }>("/api/v1/gamification/check-ins", { token }).then((r) => r.data),
 
   checkIn: (body: { destination_id: string; lon: number; lat: number }, token: string) =>
     request<{ data: CheckIn }>("/api/v1/gamification/check-ins", {

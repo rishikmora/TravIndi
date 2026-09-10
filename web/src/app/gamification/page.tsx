@@ -11,8 +11,11 @@ import {
   type Destination,
   type Badge,
   type GamificationCategory,
+  type PointsHistoryEntry,
+  type VisitedDestination,
+  type MyRank,
 } from "@/lib/api";
-import { StarIcon, CompassIcon, SparkleIcon } from "@/components/icons";
+import { StarIcon, CompassIcon, SparkleIcon, MapPinIcon, ClockIcon } from "@/components/icons";
 
 const CATEGORY_LABELS: Record<string, string> = {
   EXPLORATION: "Exploration",
@@ -44,15 +47,27 @@ function categoryTone(category: string) {
   }
 }
 
-function BadgeChip({ badge }: { badge: Badge }) {
+function BadgeCollectionChip({ badge, awardedAt }: { badge: Badge; awardedAt: string | null }) {
+  const earned = awardedAt !== null;
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4">
-      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${categoryTone(badge.category)}`}>
+    <div
+      className={`flex items-center gap-3 rounded-2xl border p-4 ${
+        earned ? "border-border bg-surface" : "border-dashed border-border bg-surface-muted/40"
+      }`}
+    >
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+          earned ? categoryTone(badge.category) : "bg-surface-muted text-foreground/35"
+        }`}
+      >
         <StarIcon width={18} height={18} />
       </span>
-      <div className="min-w-0">
-        <div className="font-medium">{badge.name}</div>
+      <div className="min-w-0 flex-1">
+        <div className={`font-medium ${earned ? "" : "text-foreground/60"}`}>{badge.name}</div>
         <div className="truncate text-sm text-foreground/55">{badge.description}</div>
+        <div className={`mt-0.5 text-xs ${earned ? "text-success" : "text-foreground/40"}`}>
+          {earned ? `Earned ${new Date(awardedAt).toLocaleDateString()}` : `Locked · worth ${badge.points_value} pts`}
+        </div>
       </div>
     </div>
   );
@@ -79,6 +94,34 @@ function ChallengeRow({ challenge }: { challenge: Challenge }) {
       <p className="mt-2 text-xs text-foreground/45">
         Reward: {challenge.points_reward} pts{challenge.badge ? ` + "${challenge.badge.name}" badge` : ""}
       </p>
+    </li>
+  );
+}
+
+function VisitedDestinationRow({ visit }: { visit: VisitedDestination }) {
+  return (
+    <li className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <MapPinIcon width={14} height={14} />
+      </span>
+      <span className="flex-1 text-sm font-medium">{visit.destination_name}</span>
+      <span className="shrink-0 text-xs text-foreground/50">
+        First visited {new Date(visit.first_checked_in_at).toLocaleDateString()}
+        {visit.check_in_count > 1 ? ` · ${visit.check_in_count} check-ins` : ""}
+      </span>
+    </li>
+  );
+}
+
+function PointsHistoryRow({ entry }: { entry: PointsHistoryEntry }) {
+  return (
+    <li className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-2.5">
+      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${categoryTone(entry.category)}`}>
+        {CATEGORY_LABELS[entry.category] ?? entry.category}
+      </span>
+      <span className="flex-1 truncate text-sm text-foreground/75">{entry.reason}</span>
+      <span className="shrink-0 text-xs text-foreground/45">{new Date(entry.created_at).toLocaleDateString()}</span>
+      <span className="shrink-0 text-sm font-semibold text-success">+{entry.points}</span>
     </li>
   );
 }
@@ -169,7 +212,11 @@ function GamificationHome() {
   const { token } = useAuth();
   const [me, setMe] = useState<MeGamification | null>(null);
   const [challenges, setChallenges] = useState<Challenge[] | null>(null);
+  const [allBadges, setAllBadges] = useState<Badge[] | null>(null);
+  const [visitedDestinations, setVisitedDestinations] = useState<VisitedDestination[] | null>(null);
+  const [pointsHistory, setPointsHistory] = useState<PointsHistoryEntry[] | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+  const [myRank, setMyRank] = useState<MyRank | null>(null);
   const [leaderboardView, setLeaderboardView] = useState<GamificationCategory | "">("");
   const [error, setError] = useState<string | null>(null);
 
@@ -177,15 +224,28 @@ function GamificationHome() {
     if (!token) return;
     api.getMyGamification(token).then(setMe).catch(() => setError("Could not load your points/badges."));
     api.listChallenges(token).then(setChallenges).catch(() => {});
+    api.listMyCheckIns(token).then(setVisitedDestinations).catch(() => setVisitedDestinations([]));
+    api.listMyPointsHistory(token).then(setPointsHistory).catch(() => setPointsHistory([]));
   }
 
   useEffect(refresh, [token]);
+  useEffect(() => {
+    api.listBadges().then(setAllBadges).catch(() => setAllBadges([]));
+  }, []);
   useEffect(() => {
     api
       .getLeaderboard(leaderboardView || undefined)
       .then(setLeaderboard)
       .catch(() => setLeaderboard([]));
-  }, [leaderboardView]);
+    if (!token) return;
+    api
+      .getMyLeaderboardRank(leaderboardView || undefined, token)
+      .then(setMyRank)
+      .catch(() => setMyRank(null));
+  }, [leaderboardView, token]);
+
+  const earnedAwardedAt: Record<string, string> = {};
+  if (me) for (const ub of me.badges) earnedAwardedAt[ub.badge.id] = ub.awarded_at;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
@@ -225,14 +285,36 @@ function GamificationHome() {
       <CheckInWidget onCheckedIn={refresh} />
 
       <div>
-        <h2 className="text-lg font-semibold">Your badges</h2>
-        {me?.badges.length === 0 && <p className="mt-2 text-sm text-foreground/60">No badges yet — check in somewhere to earn your first one.</p>}
-        {me && me.badges.length > 0 && (
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Badge collection</h2>
+          {allBadges && me && (
+            <span className="text-xs text-foreground/50">
+              {me.badges.length} of {allBadges.length} earned
+            </span>
+          )}
+        </div>
+        {allBadges === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {allBadges && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {me.badges.map((ub) => (
-              <BadgeChip key={ub.badge.id} badge={ub.badge} />
+            {allBadges.map((b) => (
+              <BadgeCollectionChip key={b.id} badge={b} awardedAt={earnedAwardedAt[b.id] ?? null} />
             ))}
           </div>
+        )}
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold">Places you&apos;ve visited</h2>
+        {visitedDestinations === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {visitedDestinations && visitedDestinations.length === 0 && (
+          <p className="mt-2 text-sm text-foreground/60">No real GPS-verified visits yet — check in above once you&apos;re there.</p>
+        )}
+        {visitedDestinations && visitedDestinations.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
+            {visitedDestinations.map((v) => (
+              <VisitedDestinationRow key={v.destination_id} visit={v} />
+            ))}
+          </ul>
         )}
       </div>
 
@@ -271,6 +353,13 @@ function GamificationHome() {
             Points from eco-certified bookings and other responsible-tourism actions only.
           </p>
         )}
+        {myRank && (
+          <p className="mt-2 rounded-xl bg-primary/5 px-3 py-2 text-sm text-primary">
+            {myRank.rank !== null
+              ? `You're ranked #${myRank.rank} with ${myRank.total_points} pts${leaderboardView ? " in this category" : ""}.`
+              : "You haven't earned any points in this category yet."}
+          </p>
+        )}
         {leaderboard === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
         {leaderboard && leaderboard.length === 0 && (
           <p className="mt-2 text-sm text-foreground/60">No one&apos;s on the board yet — be the first to earn points.</p>
@@ -290,6 +379,24 @@ function GamificationHome() {
               </li>
             ))}
           </ol>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2">
+          <ClockIcon width={16} height={16} className="text-foreground/50" />
+          <h2 className="text-lg font-semibold">Recent activity</h2>
+        </div>
+        {pointsHistory === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {pointsHistory && pointsHistory.length === 0 && (
+          <p className="mt-2 text-sm text-foreground/60">No points earned yet.</p>
+        )}
+        {pointsHistory && pointsHistory.length > 0 && (
+          <ul className="mt-3 flex flex-col gap-2">
+            {pointsHistory.map((entry) => (
+              <PointsHistoryRow key={entry.id} entry={entry} />
+            ))}
+          </ul>
         )}
       </div>
     </div>
