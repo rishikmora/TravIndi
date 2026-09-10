@@ -37,6 +37,7 @@ function MoreMenu({ token }: { token: string | null }) {
 
   const items: { href: string; label: string }[] = token
     ? [
+        { href: "/profile", label: "My Profile" },
         { href: "/ai/guide", label: "AI Tourist Guide" },
         { href: "/ai/translate", label: "Translate" },
         { href: "/accessibility", label: "Accessibility" },
@@ -124,7 +125,12 @@ export function Nav() {
           <MoreMenu token={token} />
           {loading ? null : token ? (
             <div className="flex items-center gap-2 pl-2">
-              <span className="hidden text-foreground/60 sm:inline">{me?.email ?? "Signed in"}</span>
+              <Link
+                href="/profile"
+                className="hidden text-foreground/60 hover:text-foreground sm:inline"
+              >
+                {me?.email ?? "Signed in"}
+              </Link>
               <button
                 onClick={logout}
                 className="rounded-full border border-border px-3 py-1.5 text-foreground/70 hover:bg-surface-muted"

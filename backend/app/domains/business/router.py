@@ -244,6 +244,25 @@ async def list_businesses(
     return ListResponse(data=[_to_business_out(r) for r in rows])
 
 
+@router.get("/mine", response_model=ListResponse[BusinessOut])
+async def list_my_businesses(
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[BusinessOut]:
+    """`GET /businesses` above has no owner filter — a business-account
+    holder had no dedicated way to find the listing(s) they registered
+    (they'd have to remember the id or scroll the whole public directory).
+    Needed for a profile page's "My business" management card."""
+    query = (
+        select(Business)
+        .options(selectinload(Business.profile))
+        .where(Business.owner_user_id == uuid.UUID(principal.user_id))
+        .order_by(Business.created_at.desc())
+    )
+    rows = (await session.execute(query)).scalars().all()
+    return ListResponse(data=[_to_business_out(r) for r in rows])
+
+
 @router.get("/{business_id}", response_model=DataResponse[BusinessOut])
 async def get_business(
     business_id: uuid.UUID, session: AsyncSession = Depends(get_db_session)
@@ -393,6 +412,21 @@ async def list_guides(
         query = query.where(Guide.destination_id == destination_id)
     if verified_only:
         query = query.where(Guide.is_verified.is_(True))
+    rows = (await session.execute(query)).scalars().all()
+    return ListResponse(data=[_to_guide_out(r) for r in rows])
+
+
+@guides_router.get("/mine", response_model=ListResponse[GuideOut])
+async def list_my_guides(
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[GuideOut]:
+    """Same gap as `GET /businesses/mine` above, for a guide-role account."""
+    query = (
+        select(Guide)
+        .where(Guide.user_id == uuid.UUID(principal.user_id))
+        .order_by(Guide.created_at.desc())
+    )
     rows = (await session.execute(query)).scalars().all()
     return ListResponse(data=[_to_guide_out(r) for r in rows])
 

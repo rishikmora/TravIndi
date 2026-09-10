@@ -245,7 +245,33 @@ function LostItemRow({ item }: { item: LostItem }) {
   );
 }
 
-function FoundItemCard({ item }: { item: FoundItem }) {
+function FoundItemCard({
+  item,
+  mine,
+  onReturned,
+}: {
+  item: FoundItem;
+  mine?: boolean;
+  onReturned?: () => void;
+}) {
+  const { token } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onMarkReturned() {
+    if (!token) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.markFoundItemReturned(item.id, token);
+      onReturned?.();
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not mark this returned.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <li className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
@@ -259,27 +285,56 @@ function FoundItemCard({ item }: { item: FoundItem }) {
             </p>
           )}
         </div>
-        <span className="whitespace-nowrap rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-foreground/60">
-          {item.category.replace("_", " ")}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="whitespace-nowrap rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-foreground/60">
+            {item.category.replace("_", " ")}
+          </span>
+          {mine && (
+            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium uppercase ${statusTone(item.status)}`}>
+              {item.status}
+            </span>
+          )}
+        </div>
       </div>
+      {mine && item.status === "CLAIMED" && (
+        <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3">
+          <p className="text-xs text-foreground/55">Someone confirmed this is theirs — mark it returned once you&apos;ve handed it back.</p>
+          {error && <p className="text-xs text-danger">{error}</p>}
+          <button
+            onClick={onMarkReturned}
+            disabled={busy}
+            className="self-start rounded-lg bg-success/10 px-3 py-1.5 text-xs font-medium text-success disabled:opacity-50"
+          >
+            {busy ? "Marking…" : "Mark as returned"}
+          </button>
+        </div>
+      )}
     </li>
   );
 }
 
 function LostFoundHome() {
   const { token } = useAuth();
-  const [tab, setTab] = useState<"report-lost" | "report-found" | "my-reports" | "browse-found">("report-lost");
+  const [tab, setTab] = useState<"report-lost" | "report-found" | "my-lost" | "my-found" | "browse-found">(
+    "report-lost"
+  );
   const [myLostItems, setMyLostItems] = useState<LostItem[] | null>(null);
+  const [myFoundItems, setMyFoundItems] = useState<FoundItem[] | null>(null);
   const [foundItems, setFoundItems] = useState<FoundItem[] | null>(null);
 
-  function refreshMyReports() {
+  function refreshMyLostReports() {
     if (!token) return;
     api.listMyLostItems(token).then(setMyLostItems).catch(() => setMyLostItems([]));
   }
 
+  function refreshMyFoundReports() {
+    if (!token) return;
+    api.listMyFoundItems(token).then(setMyFoundItems).catch(() => setMyFoundItems([]));
+  }
+
   useEffect(() => {
-    if (tab === "my-reports") refreshMyReports();
+    if (tab === "my-lost") refreshMyLostReports();
+    if (tab === "my-found") refreshMyFoundReports();
     if (tab === "browse-found") api.listFoundItems().then(setFoundItems).catch(() => setFoundItems([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, token]);
@@ -287,7 +342,8 @@ function LostFoundHome() {
   const tabs: { id: typeof tab; label: string }[] = [
     { id: "report-lost", label: "Report lost item" },
     { id: "report-found", label: "Report found item" },
-    { id: "my-reports", label: "My lost reports" },
+    { id: "my-lost", label: "My lost reports" },
+    { id: "my-found", label: "My found reports" },
     { id: "browse-found", label: "Browse found items" },
   ];
 
@@ -314,10 +370,10 @@ function LostFoundHome() {
         ))}
       </div>
 
-      {tab === "report-lost" && <ReportForm kind="lost" onCreated={refreshMyReports} />}
-      {tab === "report-found" && <ReportForm kind="found" onCreated={() => {}} />}
+      {tab === "report-lost" && <ReportForm kind="lost" onCreated={refreshMyLostReports} />}
+      {tab === "report-found" && <ReportForm kind="found" onCreated={refreshMyFoundReports} />}
 
-      {tab === "my-reports" && (
+      {tab === "my-lost" && (
         <div>
           {myLostItems === null && <p className="text-sm text-foreground/60">Loading…</p>}
           {myLostItems?.length === 0 && <p className="text-sm text-foreground/60">You haven&apos;t reported anything lost.</p>}
@@ -325,6 +381,20 @@ function LostFoundHome() {
             <ul className="flex flex-col gap-3">
               {myLostItems.map((item) => (
                 <LostItemRow key={item.id} item={item} />
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {tab === "my-found" && (
+        <div>
+          {myFoundItems === null && <p className="text-sm text-foreground/60">Loading…</p>}
+          {myFoundItems?.length === 0 && <p className="text-sm text-foreground/60">You haven&apos;t reported anything found.</p>}
+          {myFoundItems && myFoundItems.length > 0 && (
+            <ul className="flex flex-col gap-3">
+              {myFoundItems.map((item) => (
+                <FoundItemCard key={item.id} item={item} mine onReturned={refreshMyFoundReports} />
               ))}
             </ul>
           )}

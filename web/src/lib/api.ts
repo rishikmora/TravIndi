@@ -129,6 +129,7 @@ export interface Me {
   phone: string | null;
   account_type: string;
   status: string;
+  created_at: string;
   preferred_language: string | null;
   travel_preferences: Record<string, unknown>;
   accessibility_preferences: Record<string, unknown>;
@@ -989,6 +990,18 @@ export const api = {
       (r) => r.data
     ),
 
+  getNotificationPreferences: (token: string) =>
+    request<{ data: { preferences: Record<string, boolean> } }>("/api/v1/notifications/preferences", { token }).then(
+      (r) => r.data
+    ),
+
+  setNotificationPreferences: (preferences: Record<string, boolean>, token: string) =>
+    request<{ data: { preferences: Record<string, boolean> } }>("/api/v1/notifications/preferences", {
+      method: "PUT",
+      body: JSON.stringify({ preferences }),
+      token,
+    }).then((r) => r.data),
+
   // --- Safe routing ---
   getRoute: (
     mode: "safe" | "crowd-free" | "accessible" | "emergency",
@@ -1023,6 +1036,9 @@ export const api = {
   },
 
   getBusiness: (id: string) => request<{ data: Business }>(`/api/v1/businesses/${id}`).then((r) => r.data),
+
+  listMyBusinesses: (token: string) =>
+    request<{ data: Business[] }>("/api/v1/businesses/mine", { token }).then((r) => r.data),
 
   createBusiness: (
     body: { name: string; category: BusinessCategory; destination_id?: string; lon?: number; lat?: number },
@@ -1075,6 +1091,8 @@ export const api = {
 
   getGuide: (id: string) => request<{ data: Guide }>(`/api/v1/guides/${id}`).then((r) => r.data),
 
+  listMyGuides: (token: string) => request<{ data: Guide[] }>("/api/v1/guides/mine", { token }).then((r) => r.data),
+
   createGuide: (
     body: { languages?: string[]; specialties?: string[]; destination_id?: string; bio?: string },
     token: string
@@ -1124,6 +1142,9 @@ export const api = {
     request<{ data: Review }>("/api/v1/trust/reviews", { method: "POST", body: JSON.stringify(body), token }).then(
       (r) => r.data
     ),
+
+  listMyReviews: (token: string) =>
+    request<{ data: Review[] }>("/api/v1/trust/reviews/mine", { token }).then((r) => r.data),
 
   // --- Trust: fraud cases ---
   reportFraudCase: (body: { subject_type: string; subject_id?: string; description: string }, token: string) =>
@@ -1246,6 +1267,20 @@ export const api = {
       token,
     }).then((r) => r.data),
 
+  setLanguagePreference: (preferredLanguage: string | null, token: string) =>
+    request<{ data: { preferred_language: string | null } }>("/api/v1/users/me/language", {
+      method: "PUT",
+      body: JSON.stringify({ preferred_language: preferredLanguage }),
+      token,
+    }).then((r) => r.data),
+
+  changePassword: (currentPassword: string, newPassword: string, token: string) =>
+    request<void>("/api/v1/users/me/password", {
+      method: "PUT",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+      token,
+    }),
+
   // --- Predictive tourism (FR-33) ---
   getDemandForecast: (destinationId: string) =>
     request<{ data: DemandForecast }>(`/api/v1/destinations/${destinationId}/demand-forecast`).then((r) => r.data),
@@ -1271,8 +1306,10 @@ export const api = {
   getMyGamification: (token: string) =>
     request<{ data: MeGamification }>("/api/v1/gamification/me", { token }).then((r) => r.data),
 
-  getLeaderboard: () =>
-    request<{ data: LeaderboardEntry[] }>("/api/v1/gamification/leaderboard").then((r) => r.data),
+  getLeaderboard: (category?: GamificationCategory) =>
+    request<{ data: LeaderboardEntry[] }>(
+      `/api/v1/gamification/leaderboard${category ? `?category=${category}` : ""}`
+    ).then((r) => r.data),
 
   checkIn: (body: { destination_id: string; lon: number; lat: number }, token: string) =>
     request<{ data: CheckIn }>("/api/v1/gamification/check-ins", {
@@ -1323,6 +1360,15 @@ export const api = {
     }).then((r) => r.data),
 
   listFoundItems: () => request<{ data: FoundItem[] }>("/api/v1/lost-found/found-items").then((r) => r.data),
+
+  listMyFoundItems: (token: string) =>
+    request<{ data: FoundItem[] }>("/api/v1/lost-found/found-items/mine", { token }).then((r) => r.data),
+
+  markFoundItemReturned: (foundItemId: string, token: string) =>
+    request<{ data: FoundItem }>(`/api/v1/lost-found/found-items/${foundItemId}/mark-returned`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
 
   listMatchesForLostItem: (lostItemId: string, token: string) =>
     request<{ data: LostFoundMatchEntry[] }>(`/api/v1/lost-found/lost-items/${lostItemId}/matches`, { token }).then(

@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import Principal, get_current_principal, get_pagination
+from app.api.deps import Principal, get_current_principal, get_pagination, get_rls_session
 from app.core.errors import AppError
 from app.db.session import get_db_session
 from app.domains.identity.models import Notification, UserProfile
@@ -65,7 +65,9 @@ async def mark_notification_read(
     )
     row = result.scalar_one_or_none()
     if row is None:
-        raise AppError(code="NOTIFICATION_NOT_FOUND", message="No such notification.", status_code=404)
+        raise AppError(
+            code="NOTIFICATION_NOT_FOUND", message="No such notification.", status_code=404
+        )
     if row.read_at is None:
         row.read_at = datetime.now(UTC)
         await session.commit()
@@ -75,20 +77,29 @@ async def mark_notification_read(
 @router.get("/preferences", response_model=DataResponse[NotificationPreferencesIn])
 async def get_preferences(
     principal: Principal = Depends(get_current_principal),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_rls_session),
 ) -> DataResponse[NotificationPreferencesIn]:
+    # identity.user_profiles has RLS — a plain get_db_session has no
+    # app.current_user_id GUC set, so this SELECT would silently see zero
+    # rows and always report "no preferences saved" even right after a
+    # successful PUT (the same class of bug documented elsewhere in this
+    # codebase for identity.user_profiles reads).
     result = await session.execute(
         select(UserProfile).where(UserProfile.user_id == uuid.UUID(principal.user_id))
     )
     profile = result.scalar_one_or_none()
-    return DataResponse(data=NotificationPreferencesIn(preferences=profile.notification_preferences if profile else {}))
+    return DataResponse(
+        data=NotificationPreferencesIn(
+            preferences=profile.notification_preferences if profile else {}
+        )
+    )
 
 
 @router.put("/preferences", response_model=DataResponse[NotificationPreferencesIn])
 async def set_preferences(
     body: NotificationPreferencesIn,
     principal: Principal = Depends(get_current_principal),
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncSession = Depends(get_rls_session),
 ) -> DataResponse[NotificationPreferencesIn]:
     result = await session.execute(
         update(UserProfile)
@@ -96,6 +107,8 @@ async def set_preferences(
         .values(notification_preferences=body.preferences)
     )
     if result.rowcount == 0:
-        raise AppError(code="PROFILE_NOT_FOUND", message="No profile for this account.", status_code=404)
+        raise AppError(
+            code="PROFILE_NOT_FOUND", message="No profile for this account.", status_code=404
+        )
     await session.commit()
     return DataResponse(data=body)

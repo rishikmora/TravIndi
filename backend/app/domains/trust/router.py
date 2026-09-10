@@ -380,6 +380,24 @@ async def list_reviews(
     return ListResponse(data=[_to_review_out(r, principal) for r in rows])
 
 
+@router.get("/reviews/mine", response_model=ListResponse[ReviewOut])
+async def list_my_reviews(
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[ReviewOut]:
+    """`GET /reviews` above only ever lists reviews for one target — there
+    was no way for a user to see everything *they've* written across every
+    business/guide/destination they've reviewed, which a profile page needs."""
+    query = (
+        select(Review)
+        .options(selectinload(Review.analysis))
+        .where(Review.author_user_id == uuid.UUID(principal.user_id), Review.status != "REMOVED")
+        .order_by(Review.created_at.desc())
+    )
+    rows = (await session.execute(query)).scalars().all()
+    return ListResponse(data=[_to_review_out(r, principal) for r in rows])
+
+
 # --- Fraud cases ---
 
 

@@ -19,14 +19,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import Principal, get_current_principal, get_rls_session
 from app.core.errors import AppError, NotImplementedYet
-from app.core.keycloak_admin import create_user
+from app.core.keycloak_admin import create_user, set_user_password
 from app.core.keycloak_client import login_with_password, refresh_access_token
 from app.db.session import get_db_session
 from app.domains.identity.models import TrustedContact, User, UserConsent, UserProfile
 from app.domains.identity.schemas import (
     AccessibilityPreferencesIn,
+    ChangePasswordIn,
     ConsentIn,
     ConsentOut,
+    LanguagePreferenceIn,
     LoginIn,
     MeOut,
     OtpVerifyIn,
@@ -73,7 +75,14 @@ async def register(body: RegisterIn, session: AsyncSession = Depends(get_db_sess
     await session.commit()
 
     return DataResponse(
-        data=MeOut(id=user.id, email=user.email, phone=user.phone, account_type=user.account_type, status=user.status.value)
+        data=MeOut(
+            id=user.id,
+            email=user.email,
+            phone=user.phone,
+            account_type=user.account_type,
+            status=user.status.value,
+            created_at=user.created_at,
+        )
     )
 
 
@@ -123,12 +132,50 @@ async def get_me(
             phone=user.phone,
             account_type=user.account_type,
             status=user.status.value,
+            created_at=user.created_at,
             preferred_language=profile_row.preferred_language if profile_row else None,
             travel_preferences=profile_row.travel_preferences if profile_row else {},
             accessibility_preferences=profile_row.accessibility_preferences if profile_row else {},
             notification_preferences=profile_row.notification_preferences if profile_row else {},
         )
     )
+
+
+@users_router.put("/me/language", response_model=DataResponse[LanguagePreferenceIn])
+async def set_language_preference(
+    body: LanguagePreferenceIn,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_rls_session),
+) -> DataResponse[LanguagePreferenceIn]:
+    result = await session.execute(
+        update(UserProfile)
+        .where(UserProfile.user_id == uuid.UUID(principal.user_id))
+        .values(preferred_language=body.preferred_language)
+    )
+    if result.rowcount == 0:
+        raise AppError(code="PROFILE_NOT_FOUND", message="No profile for this account.", status_code=404)
+    await session.commit()
+    return DataResponse(data=body)
+
+
+@users_router.put("/me/password", status_code=204)
+async def change_password(
+    body: ChangePasswordIn,
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_rls_session),
+) -> None:
+    """Requires the caller to prove they know the *current* password (a
+    real login attempt against Keycloak) before an admin-level reset is
+    allowed to take effect — otherwise a stolen still-valid access token
+    alone would be enough to lock the real owner out."""
+    user = await session.get(User, uuid.UUID(principal.user_id))
+    if user is None or not (user.email or user.phone):
+        raise AppError(code="USER_NOT_FOUND", message="No local profile for this account.", status_code=404)
+    try:
+        await login_with_password(username=str(user.email or user.phone), password=body.current_password)
+    except AppError:
+        raise AppError(code="INVALID_PASSWORD", message="Current password is incorrect.", status_code=401) from None
+    await set_user_password(str(user.id), body.new_password)
 
 
 @users_router.get("/me/accessibility-preferences", response_model=DataResponse[AccessibilityPreferencesIn])

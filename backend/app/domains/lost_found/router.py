@@ -56,17 +56,31 @@ def _to_geo_point(wkb_element: Any) -> GeoPoint | None:
 
 def _to_lost_item_out(row: LostItemReport) -> LostItemOut:
     return LostItemOut(
-        id=row.id, reporter_user_id=row.reporter_user_id, category=row.category, title=row.title,
-        description=row.description, lost_at=row.lost_at, destination_id=row.destination_id,
-        location=_to_geo_point(row.location), status=row.status, created_at=row.created_at,
+        id=row.id,
+        reporter_user_id=row.reporter_user_id,
+        category=row.category,
+        title=row.title,
+        description=row.description,
+        lost_at=row.lost_at,
+        destination_id=row.destination_id,
+        location=_to_geo_point(row.location),
+        status=row.status,
+        created_at=row.created_at,
     )
 
 
 def _to_found_item_out(row: FoundItemReport) -> FoundItemOut:
     return FoundItemOut(
-        id=row.id, finder_user_id=row.finder_user_id, category=row.category, title=row.title,
-        description=row.description, found_at=row.found_at, destination_id=row.destination_id,
-        location=_to_geo_point(row.location), storage_location=row.storage_location, status=row.status,
+        id=row.id,
+        finder_user_id=row.finder_user_id,
+        category=row.category,
+        title=row.title,
+        description=row.description,
+        found_at=row.found_at,
+        destination_id=row.destination_id,
+        location=_to_geo_point(row.location),
+        storage_location=row.storage_location,
+        status=row.status,
         created_at=row.created_at,
     )
 
@@ -85,7 +99,9 @@ async def report_lost_item(
         description=body.description,
         lost_at=body.lost_at,
         destination_id=body.destination_id,
-        location=f"SRID=4326;POINT({body.lon} {body.lat})" if body.lon is not None and body.lat is not None else None,
+        location=f"SRID=4326;POINT({body.lon} {body.lat})"
+        if body.lon is not None and body.lat is not None
+        else None,
         embedding=embedding,
     )
     session.add(lost_item)
@@ -122,7 +138,9 @@ async def report_found_item(
         description=body.description,
         found_at=body.found_at,
         destination_id=body.destination_id,
-        location=f"SRID=4326;POINT({body.lon} {body.lat})" if body.lon is not None and body.lat is not None else None,
+        location=f"SRID=4326;POINT({body.lon} {body.lat})"
+        if body.lon is not None and body.lat is not None
+        else None,
         storage_location=body.storage_location,
         embedding=embedding,
     )
@@ -135,23 +153,65 @@ async def report_found_item(
 
 
 @router.get("/found-items", response_model=ListResponse[FoundItemOut])
-async def list_found_items(session: AsyncSession = Depends(get_db_session)) -> ListResponse[FoundItemOut]:
+async def list_found_items(
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[FoundItemOut]:
     # Public browse of OPEN found items — someone who lost something should
     # be able to look without an automated match having fired for them.
     rows = (
-        await session.execute(
-            select(FoundItemReport).where(FoundItemReport.status == FoundItemStatus.OPEN).order_by(FoundItemReport.created_at.desc())
+        (
+            await session.execute(
+                select(FoundItemReport)
+                .where(FoundItemReport.status == FoundItemStatus.OPEN)
+                .order_by(FoundItemReport.created_at.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     return ListResponse(data=[_to_found_item_out(r) for r in rows])
 
 
-async def _get_lost_item_for_principal(session: AsyncSession, lost_item_id: uuid.UUID, principal: Principal) -> LostItemReport:
+@router.get("/found-items/mine", response_model=ListResponse[FoundItemOut])
+async def list_my_found_items(
+    principal: Principal = Depends(get_current_principal),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[FoundItemOut]:
+    """Unlike the public `/found-items` listing above (OPEN only, no auth),
+    a finder needs to see their own reports across every status — in
+    particular CLAIMED ones, so they know which item to actually hand back
+    via `/found-items/{id}/mark-returned` below. Registered before the
+    `{found_item_id}` path param routes so "mine" is never swallowed as an
+    id (same reasoning as `/trips/public` in app/domains/travel/router.py)."""
+    rows = (
+        (
+            await session.execute(
+                select(FoundItemReport)
+                .where(FoundItemReport.finder_user_id == uuid.UUID(principal.user_id))
+                .order_by(FoundItemReport.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return ListResponse(data=[_to_found_item_out(r) for r in rows])
+
+
+async def _get_lost_item_for_principal(
+    session: AsyncSession, lost_item_id: uuid.UUID, principal: Principal
+) -> LostItemReport:
     lost_item = await session.get(LostItemReport, lost_item_id)
     if lost_item is None:
-        raise AppError(code="LOST_ITEM_NOT_FOUND", message="No such lost item report.", status_code=404)
-    if principal.role not in _AUTHORITY_ROLES and str(lost_item.reporter_user_id) != principal.user_id:
-        raise AppError(code="FORBIDDEN", message="You can only view your own reports.", status_code=403)
+        raise AppError(
+            code="LOST_ITEM_NOT_FOUND", message="No such lost item report.", status_code=404
+        )
+    if (
+        principal.role not in _AUTHORITY_ROLES
+        and str(lost_item.reporter_user_id) != principal.user_id
+    ):
+        raise AppError(
+            code="FORBIDDEN", message="You can only view your own reports.", status_code=403
+        )
     return lost_item
 
 
@@ -163,33 +223,52 @@ async def list_matches_for_lost_item(
 ) -> ListResponse[MatchOut]:
     lost_item = await _get_lost_item_for_principal(session, lost_item_id, principal)
     rows = (
-        await session.execute(
-            select(LostFoundMatch)
-            .where(LostFoundMatch.lost_item_id == lost_item.id)
-            .order_by(LostFoundMatch.similarity_score.desc())
+        (
+            await session.execute(
+                select(LostFoundMatch)
+                .where(LostFoundMatch.lost_item_id == lost_item.id)
+                .order_by(LostFoundMatch.similarity_score.desc())
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     out = []
     for match in rows:
         found_item = await session.get(FoundItemReport, match.found_item_id)
-        assert found_item is not None, "found_item_id is a NOT NULL FK — the referenced row always exists"
+        assert found_item is not None, (
+            "found_item_id is a NOT NULL FK — the referenced row always exists"
+        )
         out.append(
             MatchOut(
-                id=match.id, lost_item=_to_lost_item_out(lost_item), found_item=_to_found_item_out(found_item),
-                similarity_score=float(match.similarity_score), status=match.status, created_at=match.created_at,
+                id=match.id,
+                lost_item=_to_lost_item_out(lost_item),
+                found_item=_to_found_item_out(found_item),
+                similarity_score=float(match.similarity_score),
+                status=match.status,
+                created_at=match.created_at,
             )
         )
     return ListResponse(data=out)
 
 
-async def _get_match_for_principal(session: AsyncSession, match_id: uuid.UUID, principal: Principal) -> LostFoundMatch:
+async def _get_match_for_principal(
+    session: AsyncSession, match_id: uuid.UUID, principal: Principal
+) -> LostFoundMatch:
     match = await session.get(LostFoundMatch, match_id)
     if match is None:
         raise AppError(code="MATCH_NOT_FOUND", message="No such match.", status_code=404)
     lost_item = await session.get(LostItemReport, match.lost_item_id)
     assert lost_item is not None, "lost_item_id is a NOT NULL FK — the referenced row always exists"
-    if principal.role not in _AUTHORITY_ROLES and str(lost_item.reporter_user_id) != principal.user_id:
-        raise AppError(code="FORBIDDEN", message="Only the person who lost the item can confirm or reject a match.", status_code=403)
+    if (
+        principal.role not in _AUTHORITY_ROLES
+        and str(lost_item.reporter_user_id) != principal.user_id
+    ):
+        raise AppError(
+            code="FORBIDDEN",
+            message="Only the person who lost the item can confirm or reject a match.",
+            status_code=403,
+        )
     return match
 
 
@@ -201,7 +280,11 @@ async def confirm_match(
 ) -> DataResponse[MatchOut]:
     match = await _get_match_for_principal(session, match_id, principal)
     if match.status != MatchStatus.SUGGESTED:
-        raise AppError(code="MATCH_ALREADY_DECIDED", message="This match has already been confirmed or rejected.", status_code=409)
+        raise AppError(
+            code="MATCH_ALREADY_DECIDED",
+            message="This match has already been confirmed or rejected.",
+            status_code=409,
+        )
 
     lost_item = await session.get(LostItemReport, match.lost_item_id)
     found_item = await session.get(FoundItemReport, match.found_item_id)
@@ -214,8 +297,12 @@ async def confirm_match(
     await session.commit()
     return DataResponse(
         data=MatchOut(
-            id=match.id, lost_item=_to_lost_item_out(lost_item), found_item=_to_found_item_out(found_item),
-            similarity_score=float(match.similarity_score), status=match.status, created_at=match.created_at,
+            id=match.id,
+            lost_item=_to_lost_item_out(lost_item),
+            found_item=_to_found_item_out(found_item),
+            similarity_score=float(match.similarity_score),
+            status=match.status,
+            created_at=match.created_at,
         )
     )
 
@@ -228,7 +315,11 @@ async def reject_match(
 ) -> DataResponse[MatchOut]:
     match = await _get_match_for_principal(session, match_id, principal)
     if match.status != MatchStatus.SUGGESTED:
-        raise AppError(code="MATCH_ALREADY_DECIDED", message="This match has already been confirmed or rejected.", status_code=409)
+        raise AppError(
+            code="MATCH_ALREADY_DECIDED",
+            message="This match has already been confirmed or rejected.",
+            status_code=409,
+        )
 
     match.status = MatchStatus.REJECTED
     lost_item = await session.get(LostItemReport, match.lost_item_id)
@@ -237,7 +328,9 @@ async def reject_match(
 
     remaining = await session.execute(
         select(LostFoundMatch).where(
-            LostFoundMatch.lost_item_id == lost_item.id, LostFoundMatch.status == MatchStatus.SUGGESTED, LostFoundMatch.id != match.id
+            LostFoundMatch.lost_item_id == lost_item.id,
+            LostFoundMatch.status == MatchStatus.SUGGESTED,
+            LostFoundMatch.id != match.id,
         )
     )
     if remaining.scalar_one_or_none() is None and lost_item.status == LostItemStatus.MATCHED:
@@ -246,13 +339,19 @@ async def reject_match(
     await session.commit()
     return DataResponse(
         data=MatchOut(
-            id=match.id, lost_item=_to_lost_item_out(lost_item), found_item=_to_found_item_out(found_item),
-            similarity_score=float(match.similarity_score), status=match.status, created_at=match.created_at,
+            id=match.id,
+            lost_item=_to_lost_item_out(lost_item),
+            found_item=_to_found_item_out(found_item),
+            similarity_score=float(match.similarity_score),
+            status=match.status,
+            created_at=match.created_at,
         )
     )
 
 
-@router.post("/found-items/{found_item_id}/mark-returned", response_model=DataResponse[FoundItemOut])
+@router.post(
+    "/found-items/{found_item_id}/mark-returned", response_model=DataResponse[FoundItemOut]
+)
 async def mark_found_item_returned(
     found_item_id: uuid.UUID,
     principal: Principal = Depends(get_current_principal),
@@ -263,12 +362,23 @@ async def mark_found_item_returned(
     `CLAIMED` (ownership identified, item not yet physically returned)."""
     found_item = await session.get(FoundItemReport, found_item_id)
     if found_item is None:
-        raise AppError(code="FOUND_ITEM_NOT_FOUND", message="No such found item report.", status_code=404)
-    if principal.role not in _AUTHORITY_ROLES and str(found_item.finder_user_id) != principal.user_id:
-        raise AppError(code="FORBIDDEN", message="Only the finder (or an authority) can mark this returned.", status_code=403)
+        raise AppError(
+            code="FOUND_ITEM_NOT_FOUND", message="No such found item report.", status_code=404
+        )
+    if (
+        principal.role not in _AUTHORITY_ROLES
+        and str(found_item.finder_user_id) != principal.user_id
+    ):
+        raise AppError(
+            code="FORBIDDEN",
+            message="Only the finder (or an authority) can mark this returned.",
+            status_code=403,
+        )
     if found_item.status != FoundItemStatus.CLAIMED:
         raise AppError(
-            code="NOT_CLAIMED_YET", message="This item hasn't been matched and claimed by an owner yet.", status_code=409
+            code="NOT_CLAIMED_YET",
+            message="This item hasn't been matched and claimed by an owner yet.",
+            status_code=409,
         )
     found_item.status = FoundItemStatus.RETURNED
     await session.commit()

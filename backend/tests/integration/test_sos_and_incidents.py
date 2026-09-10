@@ -35,7 +35,8 @@ async def _register_and_login(client: AsyncClient) -> dict:
     email = f"test-{uuid.uuid4().hex[:12]}@example.com"
     password = "Test1234!"
     register = await client.post(
-        "/api/v1/auth/register", json={"email": email, "password": password, "account_type": "tourist"}
+        "/api/v1/auth/register",
+        json={"email": email, "password": password, "account_type": "tourist"},
     )
     assert register.status_code == 201, register.text
     login = await client.post("/api/v1/auth/login", json={"email": email, "password": password})
@@ -89,17 +90,23 @@ async def test_sos_create_acknowledge_resolve_lifecycle(client: AsyncClient) -> 
     # in tests/integration/test_ai_planner.py, which gets a 403 instead,
     # since travel.trips has no RLS and Trip rows are always DB-visible).
     stranger = await _register_and_login(client)
-    forbidden = await client.post(f"/api/v1/sos/{sos_id}/acknowledge", json={}, headers=_auth(stranger["access_token"]))
+    forbidden = await client.post(
+        f"/api/v1/sos/{sos_id}/acknowledge", json={}, headers=_auth(stranger["access_token"])
+    )
     assert forbidden.status_code == 404
 
     acknowledged = await client.post(
-        f"/api/v1/sos/{sos_id}/acknowledge", json={"note": "en route"}, headers=_auth(police["access_token"])
+        f"/api/v1/sos/{sos_id}/acknowledge",
+        json={"note": "en route"},
+        headers=_auth(police["access_token"]),
     )
     assert acknowledged.status_code == 200, acknowledged.text
     assert acknowledged.json()["data"]["status"] == "ACKNOWLEDGED"
 
     resolved = await client.post(
-        f"/api/v1/sos/{sos_id}/resolve", json={"outcome": "RESOLVED"}, headers=_auth(police["access_token"])
+        f"/api/v1/sos/{sos_id}/resolve",
+        json={"outcome": "RESOLVED"},
+        headers=_auth(police["access_token"]),
     )
     assert resolved.status_code == 200, resolved.text
     assert resolved.json()["data"]["status"] == "RESOLVED"
@@ -111,7 +118,9 @@ async def test_sos_create_acknowledge_resolve_lifecycle(client: AsyncClient) -> 
     assert already_closed.status_code == 409
 
     # The tourist should have a real notification about the resolution.
-    notifications = await client.get("/api/v1/notifications", headers=_auth(tourist["access_token"]))
+    notifications = await client.get(
+        "/api/v1/notifications", headers=_auth(tourist["access_token"])
+    )
     assert notifications.status_code == 200
     bodies = [n["notification_type"] for n in notifications.json()["data"]]
     assert "sos_update" in bodies
@@ -126,7 +135,9 @@ async def test_sos_owner_can_cancel_their_own(client: AsyncClient) -> None:
     )
     sos_id = created.json()["data"]["id"]
 
-    cancelled = await client.post(f"/api/v1/sos/{sos_id}/cancel", headers=_auth(tourist["access_token"]))
+    cancelled = await client.post(
+        f"/api/v1/sos/{sos_id}/cancel", headers=_auth(tourist["access_token"])
+    )
     assert cancelled.status_code == 200
     assert cancelled.json()["data"]["status"] == "CANCELLED"
 
@@ -150,12 +161,16 @@ async def test_trusted_contact_token_issued_and_verified(client: AsyncClient) ->
     token = sos["trusted_contact_tokens"][0]["token"]
 
     # Without OTP step-up: coarse info only, no precise location.
-    coarse = await client.post(f"/api/v1/sos/{sos['id']}/trusted-contact/verify", json={"token": token})
+    coarse = await client.post(
+        f"/api/v1/sos/{sos['id']}/trusted-contact/verify", json={"token": token}
+    )
     assert coarse.status_code == 200, coarse.text
     assert coarse.json()["data"]["precise_location"] is None
 
     # A garbage token must be rejected, never silently accepted.
-    bad = await client.post(f"/api/v1/sos/{sos['id']}/trusted-contact/verify", json={"token": "not-a-real-token"})
+    bad = await client.post(
+        f"/api/v1/sos/{sos['id']}/trusted-contact/verify", json={"token": "not-a-real-token"}
+    )
     assert bad.status_code == 403
 
 
@@ -175,7 +190,8 @@ async def test_trusted_contact_otp_stepup_reveals_precise_location(client: Async
     token = sos["trusted_contact_tokens"][0]["token"]
 
     verified = await client.post(
-        f"/api/v1/sos/{sos['id']}/trusted-contact/verify", json={"token": token, "otp_code": "123456"}
+        f"/api/v1/sos/{sos['id']}/trusted-contact/verify",
+        json={"token": token, "otp_code": "123456"},
     )
     assert verified.status_code == 200
     location = verified.json()["data"]["precise_location"]
@@ -195,13 +211,17 @@ async def test_incident_report_assign_resolve_lifecycle(client: AsyncClient) -> 
     assert created.status_code == 201, created.text
     incident_id = created.json()["data"]["id"]
 
-    assigned = await client.post(f"/api/v1/emergency/incidents/{incident_id}/assign", headers=_auth(police["access_token"]))
+    assigned = await client.post(
+        f"/api/v1/emergency/incidents/{incident_id}/assign", headers=_auth(police["access_token"])
+    )
     assert assigned.status_code == 200, assigned.text
     assert assigned.json()["data"]["status"] == "ASSIGNED"
     assert assigned.json()["data"]["assigned_to_user_id"] == police["user_id"]
 
     resolved = await client.post(
-        f"/api/v1/emergency/incidents/{incident_id}/resolve", json={}, headers=_auth(police["access_token"])
+        f"/api/v1/emergency/incidents/{incident_id}/resolve",
+        json={},
+        headers=_auth(police["access_token"]),
     )
     assert resolved.status_code == 200
     assert resolved.json()["data"]["status"] == "RESOLVED"
@@ -213,7 +233,12 @@ async def test_safe_route_scores_a_real_corridor(client: AsyncClient) -> None:
     distance/incident/crowd data, per app/domains/travel/routing.py."""
     response = await client.post(
         "/api/v1/routes/safe",
-        json={"origin_lon": 77.2295, "origin_lat": 28.6129, "destination_lon": 72.8347, "destination_lat": 18.9220},
+        json={
+            "origin_lon": 77.2295,
+            "origin_lat": 28.6129,
+            "destination_lon": 72.8347,
+            "destination_lat": 18.9220,
+        },
     )
     assert response.status_code == 200, response.text
     data = response.json()["data"]
@@ -281,5 +306,73 @@ async def test_offline_sos_sync_creates_a_real_sos_idempotently(client: AsyncCli
     second = await client.post("/api/v1/sync", json=body, headers=_auth(tourist["access_token"]))
     assert second.status_code == 200
     sos_list_again = await client.get("/api/v1/sos", headers=_auth(tourist["access_token"]))
-    matching_again = [s for s in sos_list_again.json()["data"] if s["emergency_type"] == "offline_test"]
+    matching_again = [
+        s for s in sos_list_again.json()["data"] if s["emergency_type"] == "offline_test"
+    ]
     assert len(matching_again) == 1
+
+
+async def test_notification_preferences_default_enabled_then_a_disabled_type_is_really_suppressed(
+    client: AsyncClient,
+) -> None:
+    """Regression test for a real gap found while redesigning the
+    notifications UI: GET/PUT /notifications/preferences existed and
+    persisted real data, but app/core/notify.py never read it back — every
+    notification always fired regardless of what was saved. Pins both the
+    default (absence of a key means enabled) and the real suppression
+    (`notify()` now checks `preferences.get(notification_type) is False`
+    before ever inserting a row)."""
+    tourist = await _register_and_login(client)
+    police = await _login_police(client)
+    headers = _auth(tourist["access_token"])
+
+    default_prefs = await client.get("/api/v1/notifications/preferences", headers=headers)
+    assert default_prefs.status_code == 200, default_prefs.text
+    assert default_prefs.json()["data"]["preferences"] == {}
+
+    disabled = await client.put(
+        "/api/v1/notifications/preferences",
+        json={"preferences": {"sos_update": False}},
+        headers=headers,
+    )
+    assert disabled.status_code == 200, disabled.text
+    assert disabled.json()["data"]["preferences"] == {"sos_update": False}
+
+    created = await client.post(
+        "/api/v1/sos",
+        json={"lon": 77.2, "lat": 28.6},
+        headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
+    )
+    sos_id = created.json()["data"]["id"]
+    await client.post(
+        f"/api/v1/sos/{sos_id}/acknowledge", json={}, headers=_auth(police["access_token"])
+    )
+    await client.post(
+        f"/api/v1/sos/{sos_id}/resolve",
+        json={"outcome": "RESOLVED"},
+        headers=_auth(police["access_token"]),
+    )
+
+    notifications = await client.get("/api/v1/notifications", headers=headers)
+    assert notifications.status_code == 200
+    assert all(n["notification_type"] != "sos_update" for n in notifications.json()["data"])
+
+    # Re-enabling must let the type through again.
+    reenabled = await client.put(
+        "/api/v1/notifications/preferences",
+        json={"preferences": {"sos_update": True}},
+        headers=headers,
+    )
+    assert reenabled.status_code == 200, reenabled.text
+    second_sos = await client.post(
+        "/api/v1/sos",
+        json={"lon": 77.2, "lat": 28.6},
+        headers={**headers, "Idempotency-Key": str(uuid.uuid4())},
+    )
+    await client.post(
+        f"/api/v1/sos/{second_sos.json()['data']['id']}/resolve",
+        json={"outcome": "FALSE_ALARM"},
+        headers=_auth(police["access_token"]),
+    )
+    notifications_after = await client.get("/api/v1/notifications", headers=headers)
+    assert any(n["notification_type"] == "sos_update" for n in notifications_after.json()["data"])

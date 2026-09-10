@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isApiError } from "@/lib/auth-context";
 import { api } from "@/lib/api";
+import { MapPinIcon, ShieldIcon } from "@/components/icons";
 
 interface VerifyResult {
   sos_id: string;
@@ -49,55 +50,66 @@ function VerifyPanel() {
 
   if (!sosId || !token) {
     return (
-      <div className="mx-auto max-w-sm">
-        <h1 className="mb-2 text-2xl font-semibold">Invalid link</h1>
-        <p className="text-sm text-black/60 dark:text-white/60">
-          This trusted-contact link is missing its SOS id or token.
-        </p>
+      <div className="mx-auto flex max-w-sm flex-col items-center gap-2 pt-12 text-center">
+        <h1 className="font-display text-xl">Invalid link</h1>
+        <p className="text-sm text-foreground/60">This trusted-contact link is missing its SOS id or token.</p>
       </div>
     );
   }
 
-  if (loading) return <p className="text-sm text-black/60 dark:text-white/60">Checking…</p>;
+  if (loading) {
+    return (
+      <div className="mx-auto flex max-w-sm flex-col items-center gap-3 pt-12 text-center">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-sm text-foreground/60">Checking this link…</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-sm">
-      <h1 className="mb-2 text-2xl font-semibold">Someone you know may need help</h1>
-      <p className="mb-6 text-sm text-black/60 dark:text-white/60">
-        You&apos;re seeing this because you&apos;re registered as a trusted contact — no account needed.
-      </p>
+    <div className="mx-auto flex max-w-sm flex-col gap-6 pt-4">
+      <div className="text-center">
+        <h1 className="font-display text-xl">Someone you know may need help</h1>
+        <p className="mt-1 text-sm text-foreground/60">
+          You&apos;re seeing this because you&apos;re registered as a trusted contact — no account needed.
+        </p>
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-center text-sm text-danger">{error}</p>}
 
       {result && (
         <div className="flex flex-col gap-4">
-          <div className="rounded border border-red-500/40 bg-red-500/5 p-4 text-sm">
-            <div className="mb-1 uppercase tracking-wide text-red-600">{result.status}</div>
-            <div>Type: {result.emergency_type ?? "General"}</div>
-            <div className="text-black/60 dark:text-white/60">
-              Triggered {new Date(result.created_at).toLocaleString()}
-            </div>
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-danger/30 bg-danger/5 p-5 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-danger text-white">
+              <ShieldIcon width={22} height={22} />
+            </span>
+            <div className="text-sm font-semibold uppercase tracking-wide text-danger">{result.status.replace("_", " ")}</div>
+            <div className="text-sm">Type: {result.emergency_type ?? "General"}</div>
+            <div className="text-xs text-foreground/55">Triggered {new Date(result.created_at).toLocaleString()}</div>
           </div>
 
           {result.precise_location ? (
-            <div className="rounded border border-black/10 p-4 text-sm dark:border-white/15">
-              <div className="mb-1 font-medium">Precise location</div>
-              <div>
+            <div className="rounded-2xl border border-border bg-surface p-4 text-sm">
+              <div className="mb-1 flex items-center gap-1.5 font-medium">
+                <MapPinIcon width={14} height={14} className="text-primary" />
+                Precise location
+              </div>
+              <div className="text-foreground/70">
                 {result.precise_location.lat.toFixed(5)}, {result.precise_location.lon.toFixed(5)}
               </div>
               <a
                 href={`https://www.google.com/maps?q=${result.precise_location.lat},${result.precise_location.lon}`}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 inline-block underline"
+                className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
-                Open in maps
+                Open in Maps
               </a>
             </div>
           ) : (
-            <div className="rounded border border-black/10 p-4 text-sm dark:border-white/15">
-              <p className="mb-2">Enter the verification code to see the exact location.</p>
-              <p className="mb-3 text-xs text-black/50 dark:text-white/50">
+            <div className="rounded-2xl border border-border bg-surface p-4 text-sm">
+              <p className="mb-2 font-medium">Enter the verification code to see the exact location.</p>
+              <p className="mb-3 text-xs text-foreground/50">
                 Prototype note: no real SMS/OTP channel exists yet, so any code works here.
               </p>
               <div className="flex gap-2">
@@ -105,12 +117,12 @@ function VerifyPanel() {
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
                   placeholder="Verification code"
-                  className="flex-1 rounded border border-black/15 px-3 py-2 text-sm dark:border-white/20 dark:bg-transparent"
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
                 <button
                   onClick={onRevealLocation}
                   disabled={revealing}
-                  className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
+                  className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
                 >
                   {revealing ? "Checking…" : "Verify"}
                 </button>
@@ -125,8 +137,16 @@ function VerifyPanel() {
 
 export default function VerifyPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-black/60 dark:text-white/60">Loading…</p>}>
-      <VerifyPanel />
-    </Suspense>
+    <div className="flex flex-col gap-8">
+      <Suspense
+        fallback={
+          <div className="mx-auto flex max-w-sm flex-col items-center gap-3 pt-12 text-center">
+            <p className="text-sm text-foreground/60">Loading…</p>
+          </div>
+        }
+      >
+        <VerifyPanel />
+      </Suspense>
+    </div>
   );
 }

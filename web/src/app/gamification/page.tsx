@@ -3,8 +3,33 @@
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
-import { api, type MeGamification, type Challenge, type LeaderboardEntry, type Destination, type Badge } from "@/lib/api";
-import { StarIcon, CompassIcon } from "@/components/icons";
+import {
+  api,
+  type MeGamification,
+  type Challenge,
+  type LeaderboardEntry,
+  type Destination,
+  type Badge,
+  type GamificationCategory,
+} from "@/lib/api";
+import { StarIcon, CompassIcon, SparkleIcon } from "@/components/icons";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  EXPLORATION: "Exploration",
+  HERITAGE: "Heritage",
+  LOCAL_ECONOMY: "Local economy",
+  RESPONSIBLE_TOURISM: "Responsible tourism",
+  COMMUNITY: "Community",
+};
+
+const LEADERBOARD_VIEWS: { value: GamificationCategory | ""; label: string }[] = [
+  { value: "", label: "Overall" },
+  { value: "RESPONSIBLE_TOURISM", label: "🌱 Green tourism" },
+  { value: "EXPLORATION", label: "Exploration" },
+  { value: "LOCAL_ECONOMY", label: "Local economy" },
+  { value: "HERITAGE", label: "Heritage" },
+  { value: "COMMUNITY", label: "Community" },
+];
 
 function categoryTone(category: string) {
   switch (category) {
@@ -145,16 +170,22 @@ function GamificationHome() {
   const [me, setMe] = useState<MeGamification | null>(null);
   const [challenges, setChallenges] = useState<Challenge[] | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[] | null>(null);
+  const [leaderboardView, setLeaderboardView] = useState<GamificationCategory | "">("");
   const [error, setError] = useState<string | null>(null);
 
   function refresh() {
     if (!token) return;
     api.getMyGamification(token).then(setMe).catch(() => setError("Could not load your points/badges."));
     api.listChallenges(token).then(setChallenges).catch(() => {});
-    api.getLeaderboard().then(setLeaderboard).catch(() => {});
   }
 
   useEffect(refresh, [token]);
+  useEffect(() => {
+    api
+      .getLeaderboard(leaderboardView || undefined)
+      .then(setLeaderboard)
+      .catch(() => setLeaderboard([]));
+  }, [leaderboardView]);
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">
@@ -171,6 +202,15 @@ function GamificationHome() {
         <div className="rounded-2xl border border-border bg-surface p-5">
           <div className="text-sm text-foreground/55">Total points</div>
           <div className="mt-1 text-3xl font-semibold tracking-tight">{me?.points.total_points ?? "—"}</div>
+          {me && Object.keys(me.points.by_category).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {Object.entries(me.points.by_category).map(([category, points]) => (
+                <span key={category} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${categoryTone(category)}`}>
+                  {CATEGORY_LABELS[category] ?? category} {points}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="rounded-2xl border border-border bg-surface p-5">
           <div className="text-sm text-foreground/55">Destinations visited</div>
@@ -209,7 +249,28 @@ function GamificationHome() {
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold">Leaderboard</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Leaderboard</h2>
+          <div className="flex flex-wrap gap-1 rounded-full bg-surface-muted p-1 text-xs">
+            {LEADERBOARD_VIEWS.map((v) => (
+              <button
+                key={v.value || "overall"}
+                onClick={() => setLeaderboardView(v.value)}
+                className={`rounded-full px-2.5 py-1 transition ${
+                  leaderboardView === v.value ? "bg-surface font-medium shadow-sm" : "text-foreground/60"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {leaderboardView === "RESPONSIBLE_TOURISM" && (
+          <p className="mt-1 flex items-center gap-1 text-xs text-foreground/50">
+            <SparkleIcon width={11} height={11} className="text-accent" />
+            Points from eco-certified bookings and other responsible-tourism actions only.
+          </p>
+        )}
         {leaderboard === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
         {leaderboard && leaderboard.length === 0 && (
           <p className="mt-2 text-sm text-foreground/60">No one&apos;s on the board yet — be the first to earn points.</p>

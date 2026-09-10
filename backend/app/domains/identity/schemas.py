@@ -56,10 +56,20 @@ class MeOut(BaseModel):
     phone: str | None
     account_type: str
     status: str
+    created_at: datetime
     preferred_language: str | None = None
     travel_preferences: dict = {}
     accessibility_preferences: dict = {}
     notification_preferences: dict = {}
+
+
+class LanguagePreferenceIn(BaseModel):
+    preferred_language: str | None = Field(default=None, max_length=8)
+
+
+class ChangePasswordIn(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)
 
 
 class ConsentIn(BaseModel):

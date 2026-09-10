@@ -176,6 +176,27 @@ async def set_user_realm_role(user_id: str, new_role: str) -> None:
         assign_response.raise_for_status()
 
 
+async def set_user_password(user_id: str, password: str) -> None:
+    """Real password change via the Keycloak Admin API's reset-password
+    endpoint — `temporary: False` so it's a genuine new password, not a
+    forced-change-on-next-login placeholder. Callers must verify the
+    caller's *current* password themselves first (see
+    `users_router` `PUT /me/password`) — this function has no way to check
+    it, it always succeeds for any value it's given."""
+    settings = get_settings()
+    admin_token = await _get_admin_token()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    base = f"{settings.keycloak_url}/admin/realms/{settings.keycloak_realm}"
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        response = await client.put(
+            f"{base}/users/{user_id}/reset-password",
+            json={"type": "password", "value": password, "temporary": False},
+            headers=headers,
+        )
+    response.raise_for_status()
+
+
 async def set_user_enabled(user_id: str, enabled: bool) -> None:
     """Real account suspension — a disabled Keycloak user cannot obtain a
     new access token (password grant fails at the IdP), so this is genuine

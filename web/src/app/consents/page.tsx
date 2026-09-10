@@ -4,16 +4,25 @@ import { useEffect, useState, type FormEvent } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Consent } from "@/lib/api";
+import { CheckCircleIcon, ShieldIcon } from "@/components/icons";
 
 // No source document names specific consent purposes (identity.user_consents.purpose
 // is a free-text column) — these are suggestions tied to this app's actual data uses,
 // not a confirmed taxonomy. "Other" lets the user (or a demo) enter anything.
 const SUGGESTED_PURPOSES = [
-  { value: "location_sharing", label: "Location sharing (crowd/safety features, safe routing)" },
-  { value: "ai_trip_personalization", label: "AI trip personalization (uses your travel preferences)" },
-  { value: "emergency_data_sharing", label: "Sharing your data with authorities during an emergency" },
-  { value: "other", label: "Other" },
+  { value: "location_sharing", label: "Location sharing", description: "Powers crowd/safety features and safe routing." },
+  { value: "ai_trip_personalization", label: "AI trip personalization", description: "Uses your saved travel preferences." },
+  {
+    value: "emergency_data_sharing",
+    label: "Emergency data sharing",
+    description: "Shares your data with authorities during an SOS.",
+  },
+  { value: "other", label: "Other", description: "Describe a custom purpose." },
 ];
+
+function purposeLabel(purpose: string) {
+  return SUGGESTED_PURPOSES.find((p) => p.value === purpose)?.label ?? purpose;
+}
 
 function ConsentsPanel() {
   const { token } = useAuth();
@@ -22,6 +31,7 @@ function ConsentsPanel() {
   const [customPurpose, setCustomPurpose] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -48,43 +58,73 @@ function ConsentsPanel() {
 
   async function onRevoke(id: string) {
     if (!token) return;
+    setRevokingId(id);
     try {
       await api.revokeConsent(id, token);
-      setConsents((c) => (c ?? []).map((x) => (x.id === id ? { ...x, status: "REVOKED", revoked_at: new Date().toISOString() } : x)));
+      setConsents((c) =>
+        (c ?? []).map((x) => (x.id === id ? { ...x, status: "REVOKED", revoked_at: new Date().toISOString() } : x))
+      );
     } catch (err) {
       setError(isApiError(err) ? err.message : "Could not revoke consent.");
+    } finally {
+      setRevokingId(null);
     }
   }
 
   const granted = consents?.filter((c) => c.status === "GRANTED") ?? [];
+  const currentPurposeValue = purpose === "other" ? customPurpose.trim() : purpose;
+  const alreadyGranted = granted.some((g) => g.purpose === currentPurposeValue);
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-6">
-      <h1 className="text-2xl font-semibold">Privacy & consent</h1>
-      <p className="text-sm text-black/60 dark:text-white/60">
-        Each consent is its own record you can revoke any time — never a hidden checkbox.
-      </p>
+    <div className="mx-auto flex max-w-lg flex-col gap-8">
+      <div>
+        <h1 className="font-display text-2xl">Privacy & consent</h1>
+        <p className="mt-1 text-sm text-foreground/60">
+          Each consent is its own real record you can revoke any time — never a hidden checkbox.
+        </p>
+      </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {consents === null && !error && <p className="text-sm text-black/60 dark:text-white/60">Loading…</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+      {consents === null && !error && (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-xl border border-border bg-surface p-4">
+              <div className="h-4 w-1/2 rounded bg-surface-muted" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {consents?.length === 0 && (
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-8 text-center">
+          <ShieldIcon width={24} height={24} className="text-foreground/30" />
+          <p className="text-sm text-foreground/60">No consents recorded yet.</p>
+        </div>
+      )}
 
       {consents && consents.length > 0 && (
         <ul className="flex flex-col gap-2">
           {consents.map((c) => (
-            <li key={c.id} className="rounded border border-black/10 p-3 text-sm dark:border-white/15">
+            <li key={c.id} className="rounded-xl border border-border bg-surface p-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="font-medium">{c.purpose}</span>
-                <span
-                  className={`text-xs uppercase ${c.status === "GRANTED" ? "text-green-600" : "text-black/40 dark:text-white/40"}`}
-                >
+                <span className="flex items-center gap-1.5 font-medium">
+                  {c.status === "GRANTED" && <CheckCircleIcon width={14} height={14} className="text-success" />}
+                  {purposeLabel(c.purpose)}
+                </span>
+                <span className={`text-xs font-medium uppercase ${c.status === "GRANTED" ? "text-success" : "text-foreground/40"}`}>
                   {c.status}
                 </span>
               </div>
-              <div className="mt-1 flex items-center justify-between text-xs text-black/50 dark:text-white/50">
-                <span>v{c.version}</span>
+              <div className="mt-1.5 flex items-center justify-between text-xs text-foreground/50">
+                <span>Version {c.version}</span>
                 {c.status === "GRANTED" && (
-                  <button onClick={() => onRevoke(c.id)} className="underline">
-                    Revoke
+                  <button
+                    onClick={() => onRevoke(c.id)}
+                    disabled={revokingId === c.id}
+                    className="font-medium text-danger/80 hover:text-danger disabled:opacity-50"
+                  >
+                    {revokingId === c.id ? "Revoking…" : "Revoke"}
                   </button>
                 )}
               </div>
@@ -93,34 +133,45 @@ function ConsentsPanel() {
         </ul>
       )}
 
-      <form onSubmit={onGrant} className="flex flex-col gap-3 rounded border border-black/10 p-4 dark:border-white/15">
+      <form onSubmit={onGrant} className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-5">
         <h2 className="text-sm font-medium">Grant a consent</h2>
-        <select
-          value={purpose}
-          onChange={(e) => setPurpose(e.target.value)}
-          className="rounded border border-black/15 px-3 py-2 text-sm dark:border-white/20 dark:bg-transparent"
-        >
+        <div className="flex flex-col gap-2">
           {SUGGESTED_PURPOSES.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
+            <label
+              key={p.value}
+              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm transition ${
+                purpose === p.value ? "border-primary bg-primary/5" : "border-border"
+              }`}
+            >
+              <input
+                type="radio"
+                name="purpose"
+                checked={purpose === p.value}
+                onChange={() => setPurpose(p.value)}
+                className="mt-0.5 h-4 w-4 accent-primary"
+              />
+              <span>
+                <span className="block font-medium">{p.label}</span>
+                <span className="block text-xs text-foreground/55">{p.description}</span>
+              </span>
+            </label>
           ))}
-        </select>
+        </div>
         {purpose === "other" && (
           <input
             value={customPurpose}
             onChange={(e) => setCustomPurpose(e.target.value)}
             placeholder="Custom purpose"
             required
-            className="rounded border border-black/15 px-3 py-2 text-sm dark:border-white/20 dark:bg-transparent"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
         )}
         <button
           type="submit"
-          disabled={submitting || granted.some((g) => g.purpose === (purpose === "other" ? customPurpose.trim() : purpose))}
-          className="self-start rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
+          disabled={submitting || alreadyGranted || !currentPurposeValue}
+          className="self-start rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
         >
-          {submitting ? "Granting…" : "Grant consent"}
+          {alreadyGranted ? "Already granted" : submitting ? "Granting…" : "Grant consent"}
         </button>
       </form>
     </div>

@@ -68,6 +68,21 @@ async def test_matching_lost_and_found_reports_produce_a_real_suggested_match(
     assert found.status_code == 201, found.text
     found_item = found.json()["data"]
 
+    # The finder can see their own report regardless of status via /mine —
+    # a real gap this test pins: the only pre-existing found-item listing
+    # (GET /found-items) is public and OPEN-only, so a finder had no way to
+    # ever see their own item once it stopped being OPEN.
+    my_found_open = await client.get(
+        "/api/v1/lost-found/found-items/mine", headers=_auth(finder["access_token"])
+    )
+    assert my_found_open.status_code == 200, my_found_open.text
+    assert any(i["id"] == found_item["id"] for i in my_found_open.json()["data"])
+    # A stranger's "mine" list must never include it.
+    my_found_stranger = await client.get(
+        "/api/v1/lost-found/found-items/mine", headers=_auth(loser["access_token"])
+    )
+    assert all(i["id"] != found_item["id"] for i in my_found_stranger.json()["data"])
+
     matches = await client.get(
         f"/api/v1/lost-found/lost-items/{lost_item['id']}/matches",
         headers=_auth(loser["access_token"]),
@@ -94,6 +109,17 @@ async def test_matching_lost_and_found_reports_produce_a_real_suggested_match(
     assert confirmed.json()["data"]["status"] == "CONFIRMED"
     assert confirmed.json()["data"]["lost_item"]["status"] == "RESOLVED"
     assert confirmed.json()["data"]["found_item"]["status"] == "CLAIMED"
+
+    # Now CLAIMED, not OPEN — the public listing must drop it, but the
+    # finder must still see it (that's the whole point of /mine: knowing
+    # which item to actually hand back).
+    public_after_claim = await client.get("/api/v1/lost-found/found-items")
+    assert all(i["id"] != found_item["id"] for i in public_after_claim.json()["data"])
+    my_found_claimed = await client.get(
+        "/api/v1/lost-found/found-items/mine", headers=_auth(finder["access_token"])
+    )
+    claimed_entry = next(i for i in my_found_claimed.json()["data"] if i["id"] == found_item["id"])
+    assert claimed_entry["status"] == "CLAIMED"
 
     already_decided = await client.post(
         f"/api/v1/lost-found/matches/{match['id']}/confirm", headers=_auth(loser["access_token"])
