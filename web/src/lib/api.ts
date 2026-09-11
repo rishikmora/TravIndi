@@ -20,20 +20,35 @@ export class ApiError extends Error {
   }
 }
 
+// Thrown when `fetch` itself fails (offline, DNS failure, timeout) — distinct
+// from `ApiError`, which means the server was reached and rejected the
+// request. Callers need this distinction to decide whether to queue a
+// mutation for later (NetworkError) or surface a real rejection (ApiError).
+export class NetworkError extends Error {
+  constructor() {
+    super("The network is unavailable.");
+  }
+}
+
 interface RequestOptions extends RequestInit {
   token?: string;
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { token, headers, ...rest } = options;
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
+      },
+    });
+  } catch {
+    throw new NetworkError();
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
@@ -76,6 +91,17 @@ export interface Attraction {
   capacity: number | null;
 }
 
+export type TripPace = "relaxed" | "balanced" | "packed";
+export type SafetyPreference = "standard" | "high" | "very_high";
+export type QuickReplanAction =
+  | "cheaper"
+  | "more_relaxed"
+  | "more_heritage"
+  | "more_food"
+  | "less_walking"
+  | "avoid_crowds"
+  | "improve_safety";
+
 export interface Trip {
   id: string;
   user_id: string;
@@ -86,6 +112,12 @@ export interface Trip {
   currency: string;
   status: string;
   is_public: boolean;
+  interests: string[];
+  avoid: string[];
+  pace: TripPace | null;
+  safety_preference: SafetyPreference | null;
+  days: number | null;
+  nights: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,22 +128,116 @@ export interface ItineraryItem {
   attraction_id: string | null;
   attraction_name: string | null;
   sequence: number;
+  day_offset: number | null;
+  time_of_day: string | null;
   scheduled_time: string | null;
   cost: number | null;
   currency: string;
   reason_code: string | null;
   explanation: string | null;
   nearest_accessible_facility_m: number | null;
+  note: string | null;
+  completed: boolean;
+  item_version: number;
 }
 
 export interface Itinerary {
   id: string;
   trip_id: string;
+  destination_id: string | null;
   version: number;
   generated_by: string;
   total_cost: number | null;
   currency: string;
+  cost_estimate_available: boolean;
+  replan_reason: string | null;
+  previous_version: number | null;
+  unmatched_avoid_terms: string[];
   items: ItineraryItem[];
+}
+
+export interface AdaptationProposalChangeItem {
+  attraction_id: string;
+  attraction_name: string | null;
+  day_offset: number;
+  time_of_day: string;
+  reason: string;
+}
+
+export interface AdaptationProposalChanges {
+  summary: string;
+  model: string;
+  proposed_items: AdaptationProposalChangeItem[];
+  added_attraction_ids: string[];
+  removed_attraction_ids: string[];
+  kept_attraction_ids: string[];
+  usage: { input_tokens: number; output_tokens: number; cost_usd: number; latency_ms: number };
+}
+
+export interface AdaptationProposal {
+  id: string;
+  trip_id: string;
+  based_on_itinerary_id: string;
+  trigger_event_id: string;
+  reason_code: string;
+  changes: AdaptationProposalChanges;
+  risk_level: string;
+  confidence: number | null;
+  status: string;
+  applied_itinerary_id: string | null;
+  created_at: string;
+  expires_at: string;
+  decided_at: string | null;
+}
+
+export interface DestinationCandidate {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  has_attractions: boolean;
+}
+
+export interface TripIntentExtractResult {
+  destination_id: string | null;
+  destination_candidates: DestinationCandidate[];
+  days: number | null;
+  nights: number | null;
+  budget: number | null;
+  interests: string[];
+  avoid: string[];
+  traveler_type_hint: TravelerType | null;
+  missing_required: string[];
+}
+
+// --- Offline sync ---
+export type SyncEntityType = "sos" | "incident" | "itinerary_item";
+
+export interface SyncOperationIn {
+  operation_id: string;
+  entity_type: SyncEntityType;
+  operation: "CREATE" | "UPDATE" | "DELETE";
+  client_timestamp: string;
+  payload: Record<string, unknown>;
+}
+
+export interface SyncConflict {
+  operation_id: string;
+  error_code: string;
+  current_state: Record<string, unknown> | null;
+}
+
+export interface SyncRejection {
+  operation_id: string;
+  error_code: string;
+}
+
+export interface SyncAck {
+  acknowledged_operation_ids: string[];
+  skipped_operation_ids: string[];
+  conflicted: SyncConflict[];
+  rejected: SyncRejection[];
+  server_time: string;
 }
 
 export interface Consent {
@@ -296,7 +422,18 @@ export interface CrowdHeatmapPoint {
   method: string;
 }
 
-export type BusinessCategory = "HOTEL" | "RESTAURANT" | "TAXI" | "ARTISAN" | "TOUR_OPERATOR" | "OTHER";
+export type BusinessCategory =
+  | "HOTEL"
+  | "RESTAURANT"
+  | "TAXI"
+  | "ARTISAN"
+  | "TOUR_OPERATOR"
+  | "AIRLINE"
+  | "RAILWAY"
+  | "BUS_OPERATOR"
+  | "OTHER";
+
+export const TRANSPORT_CATEGORIES: BusinessCategory[] = ["AIRLINE", "RAILWAY", "BUS_OPERATOR"];
 
 export type DietaryOption = "VEGETARIAN" | "VEGAN" | "JAIN" | "HALAL" | "GLUTEN_FREE" | "NON_VEGETARIAN";
 export type PriceRange = "BUDGET" | "MODERATE" | "PREMIUM";
@@ -332,6 +469,27 @@ export interface Service {
   business_id: string;
   name: string;
   description: string | null;
+  base_price: number | null;
+  currency: string;
+  origin_destination_id: string | null;
+  destination_destination_id: string | null;
+}
+
+export interface TransportSearchResult {
+  service_id: string;
+  business_id: string;
+  business_name: string;
+  category: BusinessCategory;
+  origin_destination_id: string | null;
+  origin_name: string | null;
+  destination_destination_id: string | null;
+  destination_name: string | null;
+  availability_id: string;
+  starts_at: string;
+  ends_at: string;
+  capacity: number;
+  booked_count: number;
+  remaining: number;
   base_price: number | null;
   currency: string;
 }
@@ -728,6 +886,56 @@ export interface LocationShareRecipientView {
   reason: string | null;
 }
 
+// --- Chat (conversations/messages — DIRECT/GROUP/TRIP) ---
+export type ConversationType = "DIRECT" | "GROUP" | "TRIP";
+export type ConversationMemberRole = "MEMBER" | "ADMIN" | "OWNER";
+export type MessageType = "TEXT" | "LOCATION" | "SHARED_ENTITY" | "SYSTEM";
+export type SharedEntityType = "itinerary_item" | "destination" | "trip";
+
+export interface ConversationMember {
+  user_id: string;
+  role: ConversationMemberRole;
+  status: "ACTIVE" | "LEFT";
+  joined_at: string;
+  last_read_message_id: string | null;
+  is_online: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  title: string | null;
+  trip_id: string | null;
+  creator_id: string;
+  status: "ACTIVE" | "ARCHIVED";
+  created_at: string;
+  updated_at: string;
+  members: ConversationMember[];
+  unread_count: number;
+  last_message_preview: string | null;
+  last_message_at: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  client_message_id: string;
+  content: string | null;
+  message_type: MessageType;
+  reply_to_message_id: string | null;
+  reply_preview: string | null;
+  shared_entity_type: string | null;
+  shared_entity_id: string | null;
+  location_share_id: string | null;
+  mentions: string[];
+  created_at: string;
+  edited_at: string | null;
+  deleted_at: string | null;
+  reactions: Record<string, string[]>;
+  seen_by_count: number;
+}
+
 // --- Smart Heritage / Culture (Feature Blueprint P2 #7) ---
 export interface TourismEvent {
   id: string;
@@ -879,13 +1087,39 @@ export const api = {
     request<{ data: Trip }>(`/api/v1/trips/${id}`, { token }).then((r) => r.data),
 
   createTrip: (
-    body: { title?: string; start_date?: string; end_date?: string; budget?: number; currency?: string },
+    body: {
+      title?: string;
+      start_date?: string;
+      end_date?: string;
+      budget?: number;
+      currency?: string;
+      interests?: string[];
+      avoid?: string[];
+      pace?: TripPace;
+      safety_preference?: SafetyPreference;
+      days?: number;
+      nights?: number;
+    },
     token: string
   ) => request<{ data: Trip }>("/api/v1/trips", { method: "POST", body: JSON.stringify(body), token }).then(
     (r) => r.data
   ),
 
-  updateTrip: (id: string, body: Partial<{ title: string; status: string; is_public: boolean }>, token: string) =>
+  updateTrip: (
+    id: string,
+    body: Partial<{
+      title: string;
+      status: string;
+      is_public: boolean;
+      interests: string[];
+      avoid: string[];
+      pace: TripPace;
+      safety_preference: SafetyPreference;
+      days: number;
+      nights: number;
+    }>,
+    token: string
+  ) =>
     request<{ data: Trip }>(`/api/v1/trips/${id}`, { method: "PATCH", body: JSON.stringify(body), token }).then(
       (r) => r.data
     ),
@@ -896,6 +1130,13 @@ export const api = {
     request<void>(`/api/v1/trips/${id}`, { method: "DELETE", token }),
 
   // --- AI trip planning ---
+  extractTripIntent: (prompt: string, token: string) =>
+    request<{ data: TripIntentExtractResult }>("/api/v1/ai/trip-intent/extract", {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+      token,
+    }).then((r) => r.data),
+
   planTripWithAi: (
     body: {
       destination_id: string;
@@ -908,6 +1149,12 @@ export const api = {
       accessibility_needs?: AccessibilityNeed[];
       family_children_count?: number;
       family_seniors_count?: number;
+      interests?: string[];
+      avoid?: string[];
+      pace?: TripPace;
+      safety_preference?: SafetyPreference;
+      days?: number;
+      nights?: number;
     },
     token: string
   ) =>
@@ -922,7 +1169,11 @@ export const api = {
       token,
     }).then((r) => r.data),
 
-  replanItinerary: (itineraryId: string, body: { reason: string; context?: Record<string, unknown> }, token: string) =>
+  replanItinerary: (
+    itineraryId: string,
+    body: { reason: string; context?: Record<string, unknown>; quick_action?: QuickReplanAction },
+    token: string
+  ) =>
     request<{ data: Itinerary }>(`/api/v1/ai/itinerary/${itineraryId}/replan`, {
       method: "POST",
       body: JSON.stringify(body),
@@ -931,6 +1182,47 @@ export const api = {
 
   getTripItinerary: (tripId: string, token: string) =>
     request<{ data: Itinerary }>(`/api/v1/trips/${tripId}/itinerary`, { token }).then((r) => r.data),
+
+  updateItineraryItem: (
+    tripId: string,
+    itineraryId: string,
+    itemId: string,
+    body: { note?: string; completed?: boolean; base_item_version: number },
+    token: string
+  ) =>
+    request<{ data: ItineraryItem }>(`/api/v1/trips/${tripId}/itinerary/${itineraryId}/items/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  // --- Adaptive journey engine ---
+  listTripAdaptations: (tripId: string, token: string) =>
+    request<{ data: AdaptationProposal[] }>(`/api/v1/trips/${tripId}/adaptations`, { token }).then((r) => r.data),
+
+  checkTripAdaptations: (tripId: string, token: string) =>
+    request<{ data: AdaptationProposal | null }>(`/api/v1/trips/${tripId}/adaptations/check`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
+
+  acceptAdaptationProposal: (proposalId: string, token: string) =>
+    request<{ data: AdaptationProposal }>(`/api/v1/adaptations/${proposalId}/accept`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
+
+  rejectAdaptationProposal: (proposalId: string, token: string) =>
+    request<{ data: AdaptationProposal }>(`/api/v1/adaptations/${proposalId}/reject`, {
+      method: "POST",
+      token,
+    }).then((r) => r.data),
+
+  // --- Offline sync ---
+  sync: (body: { device_id: string; operations: SyncOperationIn[] }, token: string) =>
+    request<{ data: SyncAck }>("/api/v1/sync", { method: "POST", body: JSON.stringify(body), token }).then(
+      (r) => r.data
+    ),
 
   getDestinationSafety: (id: string) =>
     request<{ data: SafetyScore | null }>(`/api/v1/destinations/${id}/safety`).then((r) => r.data),
@@ -1214,7 +1506,14 @@ export const api = {
 
   createService: (
     businessId: string,
-    body: { name: string; description?: string; base_price?: number; currency?: string },
+    body: {
+      name: string;
+      description?: string;
+      base_price?: number;
+      currency?: string;
+      origin_destination_id?: string;
+      destination_destination_id?: string;
+    },
     token: string
   ) =>
     request<{ data: Service }>(`/api/v1/businesses/${businessId}/services`, {
@@ -1222,6 +1521,19 @@ export const api = {
       body: JSON.stringify(body),
       token,
     }).then((r) => r.data),
+
+  searchTransport: (params: {
+    category: BusinessCategory;
+    origin_destination_id?: string;
+    destination_destination_id?: string;
+  }) => {
+    const query = new URLSearchParams({ category: params.category });
+    if (params.origin_destination_id) query.set("origin_destination_id", params.origin_destination_id);
+    if (params.destination_destination_id) query.set("destination_destination_id", params.destination_destination_id);
+    return request<{ data: TransportSearchResult[] }>(`/api/v1/services/search?${query.toString()}`).then(
+      (r) => r.data
+    );
+  },
 
   // --- Guides ---
   listGuides: (params?: { destination_id?: string; verified_only?: boolean }) => {
@@ -1616,6 +1928,109 @@ export const api = {
 
   getGroupSafety: (tripId: string, token: string) =>
     request<{ data: GroupSafety }>(`/api/v1/group-travel/trips/${tripId}/safety`, { token }).then((r) => r.data),
+
+  // --- Chat ---
+  listConversations: (token: string) =>
+    request<{ data: Conversation[] }>("/api/v1/conversations", { token }).then((r) => r.data),
+
+  createConversation: (
+    body: { type: "DIRECT" | "GROUP"; member_user_ids?: string[]; title?: string },
+    token: string
+  ) =>
+    request<{ data: Conversation }>("/api/v1/conversations", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  getConversation: (conversationId: string, token: string) =>
+    request<{ data: Conversation }>(`/api/v1/conversations/${conversationId}`, { token }).then((r) => r.data),
+
+  getOrCreateTripConversation: (tripId: string, token: string) =>
+    request<{ data: Conversation }>(`/api/v1/trips/${tripId}/conversation`, { token }).then((r) => r.data),
+
+  addConversationMembers: (conversationId: string, memberUserIds: string[], token: string) =>
+    request<{ data: Conversation }>(`/api/v1/conversations/${conversationId}/members`, {
+      method: "POST",
+      body: JSON.stringify(memberUserIds),
+      token,
+    }).then((r) => r.data),
+
+  removeConversationMember: (conversationId: string, memberUserId: string, token: string) =>
+    request<void>(`/api/v1/conversations/${conversationId}/members/${memberUserId}`, { method: "DELETE", token }),
+
+  listMessages: (conversationId: string, token: string, params?: { cursor?: string; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.cursor) query.set("cursor", params.cursor);
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString();
+    return request<{ data: ChatMessage[]; meta: { next_cursor: string | null; has_more: boolean } }>(
+      `/api/v1/conversations/${conversationId}/messages${qs ? `?${qs}` : ""}`,
+      { token }
+    );
+  },
+
+  sendMessage: (
+    conversationId: string,
+    body: {
+      client_message_id: string;
+      content?: string;
+      message_type?: MessageType;
+      reply_to_message_id?: string;
+      shared_entity_type?: SharedEntityType;
+      shared_entity_id?: string;
+      location_share_id?: string;
+      mentions?: string[];
+    },
+    token: string
+  ) =>
+    request<{ data: ChatMessage }>(`/api/v1/conversations/${conversationId}/messages`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  editMessage: (messageId: string, content: string, token: string) =>
+    request<{ data: ChatMessage }>(`/api/v1/messages/${messageId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ content }),
+      token,
+    }).then((r) => r.data),
+
+  deleteMessage: (messageId: string, token: string) =>
+    request<void>(`/api/v1/messages/${messageId}`, { method: "DELETE", token }),
+
+  addReaction: (messageId: string, emoji: string, token: string) =>
+    request<{ data: ChatMessage }>(`/api/v1/messages/${messageId}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
+      token,
+    }).then((r) => r.data),
+
+  removeReaction: (messageId: string, emoji: string, token: string) =>
+    request<{ data: ChatMessage }>(`/api/v1/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`, {
+      method: "DELETE",
+      token,
+    }).then((r) => r.data),
+
+  reportMessage: (messageId: string, reason: string, token: string) =>
+    request<{ data: { report_id: string } }>(`/api/v1/messages/${messageId}/report`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+      token,
+    }).then((r) => r.data),
+
+  markConversationRead: (conversationId: string, messageId: string, token: string) =>
+    request<void>(`/api/v1/conversations/${conversationId}/read`, {
+      method: "POST",
+      body: JSON.stringify({ message_id: messageId }),
+      token,
+    }),
+
+  blockUser: (userId: string, token: string) => request<void>(`/api/v1/users/${userId}/block`, { method: "POST", token }),
+
+  unblockUser: (userId: string, token: string) =>
+    request<void>(`/api/v1/users/${userId}/block`, { method: "DELETE", token }),
 
   // --- Smart Heritage / Culture ---
   listTourismEvents: (destinationId: string) =>

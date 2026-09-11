@@ -11,12 +11,20 @@ agent recommends among a *given* destination's seeded attractions, it does
 not infer which destination a free-text prompt means. Guessing the wrong
 destination and confidently planning around it would be a worse failure
 than a clear "specify a destination" error, so it fails closed instead.
+`app/domains/travel/intent.py` is a separate, upstream module that *does*
+extract a candidate destination name from free text — but it never resolves
+that name to an id itself with any confidence beyond "exactly one real row
+matched, and it has seeded attractions"; anything else comes back as
+candidates for the caller to confirm. This module still never sees or
+trusts a destination inferred from text — only a real, already-resolved
+`destination_id`.
 Pricing (ItineraryItem.cost / Itinerary.total_cost) is left null — no real
 attraction-pricing data exists yet (that's the P1 business/booking schema,
 not built). Route/travel-time between items is Phase 13's job; this only
 ever creates ItemType.ATTRACTION items, never ROUTE_SEGMENT.
 """
 
+import time
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -33,6 +41,7 @@ from app.core.ai.rag import embed_text, retrieve_knowledge
 from app.core.ai.router import route_for_task
 from app.core.errors import AppError
 from app.core.geo import haversine_meters
+from app.domains.crowd.engine import latest_risk_score
 from app.domains.crowd.models import CrowdCell
 from app.domains.identity.models import UserProfile
 from app.domains.identity.schemas import AccessibilityNeed, TravelerType
@@ -51,6 +60,16 @@ _ACCESSIBILITY_FACILITY_TYPES = [
 """Lowercase, matching the real values `app/db/seed.py` actually wrote —
 see `app/domains/travel/routing.py`'s identical constant for the full
 explanation of the case mismatch with `FacilityCreateIn`'s Literal."""
+
+
+def normalize_category_term(term: str) -> str:
+    """Lowercase + strip a trailing 's' — the real category vocabulary
+    (`temple, heritage, museum, memorial, landmark, zoo, garden, natural`,
+    per app/db/seed.py) is small, fixed, and always singular, so this is a
+    sufficient normalization for matching free-text interest/avoid terms
+    against it without a fuzzy-match dependency this project doesn't have
+    (no pg_trgm extension is installed)."""
+    return term.strip().lower().rstrip("s")
 
 
 def _to_point(geo: Any):
@@ -173,6 +192,31 @@ def _traveler_context_clause(
     return ""
 
 
+_PACE_GUIDANCE = {
+    "relaxed": "Favor fewer stops per day with generous buffer/rest time between them.",
+    "balanced": "A moderate number of stops per day with reasonable buffer time.",
+    "packed": "More stops per day is fine, but keep it physically realistic — never impossible travel times.",
+}
+
+
+def _intent_clause(*, interests: list[str], pace: str | None) -> str:
+    """Interests/pace are real, stored trip-intent fields — this only tells
+    the model how to weigh real candidate categories it was already given
+    (see _build_candidate_lines), it never asks the model to invent an
+    interest match that isn't grounded in a real category."""
+    parts: list[str] = []
+    if interests:
+        parts.append(
+            "\n\nThe traveler is especially interested in: "
+            + ", ".join(interests)
+            + ". Prefer real candidates whose category matches these where a good one exists — this is a "
+            "preference to weigh, not a strict filter; still choose the best overall plan."
+        )
+    if pace and pace in _PACE_GUIDANCE:
+        parts.append(f"\n\nPreferred pace: {pace}. {_PACE_GUIDANCE[pace]}")
+    return "".join(parts)
+
+
 class PlannedItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -193,6 +237,36 @@ class PlannedItinerary(BaseModel):
 class GeneratedItinerary:
     itinerary: Itinerary
     summary: str
+
+
+@dataclass
+class PlannedCandidate:
+    """Everything `generate_itinerary` used to compute inline, up to but
+    not including persistence — the split that lets the adaptive journey
+    engine (`app/domains/adaptation/`) build a real AI-assisted candidate
+    plan without writing it to the database until the user accepts it.
+    `baseline_crowd_risk_score`/`baseline_crowd_observed_at` are captured
+    unconditionally (not just when `show_crowd`), so every itinerary — not
+    only accessibility/family/high-safety ones — has a real number for the
+    adaptation engine's CROWD_CHANGE detector to diff a later reading
+    against."""
+
+    destination: Destination
+    candidates: list[Attraction]
+    planned: PlannedItinerary
+    prompt: str
+    chunk_ids: list[str]
+    model: str
+    usage: Any
+    latency_ms: int
+    tool_input: dict
+    resolved_type: TravelerType
+    facility_distances_m: dict[str, float | None]
+    interest_terms: set[str]
+    show_accessibility: bool
+    show_safety: bool
+    baseline_crowd_risk_score: float | None
+    baseline_crowd_observed_at: datetime | None
 
 
 async def _resolve_traveler_context(
@@ -308,7 +382,20 @@ def _build_candidate_lines(
     return "\n".join(lines)
 
 
-async def generate_itinerary(
+def _reason_code_for(attraction: Attraction | None, *, interest_terms: set[str], show_accessibility: bool, show_safety: bool) -> str:
+    """A small, deterministic (Python-computed, never AI-invented) taxonomy
+    derived from which real signals actually applied to this item — replaces
+    the previous hardcoded `"ai_recommended"` literal that never varied."""
+    if attraction is not None and attraction.category and normalize_category_term(attraction.category) in interest_terms:
+        return "interest_match"
+    if show_accessibility:
+        return "accessibility_grounded"
+    if show_safety:
+        return "safety_priority"
+    return "ai_recommended"
+
+
+async def _plan_itinerary_candidate(
     session: AsyncSession,
     *,
     user_id: str,
@@ -319,7 +406,13 @@ async def generate_itinerary(
     accessibility_needs: list[AccessibilityNeed] | None = None,
     family_children_count: int | None = None,
     family_seniors_count: int | None = None,
-) -> GeneratedItinerary:
+) -> PlannedCandidate:
+    """Candidate-fetch -> RAG -> strict-tool-use Claude call ->
+    deterministic re-validation — everything `generate_itinerary` does
+    except writing to the database. Never calls `session.add()`; callers
+    decide whether/how to persist the result (`_persist_planned_candidate`
+    for the real itinerary-generation path, `build_adaptation_proposal_
+    changes` for a not-yet-approved system-triggered proposal)."""
     destination = None
     if destination_id is not None:
         destination = await session.get(Destination, destination_id)
@@ -341,6 +434,22 @@ async def generate_itinerary(
         )
     assert destination is not None  # candidates is only ever populated when destination was resolved above
 
+    # Hard-exclusion filtering — trip.avoid terms are a real pre-filter, never
+    # an LLM-enforced rule. Never silently plan around an exhausted
+    # exclusion: if it empties the candidate set, fail closed the same way
+    # a destination with zero seeded attractions already does.
+    interest_terms = {normalize_category_term(t) for t in trip.interests if t.strip()}
+    avoid_terms = {normalize_category_term(t) for t in trip.avoid if t.strip()}
+    if avoid_terms:
+        filtered = [a for a in candidates if not a.category or normalize_category_term(a.category) not in avoid_terms]
+        if not filtered:
+            raise AppError(
+                code="NO_CANDIDATE_ATTRACTIONS",
+                message="Your exclusions removed every available attraction at this destination.",
+                status_code=422,
+            )
+        candidates = filtered
+
     resolved_type, resolved_needs, resolved_children, resolved_seniors = await _resolve_traveler_context(
         session,
         user_id=user_id,
@@ -351,7 +460,11 @@ async def generate_itinerary(
     )
     show_accessibility = resolved_type == TravelerType.ACCESSIBILITY and bool(resolved_needs)
     show_family = resolved_type == TravelerType.FAMILY
-    show_crowd = show_accessibility or show_family
+    # safety_preference widens this beyond FAMILY/ACCESSIBILITY — a plain
+    # SOLO traveler who asks for high safety gets the same real crowd/safety
+    # queries, reusing the exact same functions, just triggered more often.
+    show_safety = show_family or trip.safety_preference in ("high", "very_high")
+    show_crowd = show_accessibility or show_safety
 
     facility_distances_m: dict[str, float | None] = {}
     if show_accessibility:
@@ -359,7 +472,14 @@ async def generate_itinerary(
             session, destination_id=destination.id, candidates=candidates
         )
     crowd_density = await _latest_crowd_density(session, destination_id=destination.id) if show_crowd else None
-    safety_score = await _latest_safety_score(session, destination_id=destination.id) if show_family else None
+    safety_score = await _latest_safety_score(session, destination_id=destination.id) if show_safety else None
+    # Captured unconditionally (not just when show_crowd) — this is the
+    # only chance the adaptation engine's CROWD_CHANGE detector ever gets
+    # to compare a later reading against a real baseline for THIS
+    # itinerary (app/domains/adaptation/detection.py's `check_crowd_
+    # adaptations`).
+    baseline_crowd = await latest_risk_score(session, destination_id=destination.id)
+    baseline_crowd_risk_score, baseline_crowd_observed_at = baseline_crowd if baseline_crowd else (None, None)
 
     query_embedding = await embed_text(prompt)
     chunks = await retrieve_knowledge(session, query_embedding, destination_id=str(destination.id))
@@ -383,12 +503,15 @@ async def generate_itinerary(
         f"{safety_line}"
     )
 
-    system_prompt = _SYSTEM_PROMPT + _traveler_context_clause(
-        resolved_type, resolved_needs, resolved_children, resolved_seniors
+    system_prompt = (
+        _SYSTEM_PROMPT
+        + _traveler_context_clause(resolved_type, resolved_needs, resolved_children, resolved_seniors)
+        + _intent_clause(interests=trip.interests, pace=trip.pace)
     )
 
     route = route_for_task("planner")
     client = get_anthropic_client()
+    _started_at = time.monotonic()
     response = await client.messages.create(
         model=route.model,
         max_tokens=2048,
@@ -404,6 +527,7 @@ async def generate_itinerary(
         tool_choice={"type": "tool", "name": _TOOL_NAME},
         messages=[{"role": "user", "content": user_content}],
     )
+    latency_ms = round((time.monotonic() - _started_at) * 1000)
 
     tool_use = next((block for block in response.content if block.type == "tool_use"), None)
     if tool_use is None:
@@ -427,15 +551,59 @@ async def generate_itinerary(
                 retryable=True,
             )
 
+    usage = price_usage(
+        model=route.model,
+        input_tokens=response.usage.input_tokens,
+        output_tokens=response.usage.output_tokens,
+    )
+
+    return PlannedCandidate(
+        destination=destination,
+        candidates=candidates,
+        planned=planned,
+        prompt=prompt,
+        chunk_ids=[str(c.id) for c in chunks],
+        model=route.model,
+        usage=usage,
+        latency_ms=latency_ms,
+        tool_input=tool_use.input,
+        resolved_type=resolved_type,
+        facility_distances_m=facility_distances_m,
+        interest_terms=interest_terms,
+        show_accessibility=show_accessibility,
+        show_safety=show_safety,
+        baseline_crowd_risk_score=baseline_crowd_risk_score,
+        baseline_crowd_observed_at=baseline_crowd_observed_at,
+    )
+
+
+async def _persist_planned_candidate(
+    session: AsyncSession, *, user_id: str, trip: Trip, candidate: PlannedCandidate
+) -> GeneratedItinerary:
+    """The tail `generate_itinerary` always did: version-increment, real
+    row creation, AI traceability. Split out so both the real (eager,
+    unchanged-behavior) itinerary-generation path and nothing else write
+    to `travel.itineraries`/`travel.itinerary_items` — a system-triggered
+    adaptation proposal (`build_adaptation_proposal_changes`, below) calls
+    only `_plan_itinerary_candidate` and never this function until the
+    user explicitly accepts (`apply_adaptation_proposal`)."""
     existing_max = await session.execute(select(func.max(Itinerary.version)).where(Itinerary.trip_id == trip.id))
     next_version = (existing_max.scalar() or 0) + 1
 
-    itinerary = Itinerary(trip_id=trip.id, version=next_version, generated_by="AI", currency=trip.currency)
+    itinerary = Itinerary(
+        trip_id=trip.id,
+        version=next_version,
+        generated_by="AI",
+        currency=trip.currency,
+        destination_id=candidate.destination.id,
+        baseline_crowd_risk_score=candidate.baseline_crowd_risk_score,
+        baseline_crowd_observed_at=candidate.baseline_crowd_observed_at,
+    )
     session.add(itinerary)
     await session.flush()
 
-    chunk_ids = [str(c.id) for c in chunks]
-    for idx, item in enumerate(planned.items):
+    candidates_by_id = {str(a.id): a for a in candidate.candidates}
+    for idx, item in enumerate(candidate.planned.items):
         scheduled_time = None
         if trip.start_date is not None:
             day = trip.start_date + timedelta(days=item.day_offset)
@@ -446,40 +614,208 @@ async def generate_itinerary(
                 item_type=ItemType.ATTRACTION,
                 attraction_id=uuid.UUID(item.attraction_id),
                 sequence=idx,
+                day_offset=item.day_offset,
+                time_of_day=item.time_of_day,
                 scheduled_time=scheduled_time,
-                reason_code="ai_recommended",
+                reason_code=_reason_code_for(
+                    candidates_by_id.get(item.attraction_id),
+                    interest_terms=candidate.interest_terms,
+                    show_accessibility=candidate.show_accessibility,
+                    show_safety=candidate.show_safety,
+                ),
                 explanation=item.reason,
                 score_snapshot={
-                    "source_chunk_ids": chunk_ids,
-                    "model": route.model,
+                    "source_chunk_ids": candidate.chunk_ids,
+                    "model": candidate.model,
                     **(
-                        {"nearest_accessible_facility_m": facility_distances_m.get(item.attraction_id)}
-                        if show_accessibility
+                        {"nearest_accessible_facility_m": candidate.facility_distances_m.get(item.attraction_id)}
+                        if candidate.show_accessibility
                         else {}
                     ),
                 },
             )
         )
 
-    usage = price_usage(
-        model=route.model,
-        input_tokens=response.usage.input_tokens,
-        output_tokens=response.usage.output_tokens,
-    )
     await _record_ai_session(
         session,
         user_id=user_id,
-        prompt=prompt,
-        tool_input=tool_use.input,
-        usage=usage,
+        prompt=candidate.prompt,
+        tool_input=candidate.tool_input,
+        usage=candidate.usage,
+        latency_ms=candidate.latency_ms,
         itinerary_id=itinerary.id,
-        item_count=len(planned.items),
-        traveler_type=resolved_type,
+        item_count=len(candidate.planned.items),
+        traveler_type=candidate.resolved_type,
     )
 
     await session.flush()
     await session.refresh(itinerary, attribute_names=["items"])
-    return GeneratedItinerary(itinerary=itinerary, summary=planned.summary)
+    return GeneratedItinerary(itinerary=itinerary, summary=candidate.planned.summary)
+
+
+async def generate_itinerary(
+    session: AsyncSession,
+    *,
+    user_id: str,
+    trip: Trip,
+    prompt: str,
+    destination_id: uuid.UUID | None,
+    traveler_type: TravelerType | None = None,
+    accessibility_needs: list[AccessibilityNeed] | None = None,
+    family_children_count: int | None = None,
+    family_seniors_count: int | None = None,
+) -> GeneratedItinerary:
+    """Unchanged signature, unchanged behavior — every existing caller
+    (`create_trip_plan`, `generate_itinerary_for_trip`, `replan_itinerary`)
+    is untouched by the `_plan_itinerary_candidate`/`_persist_planned_
+    candidate` split; this is now just their composition."""
+    candidate = await _plan_itinerary_candidate(
+        session,
+        user_id=user_id,
+        trip=trip,
+        prompt=prompt,
+        destination_id=destination_id,
+        traveler_type=traveler_type,
+        accessibility_needs=accessibility_needs,
+        family_children_count=family_children_count,
+        family_seniors_count=family_seniors_count,
+    )
+    return await _persist_planned_candidate(session, user_id=user_id, trip=trip, candidate=candidate)
+
+
+async def build_adaptation_proposal_changes(
+    session: AsyncSession,
+    *,
+    user_id: str,
+    trip: Trip,
+    prompt: str,
+    destination_id: uuid.UUID | None,
+    current_itinerary: Itinerary,
+) -> dict:
+    """The adaptation engine's AI-assisted step
+    (`app/domains/adaptation/service.py`) — calls only the non-persisting
+    half of the planner, so a system-triggered proposal never writes a
+    new itinerary version until the user accepts it. Returns a structured
+    diff against `current_itinerary`, stored verbatim on `AdaptationProposal.
+    changes`; `apply_adaptation_proposal` later materializes exactly this,
+    never re-calling Claude, so there is no gap between what the user
+    reviewed and what gets applied."""
+    candidate = await _plan_itinerary_candidate(
+        session, user_id=user_id, trip=trip, prompt=prompt, destination_id=destination_id
+    )
+    current_ids = {str(item.attraction_id) for item in current_itinerary.items if item.attraction_id}
+    proposed_ids = {item.attraction_id for item in candidate.planned.items}
+    names = {str(a.id): a.name for a in candidate.candidates}
+    return {
+        "summary": candidate.planned.summary,
+        "model": candidate.model,
+        "proposed_items": [
+            {
+                "attraction_id": item.attraction_id,
+                "attraction_name": names.get(item.attraction_id),
+                "day_offset": item.day_offset,
+                "time_of_day": item.time_of_day,
+                "reason": item.reason,
+            }
+            for item in candidate.planned.items
+        ],
+        "added_attraction_ids": sorted(proposed_ids - current_ids),
+        "removed_attraction_ids": sorted(current_ids - proposed_ids),
+        "kept_attraction_ids": sorted(proposed_ids & current_ids),
+        "usage": {
+            "input_tokens": candidate.usage.input_tokens,
+            "output_tokens": candidate.usage.output_tokens,
+            "cost_usd": candidate.usage.cost_usd,
+            "latency_ms": candidate.latency_ms,
+        },
+    }
+
+
+async def apply_adaptation_proposal(
+    session: AsyncSession,
+    *,
+    trip: Trip,
+    current_itinerary: Itinerary,
+    changes: dict,
+    reason_code: str,
+    confidence: float | None,
+    proposal_id: uuid.UUID,
+) -> Itinerary:
+    """Materializes an already-reviewed `AdaptationProposal.changes` diff
+    as a brand-new itinerary version — the old version's rows are left
+    untouched (same "never hard-delete, keep history" convention
+    `replan_itinerary` follows). Never calls Claude: what the user saw in
+    the proposal is exactly what gets written, avoiding any
+    non-determinism between review and apply."""
+    existing_max = await session.execute(select(func.max(Itinerary.version)).where(Itinerary.trip_id == trip.id))
+    next_version = (existing_max.scalar() or 0) + 1
+
+    itinerary = Itinerary(
+        trip_id=trip.id,
+        version=next_version,
+        generated_by="SYSTEM",
+        currency=trip.currency,
+        destination_id=current_itinerary.destination_id,
+        replan_reason=f"System-detected adaptation: {reason_code}",
+        previous_version=current_itinerary.version,
+    )
+    session.add(itinerary)
+    await session.flush()
+
+    for idx, item in enumerate(changes["proposed_items"]):
+        scheduled_time = None
+        if trip.start_date is not None:
+            day = trip.start_date + timedelta(days=item["day_offset"])
+            scheduled_time = day.replace(hour=_TIME_OF_DAY_HOUR[item["time_of_day"]], minute=0, second=0, microsecond=0)
+        session.add(
+            ItineraryItem(
+                itinerary_id=itinerary.id,
+                item_type=ItemType.ATTRACTION,
+                attraction_id=uuid.UUID(item["attraction_id"]),
+                sequence=idx,
+                day_offset=item["day_offset"],
+                time_of_day=item["time_of_day"],
+                scheduled_time=scheduled_time,
+                reason_code="adaptation_proposed",
+                explanation=item["reason"],
+                score_snapshot={"model": changes.get("model"), "adaptation_proposal_id": str(proposal_id)},
+            )
+        )
+
+    session.add(
+        AiPrediction(
+            prediction_type="adaptation_itinerary",
+            target_type="itinerary",
+            target_id=itinerary.id,
+            value={
+                "proposal_id": str(proposal_id),
+                "reason_code": reason_code,
+                "added_attraction_ids": changes.get("added_attraction_ids"),
+                "removed_attraction_ids": changes.get("removed_attraction_ids"),
+            },
+            confidence=confidence,
+            model_version=changes.get("model") or "unknown",
+            generated_at=datetime.now(UTC),
+        )
+    )
+
+    await session.flush()
+    await session.refresh(itinerary, attribute_names=["items"])
+    return itinerary
+
+
+async def is_current_itinerary(session: AsyncSession, itinerary: Itinerary) -> bool:
+    """Relocated from `travel/router.py`'s `_is_current_itinerary` so the
+    adaptation engine's accept-time staleness check
+    (`app/domains/adaptation/router.py`) reuses the exact same guard an
+    offline item edit already relies on, instead of inventing a second
+    version-comparison mechanism. `replan_itinerary`/`apply_adaptation_
+    proposal` never mutate old rows in place, so an itinerary can be
+    superseded by a newer version generated after this one was read."""
+    latest_versions = (
+        await session.execute(select(Itinerary.version).where(Itinerary.trip_id == itinerary.trip_id))
+    ).scalars().all()
+    return bool(latest_versions) and itinerary.version == max(latest_versions)
 
 
 async def _record_ai_session(
@@ -489,6 +825,7 @@ async def _record_ai_session(
     prompt: str,
     tool_input: dict,
     usage,
+    latency_ms: int,
     itinerary_id: uuid.UUID,
     item_count: int,
     traveler_type: TravelerType,
@@ -523,6 +860,7 @@ async def _record_ai_session(
                 "input_tokens": usage.input_tokens,
                 "output_tokens": usage.output_tokens,
                 "cost_usd": usage.cost_usd,
+                "latency_ms": latency_ms,
             },
             called_at=now,
         )

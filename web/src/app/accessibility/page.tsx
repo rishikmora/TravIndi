@@ -257,7 +257,7 @@ export default function AccessibilityPage() {
         <TravelProfileSection />
       </div>
 
-      <p className="text-xs text-foreground/45">
+      <p className="text-xs text-foreground/55">
         Not built here: voice navigation, audio descriptions, and sign-language support — all
         need real speech/video infrastructure this prototype doesn&apos;t have. Accessible-route
         navigation, accessible-facility listings, and disability-aware trip planning are real,

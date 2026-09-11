@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Destination, type Guide, type Review, type Verification } from "@/lib/api";
 import { LanguageIcon, StarIcon, UsersIcon } from "@/components/icons";
+import { Skeleton } from "@/components/Skeleton";
 
 function EditGuideForm({ guide, onUpdated }: { guide: Guide; onUpdated: (g: Guide) => void }) {
   const { token } = useAuth();
@@ -244,7 +245,17 @@ export default function GuideDetailPage() {
   }, [guide?.destination_id]);
 
   if (error) return <p className="text-sm text-danger">{error}</p>;
-  if (!guide) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (!guide) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading guide…</span>
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-7 w-1/2" />
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
 
   const isOwner = me?.id === guide.user_id;
 

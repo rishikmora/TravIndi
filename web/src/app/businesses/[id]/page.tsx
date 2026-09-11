@@ -6,9 +6,12 @@ import Link from "next/link";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import {
   api,
+  TRANSPORT_CATEGORIES,
   type Availability,
   type Booking,
   type Business,
+  type BusinessCategory,
+  type Destination,
   type DietaryOption,
   type PriceRange,
   type Review,
@@ -17,6 +20,7 @@ import {
 } from "@/lib/api";
 import { QrTicket } from "@/components/QrTicket";
 import { BuildingIcon, CalendarIcon, ImageIcon, MinusIcon, PlusIcon, StarIcon, TicketIcon } from "@/components/icons";
+import { Skeleton } from "@/components/Skeleton";
 
 const DIETARY_OPTIONS: DietaryOption[] = ["VEGETARIAN", "VEGAN", "JAIN", "HALAL", "GLUTEN_FREE", "NON_VEGETARIAN"];
 const DIETARY_LABELS: Record<DietaryOption, string> = {
@@ -439,7 +443,7 @@ function SlotBookingRow({ service, slot, onBooked }: { service: Service; slot: A
             {remaining <= 0 ? "Full" : expanded ? "Cancel" : "Book"}
           </button>
         ) : (
-          <span className="text-foreground/40">Sign in to book</span>
+          <span className="text-foreground/55">Sign in to book</span>
         )}
       </div>
       {expanded && (
@@ -550,11 +554,24 @@ function ServiceCard({
   );
 }
 
-function AddServiceForm({ businessId, onAdded }: { businessId: string; onAdded: (s: Service) => void }) {
+function AddServiceForm({
+  businessId,
+  category,
+  destinations,
+  onAdded,
+}: {
+  businessId: string;
+  category: BusinessCategory;
+  destinations: Destination[];
+  onAdded: (s: Service) => void;
+}) {
   const { token } = useAuth();
+  const isTransport = TRANSPORT_CATEGORIES.includes(category);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [basePrice, setBasePrice] = useState("");
+  const [originId, setOriginId] = useState("");
+  const [destinationId, setDestinationId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -566,13 +583,21 @@ function AddServiceForm({ businessId, onAdded }: { businessId: string; onAdded: 
     try {
       const service = await api.createService(
         businessId,
-        { name, description: description || undefined, base_price: basePrice ? Number(basePrice) : undefined },
+        {
+          name,
+          description: description || undefined,
+          base_price: basePrice ? Number(basePrice) : undefined,
+          origin_destination_id: isTransport && originId ? originId : undefined,
+          destination_destination_id: isTransport && destinationId ? destinationId : undefined,
+        },
         token
       );
       onAdded(service);
       setName("");
       setDescription("");
       setBasePrice("");
+      setOriginId("");
+      setDestinationId("");
     } catch (err) {
       setError(isApiError(err) ? err.message : "Could not add this service.");
     } finally {
@@ -582,14 +607,42 @@ function AddServiceForm({ businessId, onAdded }: { businessId: string; onAdded: 
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2 rounded-xl border border-border bg-surface-muted p-4 text-sm">
-      <h3 className="font-medium">Add a bookable service</h3>
+      <h3 className="font-medium">{isTransport ? "Add a route" : "Add a bookable service"}</h3>
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        placeholder="e.g. Deluxe Room, City Tour, Table for two"
+        placeholder={isTransport ? "e.g. Delhi → Agra" : "e.g. Deluxe Room, City Tour, Table for two"}
         className="rounded-lg border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
+      {isTransport && (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <select
+            value={originId}
+            onChange={(e) => setOriginId(e.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="">Origin destination</option>
+            {destinations.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={destinationId}
+            onChange={(e) => setDestinationId(e.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          >
+            <option value="">Arrival destination</option>
+            {destinations.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <input
         value={description}
         onChange={(e) => setDescription(e.target.value)}
@@ -610,7 +663,7 @@ function AddServiceForm({ businessId, onAdded }: { businessId: string; onAdded: 
         disabled={submitting || !name.trim()}
         className="self-start rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
       >
-        {submitting ? "Adding…" : "Add service"}
+        {submitting ? "Adding…" : isTransport ? "Add route" : "Add service"}
       </button>
     </form>
   );
@@ -620,14 +673,28 @@ function ServicesSection({ business, isOwner }: { business: Business; isOwner: b
   const { token } = useAuth();
   const [services, setServices] = useState<Service[] | null>(null);
   const [justBooked, setJustBooked] = useState<Booking | null>(null);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const isTransport = TRANSPORT_CATEGORIES.includes(business.category);
 
   useEffect(() => {
     api.listServices(business.id).then(setServices);
   }, [business.id]);
 
+  useEffect(() => {
+    if (!isOwner || !isTransport) return;
+    api.listDestinations().then(setDestinations).catch(() => setDestinations([]));
+  }, [isOwner, isTransport]);
+
   return (
     <div className="flex flex-col gap-3">
-      {isOwner && <AddServiceForm businessId={business.id} onAdded={(s) => setServices((prev) => [...(prev ?? []), s])} />}
+      {isOwner && (
+        <AddServiceForm
+          businessId={business.id}
+          category={business.category}
+          destinations={destinations}
+          onAdded={(s) => setServices((prev) => [...(prev ?? []), s])}
+        />
+      )}
       {justBooked && (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-success/30 bg-success/5 p-5 text-center">
           <p className="flex items-center gap-1.5 text-sm font-medium text-success">
@@ -649,7 +716,7 @@ function ServicesSection({ business, isOwner }: { business: Business; isOwner: b
           </p>
         </div>
       )}
-      {services === null && <p className="text-sm text-foreground/60">Loading services…</p>}
+      {services === null && <Skeleton className="h-16 w-full" />}
       {services?.length === 0 && <p className="text-sm text-foreground/60">No services listed yet.</p>}
       {services && services.length > 0 && (
         <ul className="flex flex-col gap-2">
@@ -895,7 +962,17 @@ export default function BusinessDetailPage() {
   }, [business?.destination_id]);
 
   if (error) return <p className="text-sm text-danger">{error}</p>;
-  if (!business) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (!business) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading business…</span>
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-7 w-1/2" />
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    );
+  }
 
   const isOwner = me?.id === business.owner_user_id;
 

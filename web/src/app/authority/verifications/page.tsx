@@ -76,7 +76,7 @@ function VerificationRow({
           {v.status}
         </span>
       </div>
-      <p className="mt-1 text-xs text-foreground/45">Submitted {new Date(v.created_at).toLocaleString()}</p>
+      <p className="mt-1 text-xs text-foreground/55">Submitted {new Date(v.created_at).toLocaleString()}</p>
 
       {v.status === "PENDING" && (
         <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">

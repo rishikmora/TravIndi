@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type DiscussionPost } from "@/lib/api";
 import { UsersIcon } from "@/components/icons";
+import { ListSkeleton } from "@/components/Skeleton";
 
 export function DiscussionThread({ destinationId }: { destinationId: string }) {
   const { token } = useAuth();
@@ -61,14 +62,14 @@ export function DiscussionThread({ destinationId }: { destinationId: string }) {
       )}
       {error && <p className="mb-2 text-sm text-danger">{error}</p>}
 
-      {posts === null && <p className="text-sm text-foreground/60">Loading…</p>}
+      {posts === null && <ListSkeleton count={2} />}
       {posts?.length === 0 && <p className="text-sm text-foreground/60">No discussion yet — be the first to share a tip.</p>}
       {posts && posts.length > 0 && (
         <ul className="flex flex-col gap-2">
           {posts.map((p) => (
             <li key={p.id} className="rounded-xl border border-border bg-surface p-3 text-sm">
               <p className="text-foreground/85">{p.body}</p>
-              <p className="mt-1 text-xs text-foreground/45">{new Date(p.created_at).toLocaleDateString()}</p>
+              <p className="mt-1 text-xs text-foreground/55">{new Date(p.created_at).toLocaleDateString()}</p>
             </li>
           ))}
         </ul>

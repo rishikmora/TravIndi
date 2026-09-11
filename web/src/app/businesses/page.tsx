@@ -6,13 +6,26 @@ import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Business, type BusinessCategory, type Destination, type DietaryOption } from "@/lib/api";
 import { ArrowRightIcon, BuildingIcon, SearchIcon } from "@/components/icons";
 
-const CATEGORIES: BusinessCategory[] = ["HOTEL", "RESTAURANT", "TAXI", "ARTISAN", "TOUR_OPERATOR", "OTHER"];
+const CATEGORIES: BusinessCategory[] = [
+  "HOTEL",
+  "RESTAURANT",
+  "TAXI",
+  "ARTISAN",
+  "TOUR_OPERATOR",
+  "AIRLINE",
+  "RAILWAY",
+  "BUS_OPERATOR",
+  "OTHER",
+];
 const CATEGORY_LABELS: Record<BusinessCategory, string> = {
   HOTEL: "Hotels",
   RESTAURANT: "Restaurants",
   TAXI: "Taxis",
   ARTISAN: "Artisans",
   TOUR_OPERATOR: "Tour operators",
+  AIRLINE: "Airlines",
+  RAILWAY: "Railways",
+  BUS_OPERATOR: "Bus operators",
   OTHER: "Other",
 };
 const DIETARY_OPTIONS: DietaryOption[] = ["VEGETARIAN", "VEGAN", "JAIN", "HALAL", "GLUTEN_FREE", "NON_VEGETARIAN"];
@@ -356,8 +369,10 @@ export default function BusinessesPage() {
 
       {businesses !== null && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((b) => (
-            <BusinessCard key={b.id} business={b} destinationName={destinationName(b.destination_id)} />
+          {filtered.map((b, i) => (
+            <div key={b.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
+              <BusinessCard business={b} destinationName={destinationName(b.destination_id)} />
+            </div>
           ))}
         </div>
       )}

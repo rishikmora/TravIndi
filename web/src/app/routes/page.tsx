@@ -214,7 +214,7 @@ export default function RoutesPage() {
           )}
           <ReasonsBreakdown result={result} />
           {typeof result.reasons.note === "string" && (
-            <p className="border-t border-border pt-3 text-xs text-foreground/45">{result.reasons.note}</p>
+            <p className="border-t border-border pt-3 text-xs text-foreground/55">{result.reasons.note}</p>
           )}
         </div>
       )}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Business, type Guide, type MeGamification, type Review } from "@/lib/api";
+import { ListSkeleton, Skeleton } from "@/components/Skeleton";
 import {
   ArrowRightIcon,
   BellIcon,
@@ -216,7 +217,7 @@ function MyBusinessesSection() {
     api.listMyBusinesses(token).then(setBusinesses).catch(() => setBusinesses([]));
   }, [token]);
 
-  if (businesses === null) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (businesses === null) return <ListSkeleton count={2} />;
 
   if (businesses.length === 0) {
     return (
@@ -272,7 +273,7 @@ function MyGuideProfileSection() {
     api.listMyGuides(token).then(setGuides).catch(() => setGuides([]));
   }, [token]);
 
-  if (guides === null) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (guides === null) return <ListSkeleton count={2} />;
 
   if (guides.length === 0) {
     return (
@@ -346,7 +347,7 @@ function ReviewRow({ review, targetName }: { review: Review; targetName: string 
         </span>
       </div>
       {review.body && <p className="mt-1 text-sm text-foreground/60">{review.body}</p>}
-      <p className="mt-1 text-xs text-foreground/45">{new Date(review.created_at).toLocaleDateString()}</p>
+      <p className="mt-1 text-xs text-foreground/55">{new Date(review.created_at).toLocaleDateString()}</p>
     </li>
   );
 }
@@ -390,7 +391,7 @@ function MyReviewsSection() {
     });
   }, [reviews, names]);
 
-  if (reviews === null) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (reviews === null) return <ListSkeleton count={2} />;
 
   if (reviews.length === 0) {
     return <p className="text-sm text-foreground/60">You haven&apos;t written any reviews yet.</p>;
@@ -420,7 +421,20 @@ function ProfileHome() {
     api.listTrustedContacts(token).then((c) => setContactCount(c.length)).catch(() => {});
   }, [token]);
 
-  if (!me) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (!me) {
+    return (
+      <div className="mx-auto flex max-w-3xl flex-col gap-8" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading profile…</span>
+        <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-6">
+          <Skeleton className="h-16 w-16 shrink-0 rounded-full" />
+          <div className="flex-1">
+            <Skeleton className="h-5 w-1/3" />
+            <Skeleton className="mt-2 h-4 w-1/2" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-8">

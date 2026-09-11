@@ -1,9 +1,19 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.domains.tourism.schemas import GeoPoint
+
+
+class CrowdDemoBumpIn(BaseModel):
+    """Demo/jury-only trigger for the adaptive journey engine's
+    CROWD_CHANGE path (`POST /crowd/demo/bump`) — see that endpoint's
+    docstring for why this inserts a real row rather than fabricating an
+    event directly."""
+
+    destination_id: uuid.UUID
+    risk_score: float = Field(ge=0.0, le=1.0)
 
 
 class CrowdCellOut(BaseModel):

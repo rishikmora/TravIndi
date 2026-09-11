@@ -52,6 +52,7 @@ from app.domains.location_sharing.schemas import (
 from app.domains.tourism.schemas import GeoPoint
 from app.domains.travel.models import Trip
 from app.schemas.common import DataResponse, ListResponse
+from app.websocket.manager import publish
 
 router = APIRouter(prefix="/location-sharing", tags=["location-sharing"])
 
@@ -301,6 +302,7 @@ async def get_location_share(
     share = await _get_own_share(session, share_id, principal, "read")
     if _apply_lazy_expiry(share):
         await session.commit()
+        await publish(f"location:share:{share.id}", {"type": "location.expired", "share_id": str(share.id)})
     return DataResponse(data=_to_share_out(share))
 
 
@@ -332,6 +334,11 @@ async def update_location_share(
             token_row.expires_at = share.expires_at
 
     await session.commit()
+    if body.duration_choice is not None:
+        await publish(
+            f"location:share:{share.id}",
+            {"type": "location.share_status_changed", "share_id": str(share.id), "expires_at": share.expires_at.isoformat()},
+        )
     return DataResponse(data=_to_share_out(share))
 
 
@@ -342,7 +349,8 @@ async def revoke_location_share(
     session: AsyncSession = Depends(get_rls_session),
 ) -> None:
     share = await _get_own_share(session, share_id, principal, "write")
-    if share.status == ShareStatus.ACTIVE:
+    was_active = share.status == ShareStatus.ACTIVE
+    if was_active:
         share.status = ShareStatus.REVOKED
         share.revoked_at = datetime.now(UTC)
         _add_event(session, share, "REVOKED", uuid.UUID(principal.user_id))
@@ -354,6 +362,8 @@ async def revoke_location_share(
         if token_row is not None:
             token_row.revoked_at = share.revoked_at
     await session.commit()
+    if was_active:
+        await publish(f"location:share:{share.id}", {"type": "location.revoked", "share_id": str(share.id)})
 
 
 @router.post("/stop-all", status_code=204)
@@ -379,6 +389,8 @@ async def stop_all_location_shares(
         if token_row is not None:
             token_row.revoked_at = now
     await session.commit()
+    for share in shares:
+        await publish(f"location:share:{share.id}", {"type": "location.revoked", "share_id": str(share.id)})
 
 
 @router.post("/{share_id}/ping", response_model=DataResponse[LocationShareOut])
@@ -422,7 +434,18 @@ async def ping_location_share(
     # emergency/router.py's create_sos).
     await session.refresh(share)
     await session.commit()
-    return DataResponse(data=_to_share_out(share))
+    out = _to_share_out(share)
+    await publish(
+        f"location:share:{share.id}",
+        {
+            "type": "location.updated",
+            "share_id": str(share.id),
+            "current_location": out.current_location.model_dump() if out.current_location else None,
+            "last_location_at": share.last_location_at.isoformat(),
+            "is_live": out.is_live,
+        },
+    )
+    return DataResponse(data=out)
 
 
 @router.get("/{share_id}/recipient-view", response_model=DataResponse[LocationShareRecipientViewOut])

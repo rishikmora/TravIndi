@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { RequireAuth } from "@/components/RequireAuth";
+import { ListSkeleton } from "@/components/Skeleton";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import {
   api,
@@ -191,7 +192,7 @@ function AuditLogSection() {
         Real entries — written whenever an admin action or a verification decision happens. Not every write in the
         system is audited yet, only these back-office actions.
       </p>
-      {entries === null && <p className="text-sm text-foreground/60">Loading…</p>}
+      {entries === null && <ListSkeleton count={3} />}
       {entries && entries.length === 0 && <p className="text-sm text-foreground/60">No audit events yet.</p>}
       {entries && entries.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-border">
@@ -264,7 +265,7 @@ function SystemConfigSection() {
                   <span>
                     {p.name} <span className="text-foreground/50">v{p.version}</span>
                   </span>
-                  <span className={p.active ? "text-success" : "text-foreground/40"}>
+                  <span className={p.active ? "text-success" : "text-foreground/55"}>
                     {p.active ? "Active" : "Inactive"}
                   </span>
                 </li>

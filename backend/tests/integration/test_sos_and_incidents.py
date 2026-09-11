@@ -312,6 +312,62 @@ async def test_offline_sos_sync_creates_a_real_sos_idempotently(client: AsyncCli
     assert len(matching_again) == 1
 
 
+async def test_direct_sos_retry_with_same_idempotency_key_no_longer_duplicates(client: AsyncClient) -> None:
+    """Regression test for a real, confirmed bug fixed by the offline-first
+    upgrade: `require_idempotency_key` validated the header was present but
+    never checked it against anything, so retrying `POST /sos` with the
+    same key used to create a second SOS. Both calls now claim the same
+    `sync.sync_operations` ledger row the `/sync` endpoint itself uses."""
+    tourist = await _register_and_login(client)
+    key = str(uuid.uuid4())
+
+    first = await client.post(
+        "/api/v1/sos",
+        json={"lon": 77.2, "lat": 28.6, "emergency_type": "retry_test"},
+        headers={**_auth(tourist["access_token"]), "Idempotency-Key": key},
+    )
+    assert first.status_code == 201, first.text
+    first_id = first.json()["data"]["id"]
+
+    second = await client.post(
+        "/api/v1/sos",
+        json={"lon": 77.2, "lat": 28.6, "emergency_type": "retry_test"},
+        headers={**_auth(tourist["access_token"]), "Idempotency-Key": key},
+    )
+    assert second.status_code == 201, second.text
+    assert second.json()["data"]["id"] == first_id
+
+    sos_list = await client.get("/api/v1/sos", headers=_auth(tourist["access_token"]))
+    matching = [s for s in sos_list.json()["data"] if s["emergency_type"] == "retry_test"]
+    assert len(matching) == 1
+
+
+async def test_direct_incident_retry_with_same_idempotency_key_no_longer_duplicates(client: AsyncClient) -> None:
+    """Same regression, for `POST /emergency/incidents`."""
+    reporter = await _register_and_login(client)
+    key = str(uuid.uuid4())
+
+    first = await client.post(
+        "/api/v1/emergency/incidents",
+        json={"incident_type": "retry_test", "severity": "low", "lon": 77.2, "lat": 28.6},
+        headers={**_auth(reporter["access_token"]), "Idempotency-Key": key},
+    )
+    assert first.status_code == 201, first.text
+    first_id = first.json()["data"]["id"]
+
+    second = await client.post(
+        "/api/v1/emergency/incidents",
+        json={"incident_type": "retry_test", "severity": "low", "lon": 77.2, "lat": 28.6},
+        headers={**_auth(reporter["access_token"]), "Idempotency-Key": key},
+    )
+    assert second.status_code == 201, second.text
+    assert second.json()["data"]["id"] == first_id
+
+    incident_list = await client.get("/api/v1/emergency/incidents", headers=_auth(reporter["access_token"]))
+    matching = [i for i in incident_list.json()["data"] if i["incident_type"] == "retry_test"]
+    assert len(matching) == 1
+
+
 async def test_notification_preferences_default_enabled_then_a_disabled_type_is_really_suppressed(
     client: AsyncClient,
 ) -> None:

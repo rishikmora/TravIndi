@@ -15,19 +15,21 @@ confirmed matrix's "Business profile / services | RWU (own)" row.
 """
 
 import uuid
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends
 from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from app.api.deps import Principal, get_current_principal, get_pagination
 from app.core.errors import AppError
 from app.core.opa import require_allowed
 from app.db.session import get_db_session
 from app.domains.business.models import (
+    TRANSPORT_CATEGORIES,
     Availability,
     Business,
     BusinessCategory,
@@ -47,7 +49,9 @@ from app.domains.business.schemas import (
     GuideOut,
     ServiceCreateIn,
     ServiceOut,
+    TransportSearchResultOut,
 )
+from app.domains.tourism.models import Destination
 from app.domains.tourism.schemas import GeoPoint
 from app.schemas.common import DataResponse, ListResponse, Pagination
 
@@ -116,6 +120,8 @@ def _to_service_out(row: Service) -> ServiceOut:
         description=row.description,
         base_price=row.base_price,
         currency=row.currency,
+        origin_destination_id=row.origin_destination_id,
+        destination_destination_id=row.destination_destination_id,
     )
 
 
@@ -325,6 +331,8 @@ async def create_service(
         description=body.description,
         base_price=body.base_price,
         currency=body.currency,
+        origin_destination_id=body.origin_destination_id,
+        destination_destination_id=body.destination_destination_id,
     )
     session.add(service)
     await session.commit()
@@ -342,6 +350,70 @@ async def list_services(
         select(Service).where(Service.business_id == business_id).order_by(Service.name).limit(pagination.limit)
     )
     return ListResponse(data=[_to_service_out(r) for r in result.scalars().all()])
+
+
+@services_router.get("/search", response_model=ListResponse[TransportSearchResultOut])
+async def search_transport(
+    category: BusinessCategory,
+    origin_destination_id: uuid.UUID | None = None,
+    destination_destination_id: uuid.UUID | None = None,
+    after: datetime | None = None,
+    pagination: Pagination = Depends(get_pagination),
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResponse[TransportSearchResultOut]:
+    """Real flight/train/bus search — public, same as any other directory
+    listing in this file. Registered before `/{service_id}/availability`
+    only for readability; the two paths never collide (different segment
+    shapes). Reuses `business.services`/`business.availability` exactly as
+    seeded/created — never fabricates a departure that isn't a real row."""
+    if category not in TRANSPORT_CATEGORIES:
+        raise AppError(
+            code="INVALID_CATEGORY",
+            message="Transport search only supports AIRLINE, RAILWAY, or BUS_OPERATOR.",
+            status_code=422,
+        )
+
+    origin = aliased(Destination)
+    destination = aliased(Destination)
+    query = (
+        select(Service, Availability, Business, origin, destination)
+        .join(Business, Service.business_id == Business.id)
+        .join(Availability, Availability.service_id == Service.id)
+        .outerjoin(origin, Service.origin_destination_id == origin.id)
+        .outerjoin(destination, Service.destination_destination_id == destination.id)
+        .where(Business.category == category, Availability.starts_at >= (after or datetime.now(UTC)))
+        .order_by(Availability.starts_at)
+        .limit(pagination.limit)
+    )
+    if origin_destination_id is not None:
+        query = query.where(Service.origin_destination_id == origin_destination_id)
+    if destination_destination_id is not None:
+        query = query.where(Service.destination_destination_id == destination_destination_id)
+
+    rows = (await session.execute(query)).all()
+    return ListResponse(
+        data=[
+            TransportSearchResultOut(
+                service_id=service.id,
+                business_id=business.id,
+                business_name=business.name,
+                category=business.category,
+                origin_destination_id=service.origin_destination_id,
+                origin_name=origin_row.name if origin_row else None,
+                destination_destination_id=service.destination_destination_id,
+                destination_name=destination_row.name if destination_row else None,
+                availability_id=slot.id,
+                starts_at=slot.starts_at,
+                ends_at=slot.ends_at,
+                capacity=slot.capacity,
+                booked_count=slot.booked_count,
+                remaining=max(0, slot.capacity - slot.booked_count),
+                base_price=service.base_price,
+                currency=service.currency,
+            )
+            for service, slot, business, origin_row, destination_row in rows
+        ]
+    )
 
 
 @services_router.post("/{service_id}/availability", response_model=DataResponse[AvailabilityOut], status_code=201)

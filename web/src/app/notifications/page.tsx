@@ -184,7 +184,7 @@ function NotificationsPanel() {
                     )}
                   </div>
                   <p className="text-foreground/70">{n.body}</p>
-                  <p className="mt-1 text-xs text-foreground/40">{new Date(n.created_at).toLocaleString()}</p>
+                  <p className="mt-1 text-xs text-foreground/55">{new Date(n.created_at).toLocaleString()}</p>
                 </div>
               </li>
             );

@@ -112,7 +112,7 @@ function ConsentsPanel() {
                   {c.status === "GRANTED" && <CheckCircleIcon width={14} height={14} className="text-success" />}
                   {purposeLabel(c.purpose)}
                 </span>
-                <span className={`text-xs font-medium uppercase ${c.status === "GRANTED" ? "text-success" : "text-foreground/40"}`}>
+                <span className={`text-xs font-medium uppercase ${c.status === "GRANTED" ? "text-success" : "text-foreground/55"}`}>
                   {c.status}
                 </span>
               </div>

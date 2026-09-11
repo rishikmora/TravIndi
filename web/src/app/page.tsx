@@ -40,7 +40,7 @@ export default async function Home() {
     <div className="flex flex-col gap-16">
       <section className="overflow-hidden rounded-3xl border border-border">
         <div className="grid sm:grid-cols-[1.05fr_.95fr]">
-          <div className="flex flex-col gap-6 bg-surface px-8 py-12 sm:px-12 sm:py-16">
+          <div className="flex flex-col gap-6 bg-surface px-8 py-12 pb-24 sm:px-12 sm:py-16">
             <span className="inline-flex w-fit items-center gap-1.5 text-xs font-bold tracking-[0.25em] text-primary">
               NATIONAL TOURISM INTELLIGENCE
             </span>

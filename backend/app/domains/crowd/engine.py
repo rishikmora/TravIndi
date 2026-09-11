@@ -13,7 +13,13 @@ when you call it, instead of a frozen snapshot forever — the same honest
 """
 
 import math
+import uuid
 from datetime import datetime
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.crowd.models import CrowdCell
 
 METHOD_NAME = "time_of_day_heuristic_v1"
 
@@ -43,3 +49,23 @@ def apply_live_multiplier(baseline: float | None, multiplier: float) -> float | 
     if baseline is None:
         return None
     return max(0.0, min(1.0, float(baseline) * multiplier))
+
+
+async def latest_risk_score(session: AsyncSession, *, destination_id: uuid.UUID) -> tuple[float, datetime] | None:
+    """The one source of truth for "what does crowd risk look like right
+    now at this destination" — same "most recent row, no freshness
+    window" convention as `travel/planner.py`'s `_latest_crowd_density`.
+    Reused by both itinerary generation's baseline capture and the
+    adaptation engine's fresh-read comparison, so the two sides of a
+    CROWD_CHANGE diff are always computed the same way."""
+    row = (
+        await session.execute(
+            select(CrowdCell.risk_score, CrowdCell.observed_at)
+            .where(CrowdCell.destination_id == destination_id)
+            .order_by(CrowdCell.observed_at.desc())
+            .limit(1)
+        )
+    ).first()
+    if row is None or row[0] is None:
+        return None
+    return float(row[0]), row[1]

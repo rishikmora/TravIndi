@@ -14,8 +14,10 @@ from app.db.base import Base
 # pass (verification, reviews, fraud, business directory); booking joined
 # during the Round 2 pass (bookings, tickets — see app/domains/booking/
 # models.py for why there's no separate availability_slots table).
+from app.domains.adaptation import models as adaptation_models  # noqa: F401
 from app.domains.booking import models as booking_models  # noqa: F401
 from app.domains.business import models as business_models  # noqa: F401
+from app.domains.chat import models as chat_models  # noqa: F401
 from app.domains.crowd import models as crowd_models  # noqa: F401
 from app.domains.emergency import models as emergency_models  # noqa: F401
 from app.domains.financial import models as financial_models  # noqa: F401
@@ -28,6 +30,7 @@ from app.domains.location_sharing import models as location_sharing_models  # no
 from app.domains.lost_found import models as lost_found_models  # noqa: F401
 from app.domains.safety import models as safety_models  # noqa: F401
 from app.domains.social import models as social_models  # noqa: F401
+from app.domains.sync import models as sync_models  # noqa: F401
 from app.domains.tourism import models as tourism_models  # noqa: F401
 from app.domains.travel import models as travel_models  # noqa: F401
 from app.domains.trust import models as trust_models  # noqa: F401
@@ -60,7 +63,7 @@ OWNED_SCHEMAS = {
     "identity", "tourism", "travel", "safety", "emergency", "crowd",
     "business", "booking", "payment", "trust", "knowledge", "analytics",
     "integration", "governance", "gamification", "lost_found", "financial",
-    "group_travel", "social", "location_sharing",
+    "group_travel", "social", "location_sharing", "sync", "chat", "adaptation",
 }
 
 

@@ -126,7 +126,7 @@ function FraudCaseRow({ c, canResolve, onResolved }: { c: FraudCase; canResolve:
           {s.signal_type.replace(/_/g, " ")} · {((s.confidence ?? 0) * 100).toFixed(0)}% confidence
         </p>
       ))}
-      <p className="mt-1.5 text-xs text-foreground/40">{new Date(c.created_at).toLocaleString()}</p>
+      <p className="mt-1.5 text-xs text-foreground/55">{new Date(c.created_at).toLocaleString()}</p>
       {c.status === "OPEN" && canResolve && (
         <div className="mt-3 flex flex-col gap-1.5 border-t border-border pt-3">
           {error && <p className="text-xs text-danger">{error}</p>}

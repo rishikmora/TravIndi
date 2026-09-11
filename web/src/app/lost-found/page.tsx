@@ -11,6 +11,7 @@ import {
   type LostFoundCategory,
 } from "@/lib/api";
 import { SparkleIcon, MapPinIcon, CalendarIcon } from "@/components/icons";
+import { ListSkeleton } from "@/components/Skeleton";
 
 const CATEGORIES: LostFoundCategory[] = ["ELECTRONICS", "DOCUMENTS", "BAG_LUGGAGE", "CLOTHING", "JEWELRY", "OTHER"];
 
@@ -210,7 +211,7 @@ function LostItemRow({ item }: { item: LostItem }) {
         <div>
           <div className="font-medium">{item.title}</div>
           <p className="mt-1 text-sm text-foreground/60">{item.description}</p>
-          <p className="mt-1 flex items-center gap-1 text-xs text-foreground/45">
+          <p className="mt-1 flex items-center gap-1 text-xs text-foreground/55">
             <CalendarIcon width={12} height={12} />
             Lost {new Date(item.lost_at).toLocaleDateString()}
           </p>
@@ -230,7 +231,7 @@ function LostItemRow({ item }: { item: LostItem }) {
       </button>
       {expanded && (
         <div className="mt-3">
-          {matches === null && <p className="text-sm text-foreground/60">Loading…</p>}
+          {matches === null && <ListSkeleton count={2} />}
           {matches?.length === 0 && <p className="text-sm text-foreground/60">No matches yet — real matching runs automatically as new found items come in.</p>}
           {matches && matches.length > 0 && (
             <ul className="flex flex-col gap-2">
@@ -279,7 +280,7 @@ function FoundItemCard({
           <div className="font-medium">{item.title}</div>
           <p className="mt-1 text-sm text-foreground/60">{item.description}</p>
           {item.storage_location && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-foreground/45">
+            <p className="mt-1 flex items-center gap-1 text-xs text-foreground/55">
               <MapPinIcon width={12} height={12} />
               {item.storage_location}
             </p>
@@ -375,7 +376,7 @@ function LostFoundHome() {
 
       {tab === "my-lost" && (
         <div>
-          {myLostItems === null && <p className="text-sm text-foreground/60">Loading…</p>}
+          {myLostItems === null && <ListSkeleton count={3} />}
           {myLostItems?.length === 0 && <p className="text-sm text-foreground/60">You haven&apos;t reported anything lost.</p>}
           {myLostItems && myLostItems.length > 0 && (
             <ul className="flex flex-col gap-3">
@@ -389,7 +390,7 @@ function LostFoundHome() {
 
       {tab === "my-found" && (
         <div>
-          {myFoundItems === null && <p className="text-sm text-foreground/60">Loading…</p>}
+          {myFoundItems === null && <ListSkeleton count={3} />}
           {myFoundItems?.length === 0 && <p className="text-sm text-foreground/60">You haven&apos;t reported anything found.</p>}
           {myFoundItems && myFoundItems.length > 0 && (
             <ul className="flex flex-col gap-3">
@@ -403,7 +404,7 @@ function LostFoundHome() {
 
       {tab === "browse-found" && (
         <div>
-          {foundItems === null && <p className="text-sm text-foreground/60">Loading…</p>}
+          {foundItems === null && <ListSkeleton count={3} />}
           {foundItems?.length === 0 && <p className="text-sm text-foreground/60">No open found-item reports right now.</p>}
           {foundItems && foundItems.length > 0 && (
             <ul className="flex flex-col gap-3">

@@ -63,7 +63,7 @@ function BookingCard({ booking, onCancelled }: { booking: Booking; onCancelled: 
       {booking.total_amount != null && (
         <p className="mt-2 text-sm text-foreground/70">
           {booking.currency} {booking.total_amount}{" "}
-          <span className="text-xs text-foreground/45">(bookkeeping only — no real payment charged)</span>
+          <span className="text-xs text-foreground/55">(bookkeeping only — no real payment charged)</span>
         </p>
       )}
       {booking.notes && <p className="mt-1 text-xs text-foreground/55">Note: {booking.notes}</p>}

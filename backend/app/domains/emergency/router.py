@@ -42,6 +42,7 @@ from app.domains.emergency.schemas import (
 )
 from app.domains.group_travel.models import TripMember, TripMemberStatus
 from app.domains.identity.models import TrustedContact, TrustedContactAccessToken
+from app.domains.sync.service import claim_operation, get_existing_operation, mark_operation_result
 from app.domains.tourism.schemas import GeoPoint
 from app.schemas.common import DataResponse, ListResponse
 
@@ -105,6 +106,40 @@ async def create_sos(
     session: AsyncSession = Depends(get_rls_session),
 ) -> DataResponse[SosOut]:
     now = datetime.now(UTC)
+    user_id = uuid.UUID(principal.user_id)
+
+    # Real dedup as of this build — a retry with the same Idempotency-Key
+    # used to create a second SOS (the header was validated-present but
+    # never checked against anything). Claim the key in the shared ledger
+    # first; a miss means some earlier call already created this SOS.
+    claimed = await claim_operation(
+        session,
+        operation_id=idempotency_key,
+        user_id=user_id,
+        device_id=None,
+        source="direct",
+        entity_type="sos",
+        operation="CREATE",
+        client_timestamp=now,
+    )
+    if claimed is None:
+        existing = await get_existing_operation(session, operation_id=idempotency_key, user_id=user_id)
+        if existing is not None and existing.result_entity_id is not None:
+            prior_sos = await session.get(SosRequest, existing.result_entity_id)
+            if prior_sos is not None:
+                await session.commit()
+                return DataResponse(data=_to_sos_out(prior_sos))
+        # Claimed by another in-flight request for this same key, but that
+        # request hasn't recorded its result yet — never fall through and
+        # create a second SOS for an idempotency key that's already spoken
+        # for; the original request's own response is the real outcome.
+        raise AppError(
+            code="DUPLICATE_OPERATION_IN_PROGRESS",
+            message="An SOS request with this Idempotency-Key is already being processed.",
+            status_code=409,
+            retryable=True,
+        )
+
     sos = SosRequest(
         user_id=uuid.UUID(principal.user_id),
         location=f"SRID=4326;POINT({body.lon} {body.lat})",
@@ -114,6 +149,8 @@ async def create_sos(
     )
     session.add(sos)
     await session.flush()
+    if claimed is not None:
+        mark_operation_result(claimed, result_entity_id=sos.id)
     _add_event(session, sos, "CREATED", uuid.UUID(principal.user_id), {"idempotency_key": idempotency_key})
 
     contacts_result = await session.execute(

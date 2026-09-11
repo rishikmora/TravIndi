@@ -16,6 +16,7 @@ import {
   type MyRank,
 } from "@/lib/api";
 import { StarIcon, CompassIcon, SparkleIcon, MapPinIcon, ClockIcon } from "@/components/icons";
+import { ListSkeleton } from "@/components/Skeleton";
 
 const CATEGORY_LABELS: Record<string, string> = {
   EXPLORATION: "Exploration",
@@ -65,7 +66,7 @@ function BadgeCollectionChip({ badge, awardedAt }: { badge: Badge; awardedAt: st
       <div className="min-w-0 flex-1">
         <div className={`font-medium ${earned ? "" : "text-foreground/60"}`}>{badge.name}</div>
         <div className="truncate text-sm text-foreground/55">{badge.description}</div>
-        <div className={`mt-0.5 text-xs ${earned ? "text-success" : "text-foreground/40"}`}>
+        <div className={`mt-0.5 text-xs ${earned ? "text-success" : "text-foreground/55"}`}>
           {earned ? `Earned ${new Date(awardedAt).toLocaleDateString()}` : `Locked · worth ${badge.points_value} pts`}
         </div>
       </div>
@@ -91,7 +92,7 @@ function ChallengeRow({ challenge }: { challenge: Challenge }) {
       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
         <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
       </div>
-      <p className="mt-2 text-xs text-foreground/45">
+      <p className="mt-2 text-xs text-foreground/55">
         Reward: {challenge.points_reward} pts{challenge.badge ? ` + "${challenge.badge.name}" badge` : ""}
       </p>
     </li>
@@ -120,7 +121,7 @@ function PointsHistoryRow({ entry }: { entry: PointsHistoryEntry }) {
         {CATEGORY_LABELS[entry.category] ?? entry.category}
       </span>
       <span className="flex-1 truncate text-sm text-foreground/75">{entry.reason}</span>
-      <span className="shrink-0 text-xs text-foreground/45">{new Date(entry.created_at).toLocaleDateString()}</span>
+      <span className="shrink-0 text-xs text-foreground/55">{new Date(entry.created_at).toLocaleDateString()}</span>
       <span className="shrink-0 text-sm font-semibold text-success">+{entry.points}</span>
     </li>
   );
@@ -293,7 +294,7 @@ function GamificationHome() {
             </span>
           )}
         </div>
-        {allBadges === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {allBadges === null && <ListSkeleton count={3} className="mt-2" />}
         {allBadges && (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {allBadges.map((b) => (
@@ -305,7 +306,7 @@ function GamificationHome() {
 
       <div>
         <h2 className="text-lg font-semibold">Places you&apos;ve visited</h2>
-        {visitedDestinations === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {visitedDestinations === null && <ListSkeleton count={2} className="mt-2" />}
         {visitedDestinations && visitedDestinations.length === 0 && (
           <p className="mt-2 text-sm text-foreground/60">No real GPS-verified visits yet — check in above once you&apos;re there.</p>
         )}
@@ -320,7 +321,7 @@ function GamificationHome() {
 
       <div>
         <h2 className="text-lg font-semibold">Challenges</h2>
-        {challenges === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {challenges === null && <ListSkeleton count={2} className="mt-2" />}
         {challenges && (
           <ul className="mt-3 flex flex-col gap-3">
             {challenges.map((c) => (
@@ -360,7 +361,7 @@ function GamificationHome() {
               : "You haven't earned any points in this category yet."}
           </p>
         )}
-        {leaderboard === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {leaderboard === null && <ListSkeleton count={3} className="mt-2" />}
         {leaderboard && leaderboard.length === 0 && (
           <p className="mt-2 text-sm text-foreground/60">No one&apos;s on the board yet — be the first to earn points.</p>
         )}
@@ -387,7 +388,7 @@ function GamificationHome() {
           <ClockIcon width={16} height={16} className="text-foreground/50" />
           <h2 className="text-lg font-semibold">Recent activity</h2>
         </div>
-        {pointsHistory === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+        {pointsHistory === null && <ListSkeleton count={3} className="mt-2" />}
         {pointsHistory && pointsHistory.length === 0 && (
           <p className="mt-2 text-sm text-foreground/60">No points earned yet.</p>
         )}

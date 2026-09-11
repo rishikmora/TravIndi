@@ -1,22 +1,66 @@
 "use client";
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import {
   api,
+  NetworkError,
   type Trip,
   type Itinerary,
+  type ItineraryItem,
   type Destination,
+  type Business,
   type Expense,
   type ExpenseCategory,
   type TripFinancialSummary,
   type TripMember,
   type GroupSafety,
   type CarbonFootprint,
+  type QuickReplanAction,
+  type AdaptationProposal,
 } from "@/lib/api";
+import { cacheItinerary, cacheTrip, getCachedItinerary, getCachedTrip } from "@/lib/offline/db";
+import { useOfflineQueue } from "@/lib/offline/useOfflineQueue";
+import { useRealtimeConnection } from "@/lib/realtime/useRealtimeConnection";
 import { CalendarIcon, SparkleIcon, UsersIcon } from "@/components/icons";
+import { Skeleton } from "@/components/Skeleton";
+
+function formatRelativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+const REASON_CODE_LABELS: Record<string, string> = {
+  interest_match: "Matches your interests",
+  accessibility_grounded: "Accessibility-grounded pick",
+  safety_priority: "Weighed for safety",
+  ai_recommended: "AI recommended",
+};
+
+const TIME_OF_DAY_LABELS: Record<string, string> = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" };
+
+const ADAPTATION_REASON_LABELS: Record<string, string> = {
+  CROWD_THRESHOLD: "Crowd levels increased significantly near an upcoming stop on your trip.",
+  INCIDENT_IMPACT: "A new incident was reported near an upcoming stop on your trip.",
+};
+
+const QUICK_REPLAN_ACTIONS: { value: QuickReplanAction; label: string }[] = [
+  { value: "cheaper", label: "Make it cheaper" },
+  { value: "more_relaxed", label: "More relaxed" },
+  { value: "more_heritage", label: "More heritage" },
+  { value: "more_food", label: "More food" },
+  { value: "less_walking", label: "Less walking" },
+  { value: "avoid_crowds", label: "Avoid crowds" },
+  { value: "improve_safety", label: "Improve safety" },
+];
 
 const EXPENSE_CATEGORIES: ExpenseCategory[] = ["ACCOMMODATION", "FOOD", "TRANSPORT", "SHOPPING", "ACTIVITIES", "OTHER"];
 
@@ -174,6 +218,21 @@ function GroupSection({ trip }: { trip: Trip }) {
 
   useEffect(refresh, [token, trip.id]);
 
+  // Progressive enhancement: when any member's location updates (a real
+  // WS broadcast from POST /group-travel/trips/{id}/location, added
+  // alongside the existing endpoint, never replacing it), refresh the
+  // safety score shown below immediately instead of waiting for this
+  // component's next full reload — no new map UI is added here since
+  // none existed to enhance.
+  const { subscribe: subscribeGroupLocation } = useRealtimeConnection(token ? { token } : null);
+  useEffect(() => {
+    return subscribeGroupLocation(`location:group:${trip.id}`, () => {
+      if (!token) return;
+      api.getGroupSafety(trip.id, token).then(setSafety).catch(() => {});
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip.id, token]);
+
   async function onInvite(e: FormEvent) {
     e.preventDefault();
     if (!token || !inviteEmail) return;
@@ -285,7 +344,7 @@ function GroupSection({ trip }: { trip: Trip }) {
               <span>
                 {m.role === "OWNER" ? "Trip owner" : "Member"}
                 {safety?.by_member[m.user_id] != null && (
-                  <span className="ml-2 text-foreground/45">safety {Math.round(safety.by_member[m.user_id]! * 100)}%</span>
+                  <span className="ml-2 text-foreground/55">safety {Math.round(safety.by_member[m.user_id]! * 100)}%</span>
                 )}
               </span>
               <span className={`rounded-full px-2 py-0.5 text-xs font-medium uppercase ${
@@ -329,7 +388,7 @@ function GroupSection({ trip }: { trip: Trip }) {
         </div>
       )}
       {continuousSharing && (
-        <p className="text-xs text-foreground/45">
+        <p className="text-xs text-foreground/55">
           Updates every {CONTINUOUS_SHARE_INTERVAL_MS / 1000}s while this page stays open — there&apos;s no background
           app in this build, so closing the tab pauses it.
         </p>
@@ -415,9 +474,9 @@ function ExpensesSection({ trip }: { trip: Trip }) {
                   {e.currency} {e.amount}
                 </span>
                 <span className="ml-2 text-foreground/55">{e.category}</span>
-                {e.description && <span className="ml-2 text-foreground/45">— {e.description}</span>}
+                {e.description && <span className="ml-2 text-foreground/55">— {e.description}</span>}
               </div>
-              <button onClick={() => onDelete(e.id)} className="text-foreground/40 hover:text-danger">
+              <button onClick={() => onDelete(e.id)} className="text-foreground/55 hover:text-danger">
                 Remove
               </button>
             </li>
@@ -428,7 +487,300 @@ function ExpensesSection({ trip }: { trip: Trip }) {
   );
 }
 
-function ItineraryView({ itinerary }: { itinerary: Itinerary }) {
+function ItineraryItemRow({
+  item,
+  tripId,
+  itineraryId,
+  onUpdated,
+}: {
+  item: ItineraryItem;
+  tripId: string;
+  itineraryId: string;
+  onUpdated: (item: ItineraryItem) => void;
+}) {
+  const { token } = useAuth();
+  const { online, enqueueItineraryItem } = useOfflineQueue();
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(item.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function applyUpdate(patch: { note?: string; completed?: boolean }) {
+    if (!token) return;
+    setBusy(true);
+    setMessage(null);
+    const baseVersion = item.item_version;
+    try {
+      if (!online) {
+        await enqueueItineraryItem({ item_id: item.id, base_item_version: baseVersion, ...patch });
+        onUpdated({ ...item, ...patch });
+        setMessage("Saved on this device — will sync once you're back online.");
+        return;
+      }
+      try {
+        const updated = await api.updateItineraryItem(
+          tripId,
+          itineraryId,
+          item.id,
+          { base_item_version: baseVersion, ...patch },
+          token
+        );
+        onUpdated(updated);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          await enqueueItineraryItem({ item_id: item.id, base_item_version: baseVersion, ...patch });
+          onUpdated({ ...item, ...patch });
+          setMessage("Saved on this device — will sync once you're back online.");
+        } else if (isApiError(err) && (err.code === "ITEM_VERSION_CONFLICT" || err.code === "ITINERARY_SUPERSEDED")) {
+          setMessage("This was changed elsewhere — your edit didn't apply. Refresh to see the latest.");
+        } else {
+          setMessage(isApiError(err) ? err.message : "Could not save this change.");
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function saveNote() {
+    setEditingNote(false);
+    if (noteDraft !== (item.note ?? "")) applyUpdate({ note: noteDraft });
+  }
+
+  return (
+    <li className="relative">
+      <span className="absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
+      <div className="rounded-xl border border-border bg-surface p-4 text-sm">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => applyUpdate({ completed: !item.completed })}
+              disabled={busy}
+              aria-label={item.completed ? "Mark as not done" : "Mark as done"}
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] transition ${
+                item.completed ? "border-success bg-success text-white" : "border-border text-transparent"
+              }`}
+            >
+              ✓
+            </button>
+            <span className={`font-medium ${item.completed ? "text-foreground/55 line-through" : ""}`}>
+              {item.attraction_name ?? "Unnamed stop"}
+            </span>
+          </div>
+          {item.scheduled_time ? (
+            <span className="whitespace-nowrap text-xs text-foreground/50">
+              {new Date(item.scheduled_time).toLocaleString(undefined, {
+                weekday: "short",
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </span>
+          ) : item.time_of_day ? (
+            <span className="whitespace-nowrap text-xs text-foreground/50">
+              {TIME_OF_DAY_LABELS[item.time_of_day] ?? item.time_of_day}
+            </span>
+          ) : null}
+        </div>
+        {item.explanation && <p className="mt-1.5 text-foreground/70">{item.explanation}</p>}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {item.reason_code && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-foreground/60">
+              {REASON_CODE_LABELS[item.reason_code] ?? item.reason_code}
+            </span>
+          )}
+          {item.nearest_accessible_facility_m != null && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+              ♿ {Math.round(item.nearest_accessible_facility_m)}m to nearest verified accessible facility
+            </span>
+          )}
+        </div>
+        {editingNote ? (
+          <div className="mt-2 flex gap-2">
+            <input
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              onBlur={saveNote}
+              onKeyDown={(e) => e.key === "Enter" && saveNote()}
+              autoFocus
+              placeholder="Add a note…"
+              className="flex-1 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditingNote(true)}
+            className="mt-2 text-xs text-foreground/55 underline decoration-dotted hover:text-foreground/70"
+          >
+            {item.note || "Add a note"}
+          </button>
+        )}
+        {message && <p className="mt-1.5 text-xs text-primary">{message}</p>}
+      </div>
+    </li>
+  );
+}
+
+function AdaptationBanner({ trip, onApplied }: { trip: Trip; onApplied: (itinerary: Itinerary) => void }) {
+  const { token } = useAuth();
+  const [proposals, setProposals] = useState<AdaptationProposal[]>([]);
+  const [checking, setChecking] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function refresh() {
+    if (!token) return;
+    api.listTripAdaptations(trip.id, token).then(setProposals).catch(() => {});
+  }
+
+  useEffect(refresh, [token, trip.id]);
+
+  // Progressive enhancement, same pattern as GroupSection's `location:group`
+  // subscription above: a real WS push from the adaptation engine
+  // (backend/app/domains/adaptation/service.py's `process_event`) refreshes
+  // this list immediately, but the "Check for trip updates" button below
+  // still works with zero real-time infra if the socket is down.
+  const { subscribe } = useRealtimeConnection(token ? { token } : null);
+  useEffect(() => {
+    return subscribe(`adaptation:trip:${trip.id}`, refresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trip.id, token]);
+
+  async function onCheck() {
+    if (!token) return;
+    setChecking(true);
+    setError(null);
+    try {
+      await api.checkTripAdaptations(trip.id, token);
+      refresh();
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not check for updates.");
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function onAccept(proposalId: string) {
+    if (!token) return;
+    setBusyId(proposalId);
+    setError(null);
+    try {
+      await api.acceptAdaptationProposal(proposalId, token);
+      onApplied(await api.getTripItinerary(trip.id, token));
+      refresh();
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not accept this suggestion.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onReject(proposalId: string) {
+    if (!token) return;
+    setBusyId(proposalId);
+    setError(null);
+    try {
+      await api.rejectAdaptationProposal(proposalId, token);
+      refresh();
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not dismiss this suggestion.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  const pending = proposals.filter((p) => p.status === "PROPOSED");
+
+  return (
+    <div className="flex flex-col gap-3">
+      {pending.map((p) => {
+        const added = new Set(p.changes.added_attraction_ids);
+        const removed = new Set(p.changes.removed_attraction_ids);
+        return (
+          <div key={p.id} className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold text-primary">Your trip may need an update</h2>
+              <span className="whitespace-nowrap rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase text-primary">
+                {p.risk_level} impact
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-foreground/70">
+              {ADAPTATION_REASON_LABELS[p.reason_code] ?? p.reason_code}
+            </p>
+            <p className="mt-2 text-sm text-foreground/80">{p.changes.summary}</p>
+            {(added.size > 0 || removed.size > 0) && (
+              <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
+                {p.changes.proposed_items
+                  .filter((i) => added.has(i.attraction_id))
+                  .map((i) => (
+                    <span
+                      key={i.attraction_id}
+                      className="rounded-full bg-success/10 px-2 py-0.5 font-medium text-success"
+                    >
+                      + {i.attraction_name ?? "Unnamed stop"}
+                    </span>
+                  ))}
+                {removed.size > 0 && (
+                  <span className="rounded-full bg-surface-muted px-2 py-0.5 font-medium text-foreground/60">
+                    {removed.size} stop{removed.size > 1 ? "s" : ""} removed
+                  </span>
+                )}
+              </div>
+            )}
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => onAccept(p.id)}
+                disabled={busyId === p.id}
+                className="rounded-full bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              >
+                {busyId === p.id ? "Applying…" : "Accept"}
+              </button>
+              <button
+                onClick={() => onReject(p.id)}
+                disabled={busyId === p.id}
+                className="rounded-full border border-border px-4 py-1.5 text-xs font-medium hover:bg-surface-muted disabled:opacity-50"
+              >
+                Keep current plan
+              </button>
+            </div>
+          </div>
+        );
+      })}
+      <button
+        onClick={onCheck}
+        disabled={checking}
+        className="self-start text-xs font-medium text-foreground/50 underline decoration-dotted hover:text-foreground/80 disabled:opacity-50"
+      >
+        {checking ? "Checking…" : "Check for trip updates"}
+      </button>
+      {error && <p className="text-xs text-danger">{error}</p>}
+    </div>
+  );
+}
+
+function ItineraryView({
+  trip,
+  itinerary,
+  onItemUpdated,
+}: {
+  trip: Trip;
+  itinerary: Itinerary;
+  onItemUpdated: (item: ItineraryItem) => void;
+}) {
+  // Real calendar dates give a natural chronological read on their own; a
+  // duration-only trip (no start_date) has none, so day_offset/time_of_day
+  // (the AI's own real output, now persisted — see backend/app/domains/
+  // travel/planner.py) become the only real structure to group by.
+  const hasScheduledTimes = itinerary.items.some((i) => i.scheduled_time);
+  const byDay = new Map<number, ItineraryItem[]>();
+  if (!hasScheduledTimes) {
+    for (const item of itinerary.items) {
+      const day = item.day_offset ?? 0;
+      const bucket = byDay.get(day);
+      if (bucket) bucket.push(item);
+      else byDay.set(day, [item]);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between text-sm text-foreground/60">
@@ -437,33 +789,58 @@ function ItineraryView({ itinerary }: { itinerary: Itinerary }) {
           Generated by {itinerary.generated_by}
         </span>
       </div>
-      <ol className="relative flex flex-col gap-4 border-l border-border pl-5">
-        {itinerary.items.map((item) => (
-          <li key={item.id} className="relative">
-            <span className="absolute -left-[26px] top-1.5 h-2.5 w-2.5 rounded-full bg-primary" />
-            <div className="rounded-xl border border-border bg-surface p-4 text-sm">
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">{item.attraction_name ?? "Unnamed stop"}</span>
-                {item.scheduled_time && (
-                  <span className="whitespace-nowrap text-xs text-foreground/50">
-                    {new Date(item.scheduled_time).toLocaleString(undefined, {
-                      weekday: "short",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                )}
-              </div>
-              {item.explanation && <p className="mt-1.5 text-foreground/70">{item.explanation}</p>}
-              {item.nearest_accessible_facility_m != null && (
-                <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
-                  ♿ {Math.round(item.nearest_accessible_facility_m)}m to nearest verified accessible facility
-                </span>
-              )}
+
+      {itinerary.replan_reason && (
+        <p className="rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
+          Replanned{itinerary.previous_version != null ? ` from v${itinerary.previous_version}` : ""} because:{" "}
+          {itinerary.replan_reason}
+        </p>
+      )}
+
+      {itinerary.unmatched_avoid_terms.length > 0 && (
+        <p className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+          No real data to exclude for: {itinerary.unmatched_avoid_terms.join(", ")}
+        </p>
+      )}
+
+      {hasScheduledTimes ? (
+        <ol className="relative flex flex-col gap-4 border-l border-border pl-5">
+          {itinerary.items.map((item) => (
+            <ItineraryItemRow
+              key={item.id}
+              item={item}
+              tripId={trip.id}
+              itineraryId={itinerary.id}
+              onUpdated={onItemUpdated}
+            />
+          ))}
+        </ol>
+      ) : (
+        [...byDay.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([day, items]) => (
+            <div key={day} className="flex flex-col gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground/50">Day {day + 1}</h3>
+              <ol className="relative flex flex-col gap-3 border-l border-border pl-5">
+                {items.map((item) => (
+                  <ItineraryItemRow
+                    key={item.id}
+                    item={item}
+                    tripId={trip.id}
+                    itineraryId={itinerary.id}
+                    onUpdated={onItemUpdated}
+                  />
+                ))}
+              </ol>
             </div>
-          </li>
-        ))}
-      </ol>
+          ))
+      )}
+
+      <div className="rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
+        {itinerary.cost_estimate_available && itinerary.total_cost != null
+          ? `Estimated cost: ${itinerary.currency} ${itinerary.total_cost}`
+          : "Cost estimates aren't available for this itinerary — no attraction has real price data yet."}
+      </div>
     </div>
   );
 }
@@ -542,13 +919,12 @@ function ReplanForm({ itineraryId, onReplanned }: { itineraryId: string; onRepla
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!token) return;
+  async function submitReplan(reasonText: string, quickAction?: QuickReplanAction) {
+    if (!token || !reasonText.trim()) return;
     setError(null);
     setSubmitting(true);
     try {
-      const itinerary = await api.replanItinerary(itineraryId, { reason }, token);
+      const itinerary = await api.replanItinerary(itineraryId, { reason: reasonText, quick_action: quickAction }, token);
       onReplanned(itinerary);
       setReason("");
     } catch (err) {
@@ -558,20 +934,37 @@ function ReplanForm({ itineraryId, onReplanned }: { itineraryId: string; onRepla
     }
   }
 
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    await submitReplan(reason);
+  }
+
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-2 rounded-2xl border border-border bg-surface-muted p-5">
       <h2 className="text-sm font-medium">Not quite right? Replan it</h2>
+      <div className="flex flex-wrap gap-1.5">
+        {QUICK_REPLAN_ACTIONS.map((qa) => (
+          <button
+            key={qa.value}
+            type="button"
+            disabled={submitting}
+            onClick={() => submitReplan(qa.label, qa.value)}
+            className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium hover:bg-surface-muted disabled:opacity-50"
+          >
+            {qa.label}
+          </button>
+        ))}
+      </div>
       <input
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        required
         placeholder="e.g. It's raining, prefer indoor sights"
         className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
       />
       {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
-        disabled={submitting}
+        disabled={submitting || !reason.trim()}
         className="self-start rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-muted disabled:opacity-50"
       >
         {submitting ? "Replanning…" : "Replan"}
@@ -597,9 +990,48 @@ function CarbonFootprintCard({ tripId }: { tripId: string }) {
       <p className="mt-1 text-foreground/70">
         ~{footprint.total_distance_km} km between stops · ~{footprint.estimated_kg_co2} kg CO₂
       </p>
-      <p className="mt-1 text-xs text-foreground/45">
+      <p className="mt-1 text-xs text-foreground/55">
         A rough distance-based estimate, not a certified calculation — actual footprint depends on transport mode.
       </p>
+    </div>
+  );
+}
+
+function RestaurantsPanel({ destinationId }: { destinationId: string }) {
+  const [businesses, setBusinesses] = useState<Business[] | null>(null);
+
+  useEffect(() => {
+    api
+      .listBusinesses({ destination_id: destinationId, category: "RESTAURANT" })
+      .then(setBusinesses)
+      .catch(() => setBusinesses([]));
+  }, [destinationId]);
+
+  if (businesses === null) return null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5">
+      <h2 className="text-sm font-medium">Where to eat</h2>
+      <p className="mt-0.5 text-xs text-foreground/50">
+        Real, separately verified businesses near this destination — not part of the AI-planned itinerary above.
+      </p>
+      {businesses.length === 0 ? (
+        <p className="mt-3 text-sm text-foreground/60">No listed restaurants for this destination yet.</p>
+      ) : (
+        <ul className="mt-3 flex flex-col gap-2">
+          {businesses.slice(0, 5).map((b) => (
+            <li
+              key={b.id}
+              className="flex items-center justify-between rounded-xl border border-border bg-surface-muted px-3 py-2 text-sm"
+            >
+              <Link href={`/businesses/${b.id}`} className="font-medium hover:text-primary">
+                {b.name}
+              </Link>
+              {b.is_verified && <span className="text-xs font-medium text-success">Verified</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -613,25 +1045,62 @@ function TripDetail() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [staleSince, setStaleSince] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token || !tripId) return;
-    Promise.all([
-      api.getTrip(tripId, token),
-      api.getTripItinerary(tripId, token).catch((err) => {
-        if (isApiError(err) && err.status === 404) return null;
-        throw err;
-      }),
-      api.listDestinations(),
-    ])
-      .then(([t, it, dests]) => {
+    const authToken = token;
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [t, it, dests] = await Promise.all([
+          api.getTrip(tripId, authToken),
+          api.getTripItinerary(tripId, authToken).catch((err) => {
+            if (isApiError(err) && err.status === 404) return null;
+            throw err;
+          }),
+          api.listDestinations(),
+        ]);
+        if (cancelled) return;
         setTrip(t);
         setItinerary(it);
         setDestinations(dests);
-      })
-      .catch(() => setError("Could not load this trip."))
-      .finally(() => setLoading(false));
+        setStaleSince(null);
+        void cacheTrip(tripId, t);
+        if (it) void cacheItinerary(tripId, it);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof NetworkError) {
+          const [cachedTrip, cachedItinerary] = await Promise.all([
+            getCachedTrip<Trip>(tripId),
+            getCachedItinerary<Itinerary>(tripId),
+          ]);
+          if (cancelled) return;
+          if (cachedTrip) {
+            setTrip(cachedTrip.data);
+            setItinerary(cachedItinerary?.data ?? null);
+            setStaleSince(cachedTrip.cached_at);
+          } else {
+            setError("You're offline, and this trip hasn't been saved on this device yet.");
+          }
+        } else {
+          setError("Could not load this trip.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [token, tripId]);
+
+  function onItemUpdated(updated: ItineraryItem) {
+    setItinerary((prev) => (prev ? { ...prev, items: prev.items.map((i) => (i.id === updated.id ? updated : i)) } : prev));
+  }
 
   async function togglePublic() {
     if (!token || !trip) return;
@@ -639,11 +1108,35 @@ function TripDetail() {
     setTrip(updated);
   }
 
-  if (loading) return <p className="text-sm text-foreground/60">Loading…</p>;
+  if (loading) {
+    return (
+      <div className="mx-auto flex max-w-lg flex-col gap-6" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading trip…</span>
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-11 w-11 shrink-0 rounded-xl" />
+          <div className="flex-1">
+            <Skeleton className="h-7 w-2/3" />
+            <Skeleton className="mt-2 h-4 w-1/3" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </div>
+    );
+  }
   if (error || !trip) return <p className="text-sm text-danger">{error ?? "Trip not found."}</p>;
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
+      {staleSince && (
+        <p className="rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
+          Showing data saved {formatRelativeTime(staleSince)} — you&apos;re offline, so this may not reflect the
+          latest changes.
+        </p>
+      )}
       <div className="flex items-start gap-3">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <CalendarIcon width={20} height={20} />
@@ -651,14 +1144,22 @@ function TripDetail() {
         <div className="flex-1">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">{trip.title ?? "Untitled trip"}</h1>
-            <button
-              onClick={togglePublic}
-              className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${
-                trip.is_public ? "bg-success/10 text-success" : "bg-surface-muted text-foreground/60"
-              }`}
-            >
-              {trip.is_public ? "Public journal" : "Make public"}
-            </button>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/trips/${trip.id}/chat`}
+                className="whitespace-nowrap rounded-full border border-border px-3 py-1 text-xs font-medium hover:bg-surface-muted"
+              >
+                Trip chat
+              </Link>
+              <button
+                onClick={togglePublic}
+                className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${
+                  trip.is_public ? "bg-success/10 text-success" : "bg-surface-muted text-foreground/60"
+                }`}
+              >
+                {trip.is_public ? "Public journal" : "Make public"}
+              </button>
+            </div>
           </div>
           <p className="text-sm text-foreground/60">
             {trip.status}
@@ -669,9 +1170,11 @@ function TripDetail() {
 
       {itinerary ? (
         <>
-          <ItineraryView itinerary={itinerary} />
+          <AdaptationBanner trip={trip} onApplied={setItinerary} />
+          <ItineraryView trip={trip} itinerary={itinerary} onItemUpdated={onItemUpdated} />
           <ReplanForm itineraryId={itinerary.id} onReplanned={setItinerary} />
           <CarbonFootprintCard tripId={trip.id} />
+          {itinerary.destination_id && <RestaurantsPanel destinationId={itinerary.destination_id} />}
         </>
       ) : (
         <GenerateItineraryForm tripId={trip.id} destinations={destinations} onGenerated={setItinerary} />

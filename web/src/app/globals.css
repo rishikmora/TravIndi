@@ -84,6 +84,20 @@ h3 {
   background: rgba(183, 106, 50, 0.25);
 }
 
+/* A physical "press" on every real button site-wide — the one micro-
+   interaction class of feedback that was entirely missing (only :hover
+   existed anywhere). Purely visual, so it layers safely under whatever
+   hover transform a button already has; reduced-motion zeroes the
+   transition duration via the wildcard rule below, same as everything
+   else. Excludes disabled buttons — a press-down on something inert
+   would read as a lie about what just happened. */
+button:not(:disabled) {
+  transition: transform 0.1s ease;
+}
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,

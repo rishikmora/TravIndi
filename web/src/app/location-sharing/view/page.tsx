@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { isApiError } from "@/lib/auth-context";
 import { api, type LocationShareRecipientView } from "@/lib/api";
+import { useRealtimeConnection, type RealtimeEvent } from "@/lib/realtime/useRealtimeConnection";
 import { AlertTriangleIcon, ClockIcon, LocateIcon, MapPinIcon } from "@/components/icons";
 
 const LocationShareMap = dynamic(() => import("@/components/LocationShareMap").then((m) => m.LocationShareMap), {
@@ -80,6 +81,35 @@ function VerifyPanel() {
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [shareId, accessToken]);
+
+  // Progressive enhancement over the poll above: the same share-link
+  // token authenticates a WebSocket connection (no account needed, same
+  // as the REST recipient-view endpoint) scoped to exactly this share's
+  // channel, so an update/expiry/revoke arrives instantly instead of
+  // waiting for the next 5s tick. Polling keeps running regardless — if
+  // the socket is down, this page still works exactly as before.
+  const { subscribe } = useRealtimeConnection(accessToken ? { shareToken: accessToken } : null);
+  useEffect(() => {
+    if (!shareId) return;
+    return subscribe(`location:share:${shareId}`, (event: RealtimeEvent) => {
+      if (event.type === "location.updated") {
+        setResult((prev) =>
+          prev
+            ? {
+                ...prev,
+                current_location: (event.current_location as LocationShareRecipientView["current_location"]) ?? prev.current_location,
+                last_location_at: event.last_location_at as string,
+                is_live: event.is_live as boolean,
+              }
+            : prev
+        );
+        setConnectionLost(false);
+      } else if (event.type === "location.revoked" || event.type === "location.expired") {
+        pollingRef.current = false;
+        setResult((prev) => (prev ? { ...prev, status: event.type === "location.revoked" ? "REVOKED" : "EXPIRED" } : prev));
+      }
+    });
+  }, [shareId, subscribe]);
 
   if (!shareId || !accessToken) {
     return (
@@ -185,7 +215,11 @@ export default function LocationShareViewPage() {
       <Suspense
         fallback={
           <div className="mx-auto flex max-w-sm flex-col items-center gap-3 pt-12 text-center">
-            <p className="text-sm text-foreground/60">Loading…</p>
+            <span className="sr-only">Loading…</span>
+            <span
+              aria-hidden
+              className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary motion-reduce:animate-none"
+            />
           </div>
         }
       >

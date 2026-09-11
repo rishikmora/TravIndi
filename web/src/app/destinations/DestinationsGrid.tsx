@@ -21,7 +21,7 @@ export function DestinationsGrid({
     <>
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {destinations.map((d, i) => (
-          <li key={d.id} className="animate-fade-in-up" style={{ animationDelay: `${i * 40}ms` }}>
+          <li key={d.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
             <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-md">
               <Link href={`/destinations/${d.id}`} className="washed relative block h-36 w-full bg-surface-muted">
                 {d.image_url ? (

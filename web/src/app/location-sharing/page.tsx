@@ -16,6 +16,7 @@ import {
   type TrustedContact,
 } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geolocation";
+import { useRealtimeConnection, type RealtimeEvent } from "@/lib/realtime/useRealtimeConnection";
 import {
   AlertTriangleIcon,
   ClockIcon,
@@ -33,10 +34,11 @@ const LocationShareMap = dynamic(() => import("@/components/LocationShareMap").t
   ),
 });
 
-// Same 5s authenticated-poll idiom as ActiveSosCard (web/src/app/sos/page.tsx)
-// and the 30s crowd-heatmap poll — no WebSocket/push infrastructure exists
-// anywhere in this codebase (app/websocket/__init__.py is an unbuilt
-// placeholder), so this is the honest, already-established "live" pattern.
+// A real WebSocket layer now exists (app/websocket/) and pushes updates the
+// instant a ping/revoke/expiry happens — subscribed below, per active share.
+// Polling stays as the safety net it always was (same 5s idiom as
+// ActiveSosCard) rather than being removed: if the socket is down, this
+// page still works exactly as it did before the realtime layer existed.
 const POLL_INTERVAL_MS = 5000;
 // How often the browser tab pushes a fresh fix while a trusted-contact
 // share is active. Requires this tab to stay open — there is no background
@@ -624,7 +626,8 @@ function LocationSharingPanel() {
 
   // Poll the server every 5s while anything is active — the same pattern
   // as ActiveSosCard, so lazy server-side expiry and staleness are
-  // reflected without the user having to reload.
+  // reflected without the user having to reload. Stays as a safety net
+  // even with the WebSocket subscription below.
   useEffect(() => {
     if (!token || activeShares.length === 0) return;
     const interval = setInterval(() => {
@@ -632,6 +635,39 @@ function LocationSharingPanel() {
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [token, activeShares.length]);
+
+  const { subscribe: subscribeRealtime } = useRealtimeConnection(token ? { token } : null);
+  const contactShareIdsForRealtime = activeShares
+    .filter((s) => s.recipient_type === "TRUSTED_CONTACT")
+    .map((s) => s.id)
+    .join(",");
+
+  useEffect(() => {
+    if (!contactShareIdsForRealtime) return;
+    const unsubscribes = contactShareIdsForRealtime.split(",").map((shareId) =>
+      subscribeRealtime(`location:share:${shareId}`, (event: RealtimeEvent) => {
+        setShares((prev) =>
+          (prev ?? []).map((s) => {
+            if (s.id !== shareId) return s;
+            if (event.type === "location.updated") {
+              return {
+                ...s,
+                current_location: (event.current_location as LocationShare["current_location"]) ?? s.current_location,
+                last_location_at: event.last_location_at as string,
+                is_live: event.is_live as boolean,
+              };
+            }
+            if (event.type === "location.revoked" || event.type === "location.expired") {
+              return { ...s, status: event.type === "location.revoked" ? "REVOKED" : "EXPIRED" };
+            }
+            return s;
+          })
+        );
+      })
+    );
+    return () => unsubscribes.forEach((u) => u());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contactShareIdsForRealtime]);
 
   const contactShareIds = activeShares
     .filter((s) => s.recipient_type === "TRUSTED_CONTACT")
@@ -809,7 +845,7 @@ function LocationSharingPanel() {
         )}
       </div>
 
-      <p className="text-xs text-foreground/45">
+      <p className="text-xs text-foreground/55">
         Live updates while this page is open (checks every {POLL_INTERVAL_MS / 1000}s) — there is no background app or
         native push in this build, so closing the tab pauses updates until you reopen it.
       </p>

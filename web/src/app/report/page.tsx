@@ -4,8 +4,9 @@ import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
-import { api, type Incident } from "@/lib/api";
+import { api, NetworkError, type Incident } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geolocation";
+import { useOfflineQueue } from "@/lib/offline/useOfflineQueue";
 import { CheckCircleIcon, ClockIcon, MapPinIcon } from "@/components/icons";
 
 const INCIDENT_TYPES: { value: string; label: string }[] = [
@@ -57,11 +58,13 @@ function MyReports({ reports }: { reports: Incident[] }) {
 
 function ReportForm() {
   const { token } = useAuth();
+  const { online, enqueueIncident } = useOfflineQueue();
   const [incidentType, setIncidentType] = useState("theft");
   const [severity, setSeverity] = useState("medium");
   const [description, setDescription] = useState("");
   const [reports, setReports] = useState<Incident[]>([]);
   const [justSubmitted, setJustSubmitted] = useState<Incident | null>(null);
+  const [queuedOffline, setQueuedOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -77,18 +80,59 @@ function ReportForm() {
     setSubmitting(true);
     try {
       const { coords } = await getCurrentPosition();
-      const incident = await api.createIncident(
-        { incident_type: incidentType, severity, lon: coords.lon, lat: coords.lat, description: description || undefined },
-        token
-      );
-      setJustSubmitted(incident);
-      setReports((r) => [incident, ...r]);
-      setDescription("");
+      const payload = {
+        incident_type: incidentType,
+        severity,
+        lon: coords.lon,
+        lat: coords.lat,
+        description: description || undefined,
+      };
+      if (!online) {
+        await enqueueIncident(payload);
+        setQueuedOffline(true);
+        setDescription("");
+        return;
+      }
+      try {
+        const incident = await api.createIncident(payload, token);
+        setJustSubmitted(incident);
+        setReports((r) => [incident, ...r]);
+        setDescription("");
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          await enqueueIncident(payload);
+          setQueuedOffline(true);
+          setDescription("");
+        } else {
+          throw err;
+        }
+      }
     } catch (err) {
       setError(isApiError(err) ? err.message : "Could not submit the report.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (queuedOffline) {
+    return (
+      <div className="mx-auto flex max-w-sm flex-col gap-6">
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-6 text-center">
+          <CheckCircleIcon width={32} height={32} className="text-primary" />
+          <h1 className="font-display text-xl">Report saved on this device</h1>
+          <p className="text-sm text-foreground/60">
+            No connection right now — it will be submitted automatically as soon as you&apos;re back online.
+          </p>
+          <button
+            onClick={() => setQueuedOffline(false)}
+            className="rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+          >
+            Report another incident
+          </button>
+        </div>
+        <MyReports reports={reports} />
+      </div>
+    );
   }
 
   if (justSubmitted) {

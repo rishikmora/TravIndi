@@ -48,7 +48,7 @@ export function HeritageStory({ destinationId }: { destinationId: string }) {
       {story && (
         <div className="mt-2">
           <p className="text-sm leading-relaxed text-foreground/80">{story.story}</p>
-          <p className="mt-2 text-xs text-foreground/45">
+          <p className="mt-2 text-xs text-foreground/55">
             {story.grounded
               ? `Grounded in ${story.sources.length} real reference source${story.sources.length === 1 ? "" : "s"} — a real Claude call, not a canned blurb.`
               : "Not enough verified material yet — shown honestly rather than invented."}

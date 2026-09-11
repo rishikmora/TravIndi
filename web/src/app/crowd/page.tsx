@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api, type CrowdHeatmapPoint } from "@/lib/api";
 import { CrowdIcon, RefreshIcon, SparkleIcon } from "@/components/icons";
 import { riskColor } from "@/lib/crowd-risk-color";
+import { ListSkeleton, Skeleton } from "@/components/Skeleton";
 
 const CrowdHeatmapMap = dynamic(
   () => import("@/components/CrowdHeatmapMap").then((m) => m.CrowdHeatmapMap),
@@ -118,7 +119,7 @@ export default function CrowdHeatmapPage() {
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <div className="h-[480px] overflow-hidden rounded-2xl border border-border">
           {points === null ? (
-            <div className="flex h-full items-center justify-center text-sm text-foreground/50">Loading…</div>
+            <Skeleton className="h-full w-full rounded-none" />
           ) : (
             <CrowdHeatmapMap points={points} />
           )}
@@ -149,7 +150,7 @@ export default function CrowdHeatmapPage() {
 
           <div>
             <h2 className="text-sm font-semibold">Highest risk right now</h2>
-            {ranking === null && <p className="mt-2 text-sm text-foreground/60">Loading…</p>}
+            {ranking === null && <ListSkeleton count={5} className="mt-2" />}
             {ranking && ranking.length === 0 && <p className="mt-2 text-sm text-foreground/60">No risk data yet.</p>}
             {ranking && ranking.length > 0 && (
               <ul className="mt-2 flex flex-col gap-2">
@@ -161,7 +162,7 @@ export default function CrowdHeatmapPage() {
           </div>
 
           {lastUpdated && (
-            <p className="text-xs text-foreground/45">Last updated {lastUpdated.toLocaleTimeString()} · auto-refreshes every 30s</p>
+            <p className="text-xs text-foreground/55">Last updated {lastUpdated.toLocaleTimeString()} · auto-refreshes every 30s</p>
           )}
         </div>
       </div>

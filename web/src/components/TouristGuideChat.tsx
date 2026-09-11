@@ -119,7 +119,7 @@ export function TouristGuideChat({ compact = false }: { compact?: boolean }) {
                     <>
                       <p>{ex.answer?.answer}</p>
                       {ex.answer && ex.answer.sources.length > 0 && (
-                        <p className="mt-1.5 flex items-center gap-1 text-xs text-foreground/45">
+                        <p className="mt-1.5 flex items-center gap-1 text-xs text-foreground/55">
                           <SparkleIcon width={10} height={10} className="text-accent" />
                           {ex.answer.sources.map((s) => s.document_title).join(", ")}
                         </p>

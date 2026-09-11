@@ -43,6 +43,7 @@ from app.core.keycloak_admin import create_user, get_user_id_by_email
 from app.db.session import get_engine, get_session_factory
 from app.domains.booking.models import Booking, BookingStatus, Ticket
 from app.domains.business.models import (
+    TRANSPORT_CATEGORIES,
     Availability,
     Business,
     BusinessCategory,
@@ -80,6 +81,9 @@ _DEMO_ACCOUNTS: list[tuple[str, str, str]] = [
     ("arjun.eats@travindi-demo.in", "business", "business"),
     ("fatima.crafts@travindi-demo.in", "business", "business"),
     ("suresh.cabs@travindi-demo.in", "business", "business"),
+    ("skylink.air@travindi-demo.in", "business", "business"),
+    ("bharatrail.express@travindi-demo.in", "business", "business"),
+    ("roadrunner.travels@travindi-demo.in", "business", "business"),
     ("ananya.guide@travindi-demo.in", "guide", "guide"),
     ("vikram.guide@travindi-demo.in", "guide", "guide"),
     ("lakshmi.guide@travindi-demo.in", "guide", "guide"),
@@ -172,6 +176,53 @@ _BUSINESSES: list[dict[str, Any]] = [
         "service_name": "Airport Transfer (Sedan)",
         "base_price": 600.0,
         "slot_capacity": 3,
+    },
+    # Transport (flight/train/bus) — the only real schema difference from
+    # the rows above is `route_destination` (a second, real seeded
+    # destination this row's service actually travels to); `_seed_businesses`
+    # below wires both ends into `Service.origin_destination_id`/
+    # `destination_destination_id` for any TRANSPORT_CATEGORIES row.
+    {
+        "owner_email": "skylink.air@travindi-demo.in",
+        "name": "SkyLink Airlines",
+        "category": BusinessCategory.AIRLINE,
+        "destination": "India Gate",
+        "route_destination": "Golden Temple",
+        "lon": 77.2295,
+        "lat": 28.6129,
+        "description": "Domestic carrier operating a daily Delhi–Amritsar service.",
+        "verification": VerificationStatus.APPROVED,
+        "service_name": "Delhi → Amritsar",
+        "base_price": 4500.0,
+        "slot_capacity": 45,
+    },
+    {
+        "owner_email": "bharatrail.express@travindi-demo.in",
+        "name": "Bharat Rail Express",
+        "category": BusinessCategory.RAILWAY,
+        "destination": "Taj Mahal",
+        "route_destination": "Amber Fort",
+        "lon": 78.0421,
+        "lat": 27.1751,
+        "description": "Intercity rail service on the real Agra–Jaipur Golden Triangle route.",
+        "verification": VerificationStatus.APPROVED,
+        "service_name": "Agra → Jaipur",
+        "base_price": 350.0,
+        "slot_capacity": 120,
+    },
+    {
+        "owner_email": "roadrunner.travels@travindi-demo.in",
+        "name": "RoadRunner Travels",
+        "category": BusinessCategory.BUS_OPERATOR,
+        "destination": "Hampi",
+        "route_destination": "Meenakshi Amman Temple",
+        "lon": 76.4600,
+        "lat": 15.3350,
+        "description": "Overnight long-distance coach service between Hampi and Madurai.",
+        "verification": VerificationStatus.APPROVED,
+        "service_name": "Hampi → Madurai (Overnight)",
+        "base_price": 900.0,
+        "slot_capacity": 40,
     },
 ]
 
@@ -342,7 +393,18 @@ async def _seed_businesses(
             existing_service = result.scalar_one_or_none()
         service = existing_service
         if service is None:
-            service = Service(business_id=business.id, name=row["service_name"], base_price=row["base_price"])
+            route_destination = (
+                destinations_by_name.get(row["route_destination"]) if row["category"] in TRANSPORT_CATEGORIES else None
+            )
+            service = Service(
+                business_id=business.id,
+                name=row["service_name"],
+                base_price=row["base_price"],
+                origin_destination_id=business_destination.id
+                if row["category"] in TRANSPORT_CATEGORIES and business_destination
+                else None,
+                destination_destination_id=route_destination.id if route_destination else None,
+            )
             session.add(service)
             await session.flush()
         services_by_business[row["name"]] = service
@@ -621,7 +683,11 @@ async def seed_demo() -> None:
         users_by_email = await _seed_accounts(session)
         verifier = users_by_email["verifier.demo@travindi-demo.in"]
 
-        destination_names = {row["destination"] for row in _BUSINESSES} | {row["destination"] for row in _GUIDES}
+        destination_names = (
+            {row["destination"] for row in _BUSINESSES}
+            | {row["destination"] for row in _GUIDES}
+            | {row["route_destination"] for row in _BUSINESSES if "route_destination" in row}
+        )
         destinations_by_name = await _load_destinations(session, destination_names)
 
         businesses_by_name, services_by_business, availability_by_business = await _seed_businesses(

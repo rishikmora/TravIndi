@@ -39,6 +39,7 @@ from app.domains.tourism.models import Destination
 from app.domains.tourism.schemas import GeoPoint
 from app.domains.travel.models import Trip
 from app.schemas.common import DataResponse, ListResponse
+from app.websocket.manager import publish
 
 router = APIRouter(prefix="/group-travel", tags=["group-travel"])
 
@@ -202,12 +203,21 @@ async def update_my_location(
         existing.location = f"SRID=4326;POINT({body.lon} {body.lat})"
         existing.recorded_at = now
     await session.commit()
-    return DataResponse(
-        data=MemberLocationOut(
-            member_id=member.id, user_id=member.user_id, location=GeoPoint(lon=body.lon, lat=body.lat),
-            recorded_at=now, distance_from_centroid_meters=None, is_separated=False,
-        )
+    out = MemberLocationOut(
+        member_id=member.id, user_id=member.user_id, location=GeoPoint(lon=body.lon, lat=body.lat),
+        recorded_at=now, distance_from_centroid_meters=None, is_separated=False,
     )
+    await publish(
+        f"location:group:{trip_id}",
+        {
+            "type": "location.group_updated",
+            "trip_id": str(trip_id),
+            "user_id": str(member.user_id),
+            "location": {"lon": body.lon, "lat": body.lat},
+            "recorded_at": now.isoformat(),
+        },
+    )
+    return DataResponse(data=out)
 
 
 @router.get("/trips/{trip_id}/locations", response_model=DataResponse[GroupLocationsOut])

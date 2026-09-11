@@ -26,7 +26,7 @@ from app.domains.safety.models import Incident, IncidentStatus
 from app.domains.tourism.models import Destination, Facility
 from app.domains.travel.models import RouteMode
 
-_BUFFER_METERS = 3000
+BUFFER_METERS = 3000
 """Corridor width around the straight-line route used to find "nearby"
 incidents/destinations — a prototype-depth proxy for "along the route"
 without real road-network segments."""
@@ -83,13 +83,13 @@ async def score_route(
         await session.execute(
             select(func.count(Incident.id)).where(
                 Incident.status.in_(_OPEN_INCIDENT_STATUSES),
-                func.ST_DWithin(Incident.location, line_geog, _BUFFER_METERS),
+                func.ST_DWithin(Incident.location, line_geog, BUFFER_METERS),
             )
         )
     ).scalar_one()
 
     nearby_destination_ids = (
-        (await session.execute(select(Destination.id).where(func.ST_DWithin(Destination.location, line_geog, _BUFFER_METERS))))
+        (await session.execute(select(Destination.id).where(func.ST_DWithin(Destination.location, line_geog, BUFFER_METERS))))
         .scalars()
         .all()
     )
@@ -108,7 +108,7 @@ async def score_route(
             await session.execute(
                 select(func.count(Facility.id)).where(
                     func.lower(Facility.facility_type).in_(_ACCESSIBILITY_FACILITY_TYPES),
-                    func.ST_DWithin(Facility.location, line_geog, _BUFFER_METERS),
+                    func.ST_DWithin(Facility.location, line_geog, BUFFER_METERS),
                 )
             )
         ).scalar_one()
@@ -146,7 +146,7 @@ async def score_route(
         "distance_km": round(distance_km, 2),
         "nearby_open_incident_count": incident_count,
         "avg_crowd_risk_nearby": round(avg_crowd_risk, 3) if avg_crowd_risk is not None else None,
-        "corridor_buffer_meters": _BUFFER_METERS,
+        "corridor_buffer_meters": BUFFER_METERS,
         "note": (
             "Straight-line corridor heuristic scored against live incident/crowd data — "
             "no road-network routing engine (OSRM) in this prototype; geometry is a "

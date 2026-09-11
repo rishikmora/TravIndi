@@ -160,7 +160,7 @@ export default async function DestinationDetailPage({
           <p className="text-sm text-foreground/65">Let the AI planner build a day-by-day itinerary here.</p>
         </div>
         <Link
-          href="/trips/plan"
+          href={`/trips/plan?destination=${destination.id}`}
           className="inline-flex w-fit items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
         >
           Plan with AI

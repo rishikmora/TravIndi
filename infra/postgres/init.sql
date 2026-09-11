@@ -27,3 +27,5 @@ CREATE SCHEMA IF NOT EXISTS financial; -- P2 feature-blueprint pass, added 2026-
 CREATE SCHEMA IF NOT EXISTS group_travel; -- P2 feature-blueprint pass, added 2026-09-08
 CREATE SCHEMA IF NOT EXISTS social; -- P2 feature-blueprint pass, added 2026-09-08
 CREATE SCHEMA IF NOT EXISTS location_sharing; -- Live Location Sharing feature, added 2026-09-11
+CREATE SCHEMA IF NOT EXISTS sync; -- Offline-first sync idempotency ledger, added 2026-09-11
+CREATE SCHEMA IF NOT EXISTS chat; -- Chatrooms (conversations/messages), added 2026-09-11

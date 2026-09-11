@@ -223,8 +223,10 @@ export default function GuidesPage() {
 
       {guides !== null && guides.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {guides.map((g) => (
-            <GuideCard key={g.id} guide={g} destinationName={destinationName(g.destination_id)} />
+          {guides.map((g, i) => (
+            <div key={g.id} className="animate-fade-in-up" style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}>
+              <GuideCard guide={g} destinationName={destinationName(g.destination_id)} />
+            </div>
           ))}
         </div>
       )}

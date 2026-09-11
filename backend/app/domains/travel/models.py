@@ -67,6 +67,17 @@ class Trip(UUIDPKMixin, TimestampMixin, Base):
     for others (app/domains/social/router.py's public-journals feed). False
     by default; never flips on its own."""
 
+    # Trip-intent fields — stored on Trip (not threaded as generate_itinerary
+    # kwargs) specifically so replan_itinerary's fresh generate_itinerary
+    # call on the same Trip row keeps them for free, the same way it already
+    # keeps budget/currency today.
+    interests: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    avoid: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    pace: Mapped[str | None] = mapped_column(String(16))  # relaxed|balanced|packed
+    safety_preference: Mapped[str | None] = mapped_column(String(16))  # standard|high|very_high
+    days: Mapped[int | None]
+    nights: Mapped[int | None]
+
     itineraries: Mapped[list["Itinerary"]] = relationship(back_populates="trip")
 
 
@@ -81,6 +92,24 @@ class Itinerary(UUIDPKMixin, TimestampMixin, Base):
     generated_by: Mapped[str] = mapped_column(String(16), nullable=False, default="AI")  # AI|USER
     total_cost: Mapped[float | None] = mapped_column(Numeric(12, 2))
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
+    # Denormalized at generation time — replan_itinerary previously had to
+    # brittly re-derive this from the first item's attraction (breaks if
+    # that attraction was later deleted); also gives a stable id for
+    # destination-scoped lookups (e.g. the restaurant panel) without a
+    # second round trip through the items.
+    destination_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tourism.destinations.id"))
+    # Real, structured replan history — previously only existed inside a
+    # transient prompt string sent to Claude, never persisted anywhere.
+    replan_reason: Mapped[str | None]
+    previous_version: Mapped[int | None]
+    # Captured once at generation time (planner.py's `_plan_itinerary_
+    # candidate`, unconditionally) — the real baseline the adaptive journey
+    # engine's CROWD_CHANGE detector (app/domains/adaptation/detection.py)
+    # diffs a later reading against. Null on pre-adaptation-engine rows,
+    # meaning "no baseline captured," which the detector treats as nothing
+    # to compare against rather than a false zero.
+    baseline_crowd_risk_score: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    baseline_crowd_observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     trip: Mapped["Trip"] = relationship(back_populates="itineraries")
     items: Mapped[list["ItineraryItem"]] = relationship(
@@ -108,6 +137,13 @@ class ItineraryItem(UUIDPKMixin, TimestampMixin, Base):
 
     sequence: Mapped[int] = mapped_column(nullable=False)
     scheduled_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The AI's own PlannedItem already returns day_offset/time_of_day today
+    # (app/domains/travel/planner.py) — they were only ever used to compute
+    # scheduled_time and then discarded. Persisting them directly means a
+    # duration-only trip (no real start_date, so scheduled_time stays null)
+    # still keeps real day structure instead of degenerating to a flat list.
+    day_offset: Mapped[int | None]
+    time_of_day: Mapped[str | None] = mapped_column(String(16))  # morning|afternoon|evening
     cost: Mapped[float | None] = mapped_column(Numeric(12, 2))
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
     transport_mode: Mapped[str | None] = mapped_column(String(32))
@@ -116,6 +152,16 @@ class ItineraryItem(UUIDPKMixin, TimestampMixin, Base):
     reason_code: Mapped[str | None] = mapped_column(String(64))
     explanation: Mapped[str | None]
     score_snapshot: Mapped[dict | None] = mapped_column(JSONB)
+
+    # Real item-level mutation (offline-first upgrade) — previously the
+    # only way to change an itinerary was a whole-new AI-regenerated
+    # version. A plain integer counter, not `updated_at`, is the
+    # optimistic-concurrency precondition: a client-held JS Date truncates
+    # to millisecond precision and would cause spurious false-conflicts
+    # against a microsecond-precision DB timestamp.
+    note: Mapped[str | None]
+    completed: Mapped[bool] = mapped_column(nullable=False, default=False)
+    item_version: Mapped[int] = mapped_column(nullable=False, default=1)
 
     itinerary: Mapped["Itinerary"] = relationship(back_populates="items")
 

@@ -141,7 +141,11 @@ export default function VerifyPage() {
       <Suspense
         fallback={
           <div className="mx-auto flex max-w-sm flex-col items-center gap-3 pt-12 text-center">
-            <p className="text-sm text-foreground/60">Loading…</p>
+            <span className="sr-only">Loading…</span>
+            <span
+              aria-hidden
+              className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary motion-reduce:animate-none"
+            />
           </div>
         }
       >

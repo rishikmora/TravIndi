@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { api, ApiError, type Me } from "./api";
+import { clearAllOfflineData } from "./offline/db";
 
 const STORAGE_KEY = "travindi.tokens";
 
@@ -95,6 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveStoredTokens(null);
     setToken(null);
     setMe(null);
+    // Offline cache/queue is sensitive, user-scoped data (SOS/incident
+    // drafts, cached itinerary contents) — never let it survive past the
+    // session that created it.
+    void clearAllOfflineData();
   }
 
   async function refreshMe() {

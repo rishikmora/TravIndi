@@ -15,7 +15,13 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }, [loading, token, router]);
 
   if (loading || !token) {
-    return <p className="text-sm text-black/60 dark:text-white/60">Loading…</p>;
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading…</span>
+        <div className="h-8 w-48 animate-pulse rounded-lg bg-surface-muted motion-reduce:animate-none" />
+        <div className="h-24 w-full animate-pulse rounded-2xl bg-surface-muted motion-reduce:animate-none" />
+      </div>
+    );
   }
 
   return <>{children}</>;

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
-import { api, type Sos } from "@/lib/api";
+import { api, NetworkError, type Sos } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geolocation";
+import { useOfflineQueue } from "@/lib/offline/useOfflineQueue";
 import { CheckCircleIcon, ClockIcon, CopyIcon, MapPinIcon, ShieldIcon, UsersIcon } from "@/components/icons";
 
 const isOpen = (s: Sos) => !["RESOLVED", "CANCELLED", "FALSE_ALARM"].includes(s.status);
@@ -52,7 +53,7 @@ function StatusTimeline({ sos }: { sos: Sos }) {
             </span>
             {i < steps.length - 1 && <span className={`h-0.5 flex-1 ${steps[i + 1].done ? "bg-danger" : "bg-border"}`} />}
           </div>
-          <span className={`text-[11px] font-medium ${step.done ? "text-foreground" : "text-foreground/40"}`}>{step.label}</span>
+          <span className={`text-[11px] font-medium ${step.done ? "text-foreground" : "text-foreground/55"}`}>{step.label}</span>
         </div>
       ))}
     </div>
@@ -177,6 +178,24 @@ function ActiveSosCard({ sos, onCancelled, onUpdated }: { sos: Sos; onCancelled:
             I&apos;m safe — cancel SOS
           </button>
         ))}
+    </div>
+  );
+}
+
+function PendingSosCard({ online }: { online: boolean }) {
+  return (
+    <div className="flex w-full flex-col items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-6 text-center">
+      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/15 text-primary">
+        <ShieldIcon width={28} height={28} />
+      </span>
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">SOS saved on this device</p>
+        <p className="mt-1 text-xs text-foreground/60">
+          {online
+            ? "Sending now…"
+            : "No connection right now — it will be sent automatically as soon as you're back online."}
+        </p>
+      </div>
     </div>
   );
 }
@@ -307,6 +326,7 @@ function HistoryList({ history }: { history: Sos[] }) {
 
 function SosPanel() {
   const { token } = useAuth();
+  const { queue, online, enqueueSos, dismiss } = useOfflineQueue();
   const [active, setActive] = useState<Sos | null>(null);
   const [history, setHistory] = useState<Sos[]>([]);
   const [contactCount, setContactCount] = useState<number | null>(null);
@@ -314,7 +334,10 @@ function SosPanel() {
   const [locating, setLocating] = useState(false);
   const [usedFallbackLocation, setUsedFallbackLocation] = useState(false);
 
-  useEffect(() => {
+  const pendingSos = queue.filter((m) => m.entity_type === "sos");
+  const hasUnsentSos = pendingSos.some((m) => m.status === "LOCAL" || m.status === "SYNCING");
+
+  function refreshSos() {
     if (!token) return;
     api
       .listSos(token)
@@ -323,8 +346,24 @@ function SosPanel() {
         setActive(list.find(isOpen) ?? null);
       })
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    refreshSos();
+    if (!token) return;
     api.listTrustedContacts(token).then((list) => setContactCount(list.length)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  useEffect(() => {
+    // A queued SOS just reached the server for real (never assumed) — pick
+    // up the now-real SOS row and drop the local placeholder.
+    const confirmed = pendingSos.filter((m) => m.status === "SERVER_CONFIRMED");
+    if (confirmed.length === 0) return;
+    refreshSos();
+    confirmed.forEach((m) => dismiss(m.operation_id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSos.filter((m) => m.status === "SERVER_CONFIRMED").length]);
 
   async function onFire(emergencyType: string) {
     if (!token) return;
@@ -333,8 +372,21 @@ function SosPanel() {
     try {
       const { coords, isReal } = await getCurrentPosition();
       setUsedFallbackLocation(!isReal);
-      const sos = await api.createSos({ lon: coords.lon, lat: coords.lat, emergency_type: emergencyType }, token);
-      setActive(sos);
+      const payload = { lon: coords.lon, lat: coords.lat, emergency_type: emergencyType };
+      if (!online) {
+        await enqueueSos(payload);
+        return;
+      }
+      try {
+        const sos = await api.createSos(payload, token);
+        setActive(sos);
+      } catch (err) {
+        if (err instanceof NetworkError) {
+          await enqueueSos(payload);
+        } else {
+          throw err;
+        }
+      }
     } catch (err) {
       setError(isApiError(err) ? err.message : "Could not send SOS. Please try again.");
     } finally {
@@ -377,20 +429,22 @@ function SosPanel() {
 
       {active ? (
         <ActiveSosCard sos={active} onCancelled={onCancelled} onUpdated={onUpdated} />
+      ) : hasUnsentSos ? (
+        <PendingSosCard online={online} />
       ) : (
         <TriggerButton onFire={onFire} />
       )}
 
       {locating && <p className="text-xs text-foreground/50">Getting your location…</p>}
       {usedFallbackLocation && !locating && (
-        <p className="text-xs text-foreground/45">
+        <p className="text-xs text-foreground/55">
           Couldn&apos;t access your device location — used a default location instead.
         </p>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
 
       {!active && (
-        <p className="text-center text-xs text-foreground/45">
+        <p className="text-center text-xs text-foreground/55">
           Not an emergency?{" "}
           <Link href="/report" className="font-medium text-primary underline">
             Report an incident

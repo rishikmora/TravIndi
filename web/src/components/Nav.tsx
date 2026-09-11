@@ -110,8 +110,10 @@ export function Nav() {
           <NavLink href="/destinations">Destinations</NavLink>
           <NavLink href="/routes">Safe routes</NavLink>
           <NavLink href="/businesses">Businesses</NavLink>
+          <NavLink href="/transport">Transport</NavLink>
           <NavLink href="/guides">Guides</NavLink>
           {token && <NavLink href="/trips">My trips</NavLink>}
+          {token && <NavLink href="/messages">Messages</NavLink>}
           {token && <NavLink href="/bookings">My bookings</NavLink>}
         </div>
 

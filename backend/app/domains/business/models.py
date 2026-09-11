@@ -27,7 +27,20 @@ class BusinessCategory(enum.StrEnum):
     TAXI = "TAXI"
     ARTISAN = "ARTISAN"
     TOUR_OPERATOR = "TOUR_OPERATOR"
+    AIRLINE = "AIRLINE"
+    RAILWAY = "RAILWAY"
+    BUS_OPERATOR = "BUS_OPERATOR"
     OTHER = "OTHER"
+
+
+TRANSPORT_CATEGORIES = frozenset({BusinessCategory.AIRLINE, BusinessCategory.RAILWAY, BusinessCategory.BUS_OPERATOR})
+"""A `Service` under one of these categories is a real bookable route
+(flight/train/bus), not a hotel room or restaurant table — the only real
+difference is that its `origin_destination_id`/`destination_destination_id`
+are meaningful. Reuses the exact same `Service`+`Availability`+`Booking`+
+`Ticket` machinery every other business category already has (a scheduled
+departure IS a time-boxed, capacity-limited slot, the same shape as a
+restaurant table booking) — no new schema, no duplicated booking logic."""
 
 
 class DietaryOption(enum.StrEnum):
@@ -133,6 +146,15 @@ class Service(UUIDPKMixin, TimestampMixin, Base):
     description: Mapped[str | None]
     base_price: Mapped[float | None] = mapped_column(Numeric(12, 2))
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
+    # Only meaningful for a TRANSPORT_CATEGORIES business (a real flight/
+    # train/bus route) — null for every other category. Points at a real
+    # seeded `tourism.destinations` row rather than a free-text city name:
+    # this app's destinations are landmark-level, not city-level (see
+    # travel/planner.py's own docstring), so "book a train to the Taj
+    # Mahal" is the honest, real granularity this catalog actually has —
+    # never a fabricated city/airport code.
+    origin_destination_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tourism.destinations.id"))
+    destination_destination_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("tourism.destinations.id"))
 
     business: Mapped["Business"] = relationship(back_populates="services")
     offers: Mapped[list["Offer"]] = relationship(back_populates="service")

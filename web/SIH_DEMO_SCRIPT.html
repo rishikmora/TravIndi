@@ -1,0 +1,378 @@
+<title>SIH Demo Runbook</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --stone: #f5efe3;
+    --surface: #ffffff;
+    --surface-muted: #efe7d6;
+    --border: rgba(14, 41, 66, 0.14);
+    --ink: #0e2942;
+    --ink-soft: rgba(14, 41, 66, 0.62);
+    --ink-faint: rgba(14, 41, 66, 0.42);
+    --terracotta: #b76a32;
+    --terracotta-ink: #fbf3e7;
+    --teal: #1e806d;
+    --gold: #d9b56d;
+    --danger: #b4392f;
+    --danger-bg: rgba(217, 78, 78, 0.1);
+    --success: #3f7e56;
+    --success-bg: rgba(63, 126, 86, 0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --stone: #081a2f;
+      --surface: #0e2942;
+      --surface-muted: #123356;
+      --border: rgba(217, 181, 109, 0.22);
+      --ink: #f5efe3;
+      --ink-soft: rgba(245, 239, 227, 0.66);
+      --ink-faint: rgba(245, 239, 227, 0.44);
+      --terracotta: #d9b56d;
+      --terracotta-ink: #081a2f;
+      --teal: #2dae95;
+      --gold: #d9b56d;
+      --danger: #e07a72;
+      --danger-bg: rgba(224, 90, 90, 0.14);
+      --success: #6fbf8b;
+      --success-bg: rgba(63, 178, 116, 0.14);
+    }
+  }
+  :root[data-theme="dark"] {
+    --stone: #081a2f;
+    --surface: #0e2942;
+    --surface-muted: #123356;
+    --border: rgba(217, 181, 109, 0.22);
+    --ink: #f5efe3;
+    --ink-soft: rgba(245, 239, 227, 0.66);
+    --ink-faint: rgba(245, 239, 227, 0.44);
+    --terracotta: #d9b56d;
+    --terracotta-ink: #081a2f;
+    --teal: #2dae95;
+    --gold: #d9b56d;
+    --danger: #e07a72;
+    --danger-bg: rgba(224, 90, 90, 0.14);
+    --success: #6fbf8b;
+    --success-bg: rgba(63, 178, 116, 0.14);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--stone);
+    color: var(--ink);
+    font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--terracotta);
+  }
+  h1 {
+    font-family: 'Marcellus', Georgia, serif;
+    font-weight: 400;
+    font-size: 34px;
+    letter-spacing: 0.01em;
+    margin: 6px 0 4px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin: 0 0 28px;
+    max-width: 60ch;
+  }
+  .code {
+    font-family: 'DejaVu Sans Mono', 'Consolas', monospace;
+    font-size: 0.92em;
+    background: var(--surface-muted);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+  }
+
+  .alert {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    border: 1px solid var(--danger);
+    background: var(--danger-bg);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 28px;
+  }
+  .alert .glyph {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--danger);
+    color: var(--terracotta-ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 13px;
+    margin-top: 1px;
+  }
+  .alert h3 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--danger);
+  }
+  .alert p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+  }
+  .alert p + p { margin-top: 6px; }
+
+  .tracks {
+    display: grid;
+    gap: 18px;
+    margin-bottom: 8px;
+  }
+
+  .track {
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .track-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .track-head h2 {
+    font-family: 'Marcellus', Georgia, serif;
+    font-size: 20px;
+    font-weight: 400;
+    margin: 0;
+  }
+  .track-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .track-tag.live { background: var(--success-bg); color: var(--success); }
+  .track-tag.safe { background: var(--surface-muted); color: var(--ink-soft); }
+  .track-note {
+    margin: 0;
+    padding: 12px 22px 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 10px 12px 16px;
+    counter-reset: step;
+  }
+  ol.steps > li {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 4px 14px;
+    padding: 12px 10px;
+    border-radius: 10px;
+  }
+  ol.steps > li:not(:last-child) {
+    border-bottom: 1px dashed var(--border);
+  }
+  ol.steps > li::before {
+    content: counter(step);
+    font-family: 'Marcellus', Georgia, serif;
+    font-size: 15px;
+    color: var(--terracotta);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .step-action {
+    font-weight: 700;
+    font-size: 14.5px;
+  }
+  .step-say {
+    grid-column: 2;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .step-say b { color: var(--ink); font-weight: 700; }
+  .step-result {
+    grid-column: 2;
+    font-size: 12.5px;
+    color: var(--teal);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .step-result::before { content: "→ "; }
+
+  .fallback {
+    margin-top: 28px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    background: var(--surface);
+    padding: 18px 22px;
+  }
+  .fallback h2 {
+    font-family: 'Marcellus', Georgia, serif;
+    font-size: 18px;
+    font-weight: 400;
+    margin: 0 0 12px;
+  }
+  .fallback table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .fallback td {
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .fallback tr:last-child td { border-bottom: none; }
+  .fallback td:first-child {
+    font-weight: 700;
+    white-space: nowrap;
+    padding-right: 16px;
+    color: var(--ink);
+  }
+  .fallback td:last-child { color: var(--ink-soft); }
+
+  .footer-note {
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    text-align: center;
+  }
+
+  @media (max-width: 520px) {
+    ol.steps > li { grid-template-columns: 24px 1fr; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">TravIndi · SIH 26204</div>
+  <h1>Jury demo runbook</h1>
+  <p class="subtitle">Track B is the demo — real AI trip planning grounded in live crowd &amp; safety data, viewed from a session generated earlier. Track A (a fresh, on-stage Claude call) is confirmed unavailable for this event; go straight to Track B.</p>
+
+  <div class="alert">
+    <span class="glyph">!</span>
+    <div>
+      <h3>Track A is out for SIH day — don't attempt it live</h3>
+      <p>The Anthropic account behind <span class="code">backend/.env</span>'s key has no credits left, and won't be topped up before the event (confirmed). Any fresh AI call — new itinerary, replan, AI guide, translation — will fail with <span class="code">anthropic.BadRequestError: credit balance too low</span>.</p>
+      <p><b>What this means on stage:</b> skip Track A entirely. Track B shows the exact same AI-planning story using a real itinerary Claude already generated in an earlier session — nothing about it is faked, it's just not a fresh call. If credits ever do get restored later, Track A below still works exactly as scripted.</p>
+    </div>
+  </div>
+
+  <div class="tracks">
+    <div class="track" style="opacity:.55">
+      <div class="track-head">
+        <h2>Track A — Live AI planning</h2>
+        <span class="track-tag live">Confirmed unavailable — skip</span>
+      </div>
+      <p class="track-note">Kept here only for reference / for if credits are ever restored after SIH day. Do not attempt this live on stage.</p>
+      <ol class="steps">
+        <li>
+          <span class="step-action">Log in as <span class="code">tourist.demo1@travindi-demo.in</span> / <span class="code">Test1234!</span></span>
+          <span class="step-say">Say: <b>"This is a real traveller account, not a mock login."</b></span>
+        </li>
+        <li>
+          <span class="step-action">Open Destinations → Taj Mahal</span>
+          <span class="step-say">Point at the safety score, crowd risk, and accessible-facilities tiles.</span>
+          <span class="step-result">Real numbers computed from seeded safety/crowd rows — never fabricated.</span>
+        </li>
+        <li>
+          <span class="step-action">Click "Plan with AI" on the destination page</span>
+          <span class="step-say">Say: <b>"The planner is already grounded in this exact destination — no guessing."</b></span>
+          <span class="step-result">Form opens pre-filled with Taj Mahal + a live intelligence panel.</span>
+        </li>
+        <li>
+          <span class="step-action">Type: "One relaxed day, heritage and history, avoid too much walking, budget ₹10,000"</span>
+          <span class="step-say">Pick Interests: Heritage. Pace: Relaxed. Then click <b>Create journey</b>.</span>
+          <span class="step-result">A real Claude call returns a day-by-day plan grounded in real attractions.</span>
+        </li>
+        <li>
+          <span class="step-action">Point at one itinerary item's reason chip (e.g. "AI recommended")</span>
+          <span class="step-say">Say: <b>"Every recommendation carries a real, deterministic reason — never an invented explanation."</b></span>
+        </li>
+        <li>
+          <span class="step-action">Click a quick-replan action, e.g. "Avoid crowds"</span>
+          <span class="step-result">A new version generates with a visible replan reason and version history.</span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="track">
+      <div class="track-head">
+        <h2>Track B — This is the demo</h2>
+        <span class="track-tag safe">Zero AI calls · cannot fail</span>
+      </div>
+      <p class="track-note">Everything shown already exists in the database from a real planning session run earlier. Nothing here calls Claude on stage, so the credit outage can't touch it.</p>
+      <ol class="steps">
+        <li>
+          <span class="step-action">Open <span class="code">/crowd</span> — the Live Crowd Heatmap</span>
+          <span class="step-say">Say: <b>"Real per-destination density, adjusted by a documented time-of-day heuristic — never a fabricated live feed."</b></span>
+          <span class="step-result">Real markers, risk-ranked list, honest data-source banner.</span>
+        </li>
+        <li>
+          <span class="step-action">Open Destinations → Taj Mahal (same page as Track A, step 2)</span>
+          <span class="step-result">Same real safety/crowd/accessibility tiles — this part never depends on AI.</span>
+        </li>
+        <li>
+          <span class="step-action">Go to My Trips → open <b>"Agra weekend"</b></span>
+          <span class="step-say">Say: <b>"This itinerary was generated by the real planner in an earlier session — I'm just viewing it now, no new AI call."</b></span>
+          <span class="step-result">Agra Fort → Mehtab Bagh, each with a real "AI recommended" reason chip.</span>
+        </li>
+        <li>
+          <span class="step-action">Point at the honest cost banner</span>
+          <span class="step-say">Say: <b>"No attraction has real price data yet, so we say that plainly instead of inventing a total."</b></span>
+        </li>
+        <li>
+          <span class="step-action">Toggle an itinerary item's checkbox and add a note</span>
+          <span class="step-result">Real item-level edit, persisted immediately — independent of the AI planner entirely.</span>
+        </li>
+        <li>
+          <span class="step-action">Click <b>Trip chat</b> at the top of the trip page</span>
+          <span class="step-say">Say: <b>"Trip coordination is real-time — a message here reaches every trip member instantly over WebSocket."</b></span>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="fallback">
+    <h2>If something else breaks live</h2>
+    <table>
+      <tr><td>Blank / stale page</td><td>Hard-refresh once. If a service worker banner appears, ignore it — click through, don't wait.</td></tr>
+      <tr><td>"Could not understand this trip description"</td><td>That's the confirmed credit outage — you shouldn't see this at all if you stuck to Track B. Switch to Track B without missing a beat.</td></tr>
+      <tr><td>Ambiguous destination picker appears</td><td>That's real, honest behavior (e.g. "Hyderabad" resolves to 2 real landmarks) — say so, then pick either and continue.</td></tr>
+      <tr><td>Need a second logged-in device for chat</td><td>Use a phone on the venue wifi rather than a second laptop tab — this browser's tabs share one login.</td></tr>
+    </table>
+  </div>
+
+  <p class="footer-note">Backend: localhost:8010 · Frontend: localhost:3000 · Demo account password: Test1234!</p>
+</div>
