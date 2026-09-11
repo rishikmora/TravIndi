@@ -56,7 +56,7 @@ def _auth(token: str) -> dict:
 
 
 async def _india_gate_id(client: AsyncClient) -> str:
-    listing = (await client.get("/api/v1/destinations")).json()
+    listing = (await client.get("/api/v1/destinations?limit=100")).json()
     return next(d for d in listing["data"] if d["name"] == "India Gate")["id"]
 
 
@@ -193,22 +193,35 @@ async def test_overtourism_signal_reflects_real_crowd_density(client: AsyncClien
     destination_id = await _india_gate_id(client)
 
     async with get_session_factory()() as session:
-        session.add(
-            CrowdCell(
-                h3_cell="test_ot_cell",
-                destination_id=uuid.UUID(destination_id),
-                observed_at=datetime.now(UTC),
-                density=0.9,
-            )
+        cell = CrowdCell(
+            h3_cell="test_ot_cell",
+            destination_id=uuid.UUID(destination_id),
+            observed_at=datetime.now(UTC),
+            density=0.9,
         )
+        session.add(cell)
         await session.commit()
+        cell_id = cell.id
 
-    signal = await client.get(f"/api/v1/destinations/{destination_id}/overtourism")
-    assert signal.status_code == 200, signal.text
-    data = signal.json()["data"]
-    assert data["latest_density"] == 0.9
-    assert data["is_overtouristed"] is True
-    assert data["threshold"] == 0.75
+    try:
+        signal = await client.get(f"/api/v1/destinations/{destination_id}/overtourism")
+        assert signal.status_code == 200, signal.text
+        data = signal.json()["data"]
+        assert data["latest_density"] == 0.9
+        assert data["is_overtouristed"] is True
+        assert data["threshold"] == 0.75
+    finally:
+        # This inserts directly against the shared dev DB (not the `client`
+        # fixture's own connection), so nothing else rolls it back — leaving
+        # this row behind (as every prior run of this test until now did)
+        # accumulates permanent "test_ot_cell" pollution on India Gate that
+        # a real crowd heatmap would otherwise render as duplicate stale
+        # markers forever.
+        async with get_session_factory()() as session:
+            row = await session.get(CrowdCell, cell_id)
+            if row is not None:
+                await session.delete(row)
+                await session.commit()
 
 
 async def test_eco_certification_is_authority_gated(client: AsyncClient) -> None:

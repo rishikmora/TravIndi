@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { AccessibilityProvider } from "@/lib/accessibility-context";
 import { Nav } from "@/components/Nav";
+import { ChatbotWidget } from "@/components/ChatbotWidget";
 
 const marcellus = Marcellus({
   variable: "--font-marcellus",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AccessibilityProvider>
             <Nav />
             <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-10 sm:px-6 lg:px-8">{children}</main>
+            <ChatbotWidget />
           </AccessibilityProvider>
         </AuthProvider>
       </body>

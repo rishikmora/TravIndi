@@ -98,6 +98,9 @@ function AuthorityPanel() {
         <Link href="/authority/admin" className="text-primary hover:opacity-80">
           Administration
         </Link>
+        <Link href="/crowd" className="text-primary hover:opacity-80">
+          Crowd heatmap
+        </Link>
       </div>
 
       {dashboard && (
@@ -110,10 +113,10 @@ function AuthorityPanel() {
             <div className="font-display text-2xl">{dashboard.open_incident_count}</div>
             <div className="text-xs text-foreground/60">Open incidents</div>
           </div>
-          <div className="rounded-xl border border-border bg-surface p-4">
+          <Link href="/crowd" className="rounded-xl border border-border bg-surface p-4 transition hover:border-primary/40">
             <div className="font-display text-2xl">{dashboard.high_risk_cell_count}</div>
-            <div className="text-xs text-foreground/60">High-risk cells</div>
-          </div>
+            <div className="text-xs text-foreground/60">High-risk cells → map</div>
+          </Link>
         </div>
       )}
 

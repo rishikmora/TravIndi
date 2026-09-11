@@ -90,6 +90,22 @@ _DEMO_ACCOUNTS: list[tuple[str, str, str]] = [
     ("admin.demo@travindi-demo.in", "authority", "authority_platform_admin"),
 ]
 
+# Demo businesses are fictional (no real establishment exists to
+# photograph), so unlike `app/db/seed.py`'s real destination photos this is
+# deliberately NOT "a real photo of this specific business" — one real,
+# generic, category-representative Wikimedia Commons photo per
+# `BusinessCategory`, self-hosted under `web/public/images/businesses/`
+# with a category-named (not business-named) filename so the naming itself
+# signals "illustrative category image". Same "fabricated seed data, never
+# reported as real telemetry" honesty posture as the rest of this module.
+_CATEGORY_IMAGES: dict[BusinessCategory, str] = {
+    BusinessCategory.HOTEL: "/images/businesses/hotel.jpg",
+    BusinessCategory.TOUR_OPERATOR: "/images/businesses/tour-operator.jpg",
+    BusinessCategory.RESTAURANT: "/images/businesses/restaurant.jpg",
+    BusinessCategory.ARTISAN: "/images/businesses/artisan.jpg",
+    BusinessCategory.TAXI: "/images/businesses/taxi.jpg",
+}
+
 _BUSINESSES: list[dict[str, Any]] = [
     {
         "owner_email": "rajesh.hotels@travindi-demo.in",
@@ -299,8 +315,24 @@ async def _seed_businesses(
             )
             session.add(business)
             await session.flush()
-            session.add(BusinessProfile(business_id=business.id, description=row["description"]))
         businesses_by_name[row["name"]] = business
+
+        existing_profile = await session.execute(
+            select(BusinessProfile).where(BusinessProfile.business_id == business.id)
+        )
+        profile = existing_profile.scalar_one_or_none()
+        category_image = _CATEGORY_IMAGES.get(row["category"])
+        if profile is None:
+            session.add(
+                BusinessProfile(
+                    business_id=business.id, description=row["description"], image_url=category_image
+                )
+            )
+        elif profile.image_url is None:
+            # Backfill for businesses seeded before category images existed
+            # — never overwrites a real value the owner (or a later re-seed
+            # with a different category image) already set.
+            profile.image_url = category_image
 
         existing_service = None
         if not is_new_business:

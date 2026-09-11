@@ -253,7 +253,7 @@ async def test_fraud_case_report_list_scoping_and_resolve(client: AsyncClient) -
 
 async def test_ai_tourist_guide_answers_grounded_question(client: AsyncClient) -> None:
     tourist = await _register_and_login(client, "tourist")
-    destinations = (await client.get("/api/v1/destinations")).json()["data"]
+    destinations = (await client.get("/api/v1/destinations?limit=100")).json()["data"]
     india_gate = next(d for d in destinations if d["name"] == "India Gate")
 
     response = await client.post(

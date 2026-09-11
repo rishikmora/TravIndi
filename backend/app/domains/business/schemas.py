@@ -17,6 +17,7 @@ class BusinessCreateIn(BaseModel):
 
 class BusinessProfileIn(BaseModel):
     description: str | None = Field(default=None, max_length=4000)
+    image_url: str | None = Field(default=None, max_length=500)
     contact_info: dict = Field(default_factory=dict)
     accessibility_features: dict = Field(default_factory=dict)
     cuisines: list[str] = Field(default_factory=list, max_length=20)
@@ -26,6 +27,7 @@ class BusinessProfileIn(BaseModel):
 
 class BusinessProfileOut(BaseModel):
     description: str | None
+    image_url: str | None
     contact_info: dict
     accessibility_features: dict
     safety_score: float | None

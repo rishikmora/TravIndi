@@ -116,6 +116,71 @@ _SEED_DESTINATIONS: list[dict[str, Any]] = [
         "lat": 9.9195,
         "image_url": "/images/destinations/meenakshi-temple.jpg",
     },
+    # Added for demo breadth (2026-09-10) — 50 more real, well-known Indian
+    # destinations spanning every major region, so discovery/AI planner/map
+    # views have real geographic diversity beyond the original 10. `image_url`
+    # is each place's own real English Wikipedia lead image (same sourcing
+    # method as the original 10 — see the module docstring above), downloaded
+    # and self-hosted under `web/public/images/destinations/`, not hotlinked.
+    # Two titles needed a more specific real Wikipedia article to resolve to
+    # the right photo rather than a disambiguation page: Ellora Caves uses
+    # "Kailasa Temple, Ellora" (the caves' own lead image was unset) and
+    # several others use the disambiguated "<Place>, <State/City>" title
+    # (e.g. "City Palace, Jaipur") to avoid a same-named article elsewhere.
+    # Unlike the original 10, no attractions/facilities/crowd/safety-score
+    # rows are seeded for these (that data has to be independently real per
+    # place, same "curator adds it for real, not invented here" posture as
+    # the rest of this file) — `seed()` below explicitly tolerates that.
+    {"name": "Red Fort", "city": "Delhi", "state": "Delhi", "lon": 77.2410, "lat": 28.6562, "image_url": "/images/destinations/red-fort.jpg"},
+    {"name": "Qutub Minar", "city": "Delhi", "state": "Delhi", "lon": 77.1855, "lat": 28.5245, "image_url": "/images/destinations/qutub-minar.jpg"},
+    {"name": "Humayun's Tomb", "city": "Delhi", "state": "Delhi", "lon": 77.2507, "lat": 28.5933, "image_url": "/images/destinations/humayuns-tomb.jpg"},
+    {"name": "City Palace Jaipur", "city": "Jaipur", "state": "Rajasthan", "lon": 75.8237, "lat": 26.9258, "image_url": "/images/destinations/city-palace-jaipur.jpg"},
+    {"name": "Hawa Mahal", "city": "Jaipur", "state": "Rajasthan", "lon": 75.8267, "lat": 26.9239, "image_url": "/images/destinations/hawa-mahal.jpg"},
+    {"name": "Jaisalmer Fort", "city": "Jaisalmer", "state": "Rajasthan", "lon": 70.9127, "lat": 26.9124, "image_url": "/images/destinations/jaisalmer-fort.jpg"},
+    {"name": "Udaipur City Palace", "city": "Udaipur", "state": "Rajasthan", "lon": 73.6835, "lat": 24.5764, "image_url": "/images/destinations/udaipur-city-palace.jpg"},
+    {"name": "Mehrangarh Fort", "city": "Jodhpur", "state": "Rajasthan", "lon": 73.0182, "lat": 26.2979, "image_url": "/images/destinations/mehrangarh-fort.jpg"},
+    {"name": "Ranthambore National Park", "city": "Sawai Madhopur", "state": "Rajasthan", "lon": 76.5026, "lat": 26.0173, "image_url": "/images/destinations/ranthambore-national-park.jpg"},
+    {"name": "Ajanta Caves", "city": "Aurangabad", "state": "Maharashtra", "lon": 75.7033, "lat": 20.5519, "image_url": "/images/destinations/ajanta-caves.jpg"},
+    {"name": "Ellora Caves", "city": "Aurangabad", "state": "Maharashtra", "lon": 75.1780, "lat": 20.0258, "image_url": "/images/destinations/ellora-caves.jpg"},
+    {"name": "Lonavala", "city": "Lonavala", "state": "Maharashtra", "lon": 73.4062, "lat": 18.7546, "image_url": "/images/destinations/lonavala.jpg"},
+    {"name": "Shirdi", "city": "Shirdi", "state": "Maharashtra", "lon": 74.4769, "lat": 19.7645, "image_url": "/images/destinations/shirdi.jpg"},
+    {"name": "Calangute Beach", "city": "Bardez", "state": "Goa", "lon": 73.7553, "lat": 15.5439, "image_url": "/images/destinations/calangute-beach.jpg"},
+    {"name": "Basilica of Bom Jesus", "city": "Old Goa", "state": "Goa", "lon": 73.9114, "lat": 15.5009, "image_url": "/images/destinations/basilica-of-bom-jesus.jpg"},
+    {"name": "Alleppey Backwaters", "city": "Alappuzha", "state": "Kerala", "lon": 76.3388, "lat": 9.4981, "image_url": "/images/destinations/alleppey-backwaters.jpg"},
+    {"name": "Munnar", "city": "Munnar", "state": "Kerala", "lon": 77.0595, "lat": 10.0889, "image_url": "/images/destinations/munnar.jpg"},
+    {"name": "Wayanad", "city": "Wayanad", "state": "Kerala", "lon": 76.1320, "lat": 11.6854, "image_url": "/images/destinations/wayanad.jpg"},
+    {"name": "Kovalam Beach", "city": "Thiruvananthapuram", "state": "Kerala", "lon": 76.9787, "lat": 8.4004, "image_url": "/images/destinations/kovalam-beach.jpg"},
+    {"name": "Ooty", "city": "Ooty", "state": "Tamil Nadu", "lon": 76.6950, "lat": 11.4102, "image_url": "/images/destinations/ooty.jpg"},
+    {"name": "Kodaikanal", "city": "Kodaikanal", "state": "Tamil Nadu", "lon": 77.4892, "lat": 10.2381, "image_url": "/images/destinations/kodaikanal.jpg"},
+    {"name": "Mahabalipuram", "city": "Mahabalipuram", "state": "Tamil Nadu", "lon": 80.1927, "lat": 12.6269, "image_url": "/images/destinations/mahabalipuram.jpg"},
+    {"name": "Brihadeeswarar Temple", "city": "Thanjavur", "state": "Tamil Nadu", "lon": 79.1318, "lat": 10.7828, "image_url": "/images/destinations/brihadeeswarar-temple.jpg"},
+    {"name": "Rameswaram", "city": "Rameswaram", "state": "Tamil Nadu", "lon": 79.3129, "lat": 9.2876, "image_url": "/images/destinations/rameswaram.jpg"},
+    {"name": "Coorg", "city": "Madikeri", "state": "Karnataka", "lon": 75.7382, "lat": 12.4244, "image_url": "/images/destinations/coorg.jpg"},
+    {"name": "Belur Halebidu", "city": "Hassan", "state": "Karnataka", "lon": 75.8574, "lat": 13.1631, "image_url": "/images/destinations/belur-halebidu.jpg"},
+    {"name": "Bandipur National Park", "city": "Chamarajanagar", "state": "Karnataka", "lon": 76.6344, "lat": 11.6592, "image_url": "/images/destinations/bandipur-national-park.jpg"},
+    {"name": "Charminar", "city": "Hyderabad", "state": "Telangana", "lon": 78.4747, "lat": 17.3616, "image_url": "/images/destinations/charminar.jpg"},
+    {"name": "Golconda Fort", "city": "Hyderabad", "state": "Telangana", "lon": 78.4011, "lat": 17.3833, "image_url": "/images/destinations/golconda-fort.jpg"},
+    {"name": "Konark Sun Temple", "city": "Konark", "state": "Odisha", "lon": 86.0945, "lat": 19.8876, "image_url": "/images/destinations/konark-sun-temple.jpg"},
+    {"name": "Puri Jagannath Temple", "city": "Puri", "state": "Odisha", "lon": 85.8181, "lat": 19.8048, "image_url": "/images/destinations/puri-jagannath-temple.jpg"},
+    {"name": "Chilika Lake", "city": "Puri", "state": "Odisha", "lon": 85.3206, "lat": 19.7160, "image_url": "/images/destinations/chilika-lake.jpg"},
+    {"name": "Sundarbans National Park", "city": "South 24 Parganas", "state": "West Bengal", "lon": 88.8965, "lat": 21.9497, "image_url": "/images/destinations/sundarbans-national-park.jpg"},
+    {"name": "Darjeeling", "city": "Darjeeling", "state": "West Bengal", "lon": 88.2663, "lat": 27.0410, "image_url": "/images/destinations/darjeeling.jpg"},
+    {"name": "Victoria Memorial", "city": "Kolkata", "state": "West Bengal", "lon": 88.3426, "lat": 22.5448, "image_url": "/images/destinations/victoria-memorial.jpg"},
+    {"name": "Kaziranga National Park", "city": "Golaghat", "state": "Assam", "lon": 93.1714, "lat": 26.5775, "image_url": "/images/destinations/kaziranga-national-park.jpg"},
+    {"name": "Shillong", "city": "Shillong", "state": "Meghalaya", "lon": 91.8933, "lat": 25.5788, "image_url": "/images/destinations/shillong.jpg"},
+    {"name": "Gangtok", "city": "Gangtok", "state": "Sikkim", "lon": 88.6065, "lat": 27.3389, "image_url": "/images/destinations/gangtok.jpg"},
+    {"name": "Rishikesh", "city": "Rishikesh", "state": "Uttarakhand", "lon": 78.2676, "lat": 30.0869, "image_url": "/images/destinations/rishikesh.jpg"},
+    {"name": "Haridwar", "city": "Haridwar", "state": "Uttarakhand", "lon": 78.1642, "lat": 29.9457, "image_url": "/images/destinations/haridwar.jpg"},
+    {"name": "Nainital", "city": "Nainital", "state": "Uttarakhand", "lon": 79.4542, "lat": 29.3919, "image_url": "/images/destinations/nainital.jpg"},
+    {"name": "Valley of Flowers", "city": "Chamoli", "state": "Uttarakhand", "lon": 79.6045, "lat": 30.7268, "image_url": "/images/destinations/valley-of-flowers.jpg"},
+    {"name": "Shimla", "city": "Shimla", "state": "Himachal Pradesh", "lon": 77.1734, "lat": 31.1048, "image_url": "/images/destinations/shimla.jpg"},
+    {"name": "Manali", "city": "Manali", "state": "Himachal Pradesh", "lon": 77.1892, "lat": 32.2432, "image_url": "/images/destinations/manali.jpg"},
+    {"name": "Dharamshala", "city": "Dharamshala", "state": "Himachal Pradesh", "lon": 76.3234, "lat": 32.2190, "image_url": "/images/destinations/dharamshala.jpg"},
+    {"name": "Leh", "city": "Leh", "state": "Ladakh", "lon": 77.5771, "lat": 34.1526, "image_url": "/images/destinations/leh.jpg"},
+    {"name": "Vaishno Devi", "city": "Katra", "state": "Jammu and Kashmir", "lon": 74.9500, "lat": 33.0303, "image_url": "/images/destinations/vaishno-devi.jpg"},
+    {"name": "Dal Lake", "city": "Srinagar", "state": "Jammu and Kashmir", "lon": 74.8626, "lat": 34.1210, "image_url": "/images/destinations/dal-lake.jpg"},
+    {"name": "Statue of Unity", "city": "Kevadia", "state": "Gujarat", "lon": 73.7191, "lat": 21.8380, "image_url": "/images/destinations/statue-of-unity.jpg"},
+    {"name": "Somnath Temple", "city": "Veraval", "state": "Gujarat", "lon": 70.4013, "lat": 20.8880, "image_url": "/images/destinations/somnath-temple.jpg"},
 ]
 
 # Real, publicly-known attractions near/associated with each seeded
@@ -277,8 +342,14 @@ async def seed() -> None:
                 )
 
         for row in _SEED_DESTINATIONS:
+            signals = _SEED_CROWD_SAFETY.get(row["name"])
+            if signals is None:
+                # Real gap, not an oversight: only the original 10 have an
+                # illustrative crowd/safety signal — the 50 added later have
+                # none yet, same "legitimately empty until real telemetry"
+                # posture as everywhere else this data is read.
+                continue
             destination = destinations_by_name[row["name"]]
-            signals = _SEED_CROWD_SAFETY[row["name"]]
             h3_cell = h3.latlng_to_cell(row["lat"], row["lon"], _H3_RESOLUTION)
 
             existing_cell = await session.execute(select(CrowdCell).where(CrowdCell.h3_cell == h3_cell))

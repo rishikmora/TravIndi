@@ -148,7 +148,7 @@ async def test_feature_adoption_is_gated_and_reflects_a_real_check_in(client: As
     assert baseline.status_code == 200, baseline.text
     baseline_data = baseline.json()["data"]
 
-    destinations = (await client.get("/api/v1/destinations")).json()["data"]
+    destinations = (await client.get("/api/v1/destinations?limit=100")).json()["data"]
     india_gate = next(d for d in destinations if d["name"] == "India Gate")
     check_in = await client.post(
         "/api/v1/gamification/check-ins",

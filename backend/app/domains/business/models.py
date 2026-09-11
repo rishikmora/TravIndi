@@ -87,6 +87,11 @@ class BusinessProfile(UUIDPKMixin, TimestampMixin, Base):
         ForeignKey("business.businesses.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     description: Mapped[str | None]
+    image_url: Mapped[str | None] = mapped_column(String(500))
+    """Self-declared by the owner (same posture as `cuisines`/`price_range`
+    below — no vendor feed exists to source a real photo from). Set via the
+    same `PUT /businesses/{id}/profile` upsert every other profile field
+    already goes through."""
     contact_info: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     accessibility_features: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     safety_score: Mapped[float | None] = mapped_column(Numeric(4, 3))

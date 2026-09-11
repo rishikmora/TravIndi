@@ -8,7 +8,7 @@ from httpx import AsyncClient
 
 
 async def test_list_destinations_returns_seeded_rows(client: AsyncClient) -> None:
-    response = await client.get("/api/v1/destinations")
+    response = await client.get("/api/v1/destinations?limit=100")
     assert response.status_code == 200
     body = response.json()
     names = {d["name"] for d in body["data"]}
@@ -16,7 +16,7 @@ async def test_list_destinations_returns_seeded_rows(client: AsyncClient) -> Non
 
 
 async def test_get_destination_by_id_round_trips_location(client: AsyncClient) -> None:
-    listing = (await client.get("/api/v1/destinations")).json()
+    listing = (await client.get("/api/v1/destinations?limit=100")).json()
     india_gate = next(d for d in listing["data"] if d["name"] == "India Gate")
 
     response = await client.get(f"/api/v1/destinations/{india_gate['id']}")
@@ -38,7 +38,7 @@ async def test_destination_safety_reflects_seeded_score(client: AsyncClient) -> 
     "seed-demo-v1") so the destination detail view and safe-route scoring
     have real signal to compute against — this used to legitimately assert
     `None` before that seed data existed."""
-    listing = (await client.get("/api/v1/destinations")).json()
+    listing = (await client.get("/api/v1/destinations?limit=100")).json()
     india_gate = next(d for d in listing["data"] if d["name"] == "India Gate")
 
     response = await client.get(f"/api/v1/destinations/{india_gate['id']}/safety")
@@ -50,7 +50,7 @@ async def test_destination_safety_reflects_seeded_score(client: AsyncClient) -> 
 
 
 async def test_destination_crowd_reflects_seeded_cell(client: AsyncClient) -> None:
-    listing = (await client.get("/api/v1/destinations")).json()
+    listing = (await client.get("/api/v1/destinations?limit=100")).json()
     india_gate = next(d for d in listing["data"] if d["name"] == "India Gate")
 
     response = await client.get(f"/api/v1/destinations/{india_gate['id']}/crowd")

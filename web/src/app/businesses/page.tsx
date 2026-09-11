@@ -106,13 +106,15 @@ function RegisterBusinessForm({ onCreated }: { onCreated: (b: Business) => void 
 
 function BusinessCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-2xl border border-border bg-surface p-5">
-      <div className="h-9 w-9 rounded-lg bg-surface-muted" />
-      <div className="mt-4 h-4 w-2/3 rounded bg-surface-muted" />
-      <div className="mt-2 h-3 w-1/3 rounded bg-surface-muted" />
-      <div className="mt-4 flex gap-1.5">
-        <div className="h-5 w-16 rounded-full bg-surface-muted" />
-        <div className="h-5 w-14 rounded-full bg-surface-muted" />
+    <div className="animate-pulse overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="h-32 w-full bg-surface-muted" />
+      <div className="p-5">
+        <div className="h-4 w-2/3 rounded bg-surface-muted" />
+        <div className="mt-2 h-3 w-1/3 rounded bg-surface-muted" />
+        <div className="mt-4 flex gap-1.5">
+          <div className="h-5 w-16 rounded-full bg-surface-muted" />
+          <div className="h-5 w-14 rounded-full bg-surface-muted" />
+        </div>
       </div>
     </div>
   );
@@ -123,24 +125,37 @@ function BusinessCard({ business, destinationName }: { business: Business; desti
   return (
     <Link
       href={`/businesses/${b.id}`}
-      className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-md"
     >
+      <div className="washed relative h-32 w-full bg-surface-muted">
+        {b.profile?.image_url ? (
+          // A plain img element, not next/image: business photos are
+          // owner-submitted URLs on arbitrary external domains (no
+          // upload/hosting is wired up — see PhotoSection on the detail
+          // page), which next/image can't optimize without an explicit
+          // per-domain allowlist.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={b.profile.image_url} alt={b.name} className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <span className="absolute inset-0 flex items-center justify-center text-primary/40">
+            <BuildingIcon width={26} height={26} />
+          </span>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-3 p-5">
       <div className="flex items-start justify-between gap-2">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <BuildingIcon width={18} height={18} />
-        </span>
+        <div>
+          <div className="font-medium leading-tight">{b.name}</div>
+          <div className="mt-0.5 text-xs text-foreground/55">
+            {CATEGORY_LABELS[b.category]}
+            {destinationName ? ` · ${destinationName}` : ""}
+          </div>
+        </div>
         <ArrowRightIcon
           width={14}
           height={14}
-          className="mt-1 text-foreground/30 transition group-hover:translate-x-0.5 group-hover:text-primary"
+          className="mt-1 shrink-0 text-foreground/30 transition group-hover:translate-x-0.5 group-hover:text-primary"
         />
-      </div>
-      <div>
-        <div className="font-medium leading-tight">{b.name}</div>
-        <div className="mt-0.5 text-xs text-foreground/55">
-          {CATEGORY_LABELS[b.category]}
-          {destinationName ? ` · ${destinationName}` : ""}
-        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
@@ -174,6 +189,7 @@ function BusinessCard({ business, destinationName }: { business: Business; desti
           ))}
         </div>
       )}
+      </div>
     </Link>
   );
 }

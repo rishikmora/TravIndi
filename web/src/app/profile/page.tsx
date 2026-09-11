@@ -566,6 +566,12 @@ function ProfileHome() {
             detail={contactCount !== null ? `${contactCount} contact${contactCount === 1 ? "" : "s"}` : "Emergency contacts"}
           />
           <HubCard
+            href="/location-sharing"
+            icon={<MapPinIcon width={16} height={16} />}
+            label="Live location sharing"
+            detail="Share with a contact or your group"
+          />
+          <HubCard
             href="/notifications"
             icon={<BellIcon width={16} height={16} />}
             label="Notifications"

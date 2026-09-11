@@ -27,7 +27,7 @@ async def _register_and_login(client: AsyncClient) -> dict:
 
 
 async def _india_gate(client: AsyncClient) -> dict:
-    listing = (await client.get("/api/v1/destinations")).json()
+    listing = (await client.get("/api/v1/destinations?limit=100")).json()
     return next(d for d in listing["data"] if d["name"] == "India Gate")
 
 

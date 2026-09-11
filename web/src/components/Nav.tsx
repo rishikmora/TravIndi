@@ -38,6 +38,7 @@ function MoreMenu({ token }: { token: string | null }) {
   const items: { href: string; label: string }[] = token
     ? [
         { href: "/profile", label: "My Profile" },
+        { href: "/crowd", label: "Crowd Heatmap" },
         { href: "/ai/guide", label: "AI Tourist Guide" },
         { href: "/ai/translate", label: "Translate" },
         { href: "/accessibility", label: "Accessibility" },
@@ -46,6 +47,7 @@ function MoreMenu({ token }: { token: string | null }) {
         { href: "/report", label: "Report an incident" },
         { href: "/trust/fraud", label: "Fraud reports" },
         { href: "/trusted-contacts", label: "Trusted contacts" },
+        { href: "/location-sharing", label: "Location sharing" },
         { href: "/notifications", label: "Notifications" },
         { href: "/consents", label: "Privacy" },
         { href: "/authority", label: "Authority" },
@@ -53,6 +55,7 @@ function MoreMenu({ token }: { token: string | null }) {
         { href: "/authority/admin", label: "Administration" },
       ]
     : [
+        { href: "/crowd", label: "Crowd Heatmap" },
         { href: "/ai/guide", label: "AI Tourist Guide" },
         { href: "/ai/translate", label: "Translate" },
         { href: "/accessibility", label: "Accessibility" },

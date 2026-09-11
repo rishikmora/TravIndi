@@ -4,16 +4,17 @@ import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/lib/auth-context";
 import { api, type AppNotification } from "@/lib/api";
-import { AlertTriangleIcon, BellIcon, ShieldIcon, UsersIcon } from "@/components/icons";
+import { AlertTriangleIcon, BellIcon, MapPinIcon, ShieldIcon, UsersIcon } from "@/components/icons";
 
 const TYPE_META: Record<string, { icon: typeof BellIcon; tone: string; label: string }> = {
   sos_update: { icon: ShieldIcon, tone: "bg-danger/10 text-danger", label: "SOS updates" },
   incident_update: { icon: AlertTriangleIcon, tone: "bg-primary/10 text-primary", label: "Incident updates" },
   group_sos: { icon: UsersIcon, tone: "bg-danger/10 text-danger", label: "Group SOS alerts" },
+  location_share_started: { icon: MapPinIcon, tone: "bg-primary/10 text-primary", label: "Location sharing" },
 };
 // Every real notification_type this backend ever creates — a preferences
 // toggle for a type that could never actually fire would be a fake control.
-const TOGGLEABLE_TYPES = ["sos_update", "incident_update", "group_sos"] as const;
+const TOGGLEABLE_TYPES = ["sos_update", "incident_update", "group_sos", "location_share_started"] as const;
 
 function typeMeta(type: string) {
   return TYPE_META[type] ?? { icon: BellIcon, tone: "bg-surface-muted text-foreground/60", label: type };

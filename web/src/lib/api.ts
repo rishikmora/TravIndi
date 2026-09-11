@@ -282,6 +282,20 @@ export interface CrowdCell {
   risk_score: number | null;
 }
 
+export interface CrowdHeatmapPoint {
+  h3_cell: string;
+  destination_id: string | null;
+  destination_name: string | null;
+  location: GeoPoint | null;
+  recorded_at: string;
+  baseline_density: number | null;
+  baseline_risk_score: number | null;
+  density: number | null;
+  risk_score: number | null;
+  computed_at: string;
+  method: string;
+}
+
 export type BusinessCategory = "HOTEL" | "RESTAURANT" | "TAXI" | "ARTISAN" | "TOUR_OPERATOR" | "OTHER";
 
 export type DietaryOption = "VEGETARIAN" | "VEGAN" | "JAIN" | "HALAL" | "GLUTEN_FREE" | "NON_VEGETARIAN";
@@ -289,6 +303,7 @@ export type PriceRange = "BUDGET" | "MODERATE" | "PREMIUM";
 
 export interface BusinessProfile {
   description: string | null;
+  image_url: string | null;
   contact_info: Record<string, unknown>;
   accessibility_features: Record<string, unknown>;
   safety_score: number | null;
@@ -674,6 +689,45 @@ export interface GroupSafety {
   by_member: Record<string, number | null>;
 }
 
+// --- Live Location Sharing ---
+export type LocationShareRecipientType = "TRUSTED_CONTACT" | "GROUP";
+export type LocationSharePrecision = "PRECISE" | "APPROXIMATE";
+export type LocationShareStatus = "ACTIVE" | "EXPIRED" | "REVOKED";
+export type LocationShareDuration = "15m" | "1h" | "4h" | "until_trip_end" | "custom" | "until_stopped";
+
+export interface LocationShare {
+  id: string;
+  user_id: string;
+  recipient_type: LocationShareRecipientType;
+  trusted_contact_id: string | null;
+  trip_id: string | null;
+  purpose: string | null;
+  precision: LocationSharePrecision;
+  status: LocationShareStatus;
+  started_at: string;
+  expires_at: string;
+  last_location_at: string | null;
+  current_location: GeoPoint | null;
+  is_live: boolean;
+  created_at: string;
+  updated_at: string;
+  // Populated ONLY in the create response — never re-fetchable, same rule
+  // as Sos.trusted_contact_tokens' raw one-time token.
+  access_token: string | null;
+}
+
+export interface LocationShareRecipientView {
+  recipient_type: LocationShareRecipientType;
+  precision: LocationSharePrecision;
+  status: string;
+  current_location: GeoPoint | null;
+  last_location_at: string | null;
+  is_live: boolean;
+  expires_at: string;
+  purpose: string | null;
+  reason: string | null;
+}
+
 // --- Smart Heritage / Culture (Feature Blueprint P2 #7) ---
 export interface TourismEvent {
   id: string;
@@ -804,7 +858,14 @@ export const api = {
   revokeConsent: (id: string, token: string) =>
     request<void>(`/api/v1/users/me/consents/${id}`, { method: "DELETE", token }),
 
-  listDestinations: () => request<{ data: Destination[] }>("/api/v1/destinations").then((r) => r.data),
+  // limit=100 (the backend's real max page size, app/schemas/common.py's
+  // MAX_PAGE_SIZE) rather than the 20-row default — every caller of this
+  // treats the result as "every destination" (dropdowns, map views, the
+  // browse grid), and silently only getting the first 20 of the real 60
+  // seeded ones would be a real, confusing gap now that there are more
+  // than a default page's worth.
+  listDestinations: () =>
+    request<{ data: Destination[] }>("/api/v1/destinations?limit=100").then((r) => r.data),
 
   getDestination: (id: string) =>
     request<{ data: Destination }>(`/api/v1/destinations/${id}`).then((r) => r.data),
@@ -932,6 +993,65 @@ export const api = {
 
   removeTrustedContact: (id: string, token: string) =>
     request<void>(`/api/v1/users/me/trusted-contacts/${id}`, { method: "DELETE", token }),
+
+  // --- Live Location Sharing ---
+  createLocationShare: (
+    body: {
+      recipient_type: LocationShareRecipientType;
+      trusted_contact_id?: string;
+      trip_id?: string;
+      purpose?: string;
+      precision: LocationSharePrecision;
+      duration_choice: LocationShareDuration;
+      custom_minutes?: number;
+    },
+    token: string
+  ) =>
+    request<{ data: LocationShare }>("/api/v1/location-sharing", {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+      headers: { "Idempotency-Key": idempotencyKey() },
+    }).then((r) => r.data),
+
+  listLocationShares: (token: string) =>
+    request<{ data: LocationShare[] }>("/api/v1/location-sharing", { token }).then((r) => r.data),
+
+  getLocationShare: (id: string, token: string) =>
+    request<{ data: LocationShare }>(`/api/v1/location-sharing/${id}`, { token }).then((r) => r.data),
+
+  updateLocationShare: (
+    id: string,
+    body: { precision?: LocationSharePrecision; duration_choice?: LocationShareDuration; custom_minutes?: number },
+    token: string
+  ) =>
+    request<{ data: LocationShare }>(`/api/v1/location-sharing/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  revokeLocationShare: (id: string, token: string) =>
+    request<void>(`/api/v1/location-sharing/${id}`, { method: "DELETE", token }),
+
+  stopAllLocationShares: (token: string) =>
+    request<void>("/api/v1/location-sharing/stop-all", { method: "POST", token }),
+
+  pingLocationShare: (id: string, body: { lon: number; lat: number; accuracy?: number }, token: string) =>
+    request<{ data: LocationShare }>(`/api/v1/location-sharing/${id}/ping`, {
+      method: "POST",
+      body: JSON.stringify(body),
+      token,
+    }).then((r) => r.data),
+
+  // Public, unauthenticated — a trusted contact never has a platform
+  // account, same reasoning as verifyTrustedContactToken. `accessToken` is
+  // the share's own opaque link token (a query param here), never a Bearer
+  // auth token, so it's deliberately NOT passed as `token` to `request()`.
+  getLocationShareRecipientView: (shareId: string, accessToken: string) =>
+    request<{ data: LocationShareRecipientView }>(
+      `/api/v1/location-sharing/${shareId}/recipient-view?token=${encodeURIComponent(accessToken)}`
+    ).then((r) => r.data),
 
   // --- Incidents ---
   createIncident: (
@@ -1074,6 +1194,7 @@ export const api = {
     id: string,
     body: {
       description?: string;
+      image_url?: string | null;
       contact_info?: Record<string, unknown>;
       accessibility_features?: Record<string, unknown>;
       cuisines?: string[];
@@ -1535,4 +1656,11 @@ export const api = {
 
   getTripCarbonFootprint: (tripId: string, token: string) =>
     request<{ data: CarbonFootprint }>(`/api/v1/trips/${tripId}/carbon-footprint`, { token }).then((r) => r.data),
+
+  // --- Crowd heatmap ---
+  getCrowdHeatmap: () =>
+    request<{ data: CrowdHeatmapPoint[] }>("/api/v1/crowd/heatmap").then((r) => r.data),
+
+  getCrowdRiskRanking: () =>
+    request<{ data: CrowdHeatmapPoint[] }>("/api/v1/crowd/risk").then((r) => r.data),
 };

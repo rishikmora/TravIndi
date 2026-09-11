@@ -22,6 +22,7 @@ from app.domains.gamification.router import router as gamification_router
 from app.domains.group_travel.router import router as group_travel_router
 from app.domains.identity.router import auth_router, users_router
 from app.domains.knowledge.router import router as ai_content_router
+from app.domains.location_sharing.router import router as location_sharing_router
 from app.domains.lost_found.router import router as lost_found_router
 from app.domains.safety.router import router as incidents_router
 from app.domains.social.router import router as social_router
@@ -62,5 +63,6 @@ api_router.include_router(gamification_router)
 api_router.include_router(lost_found_router)
 api_router.include_router(financial_router)
 api_router.include_router(group_travel_router)
+api_router.include_router(location_sharing_router)
 api_router.include_router(social_router)
 api_router.include_router(admin.router)

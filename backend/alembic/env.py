@@ -24,6 +24,7 @@ from app.domains.governance import models as governance_models  # noqa: F401
 from app.domains.group_travel import models as group_travel_models  # noqa: F401
 from app.domains.identity import models as identity_models  # noqa: F401
 from app.domains.knowledge import models as knowledge_models  # noqa: F401
+from app.domains.location_sharing import models as location_sharing_models  # noqa: F401
 from app.domains.lost_found import models as lost_found_models  # noqa: F401
 from app.domains.safety import models as safety_models  # noqa: F401
 from app.domains.social import models as social_models  # noqa: F401
@@ -59,7 +60,7 @@ OWNED_SCHEMAS = {
     "identity", "tourism", "travel", "safety", "emergency", "crowd",
     "business", "booking", "payment", "trust", "knowledge", "analytics",
     "integration", "governance", "gamification", "lost_found", "financial",
-    "group_travel", "social",
+    "group_travel", "social", "location_sharing",
 }
 
 

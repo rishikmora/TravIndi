@@ -151,6 +151,11 @@ function AddExpenseForm({ tripId, onAdded }: { tripId: string; onAdded: (e: Expe
   );
 }
 
+// How often the continuous-sharing toggle below pushes a fresh fix — same
+// interval as web/src/app/location-sharing/page.tsx's own ping loop, kept
+// consistent across the app's two "keep sending my location" features.
+const CONTINUOUS_SHARE_INTERVAL_MS = 15000;
+
 function GroupSection({ trip }: { trip: Trip }) {
   const { token, me } = useAuth();
   const [members, setMembers] = useState<TripMember[]>([]);
@@ -159,6 +164,7 @@ function GroupSection({ trip }: { trip: Trip }) {
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [continuousSharing, setContinuousSharing] = useState(false);
 
   function refresh() {
     if (!token) return;
@@ -213,6 +219,57 @@ function GroupSection({ trip }: { trip: Trip }) {
 
   const myMember = members.find((m) => m.user_id === me?.id);
   const isOwner = trip.user_id === me?.id;
+  const iAmActiveMember = myMember?.status === "ACTIVE";
+
+  function toggleContinuousSharing() {
+    if (!continuousSharing && !navigator.geolocation) {
+      setStatus("Location access isn't available in this browser.");
+      return;
+    }
+    setContinuousSharing((v) => !v);
+  }
+
+  // Additive, optional upgrade to the one-shot button above: repeats the
+  // exact same existing update call on an interval instead of once. Zero
+  // backend change — still the pre-existing /group-travel/trips/{id}/location
+  // endpoint — and shareMyLocation()'s own one-shot behavior is untouched.
+  // Stops itself if the member becomes inactive, same as the one-shot
+  // button's own visibility guard. Every setState call below happens inside
+  // an async geolocation callback, never synchronously in the effect body
+  // itself (react-hooks/set-state-in-effect).
+  useEffect(() => {
+    if (!continuousSharing || !token || !iAmActiveMember) return;
+
+    function pushOnce() {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            await api.updateMyTripLocation(
+              trip.id,
+              { lon: position.coords.longitude, lat: position.coords.latitude },
+              token!
+            );
+            setStatus(`Sharing continuously — last update ${new Date().toLocaleTimeString()}.`);
+            refresh();
+          } catch (err) {
+            setStatus(isApiError(err) ? err.message : "Could not share your location.");
+          }
+        },
+        () => {
+          setStatus("Location access was denied.");
+          setContinuousSharing(false);
+        }
+      );
+    }
+
+    pushOnce();
+    const interval = setInterval(pushOnce, CONTINUOUS_SHARE_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // refresh isn't memoized and would otherwise restart this interval on
+    // every unrelated re-render — same justified exception as this file's
+    // own `useEffect(refresh, [token, trip.id])` above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [continuousSharing, token, iAmActiveMember, trip.id]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -252,10 +309,30 @@ function GroupSection({ trip }: { trip: Trip }) {
         </p>
       )}
 
-      {(myMember?.status === "ACTIVE") && (
-        <button onClick={shareMyLocation} className="self-start rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
-          Share my location with the group
-        </button>
+      {iAmActiveMember && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={shareMyLocation} className="rounded-full border border-border px-4 py-2 text-sm font-medium hover:bg-surface-muted">
+            Share my location with the group
+          </button>
+          <button
+            onClick={toggleContinuousSharing}
+            className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition ${
+              continuousSharing ? "border-success/40 bg-success/10 text-success" : "border-border hover:bg-surface-muted"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${continuousSharing ? "animate-pulse bg-success" : "bg-foreground/30"}`}
+              aria-hidden
+            />
+            {continuousSharing ? "Sharing continuously — tap to stop" : "Share continuously"}
+          </button>
+        </div>
+      )}
+      {continuousSharing && (
+        <p className="text-xs text-foreground/45">
+          Updates every {CONTINUOUS_SHARE_INTERVAL_MS / 1000}s while this page stays open — there&apos;s no background
+          app in this build, so closing the tab pauses it.
+        </p>
       )}
       {status && <p className="text-sm text-foreground/60">{status}</p>}
 

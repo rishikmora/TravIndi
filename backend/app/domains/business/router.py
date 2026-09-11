@@ -68,6 +68,7 @@ def _to_profile_out(profile: BusinessProfile | None) -> BusinessProfileOut | Non
         return None
     return BusinessProfileOut(
         description=profile.description,
+        image_url=profile.image_url,
         contact_info=profile.contact_info,
         accessibility_features=profile.accessibility_features,
         safety_score=profile.safety_score,
@@ -286,6 +287,7 @@ async def upsert_business_profile(
         business.profile = BusinessProfile(
             business_id=business.id,
             description=body.description,
+            image_url=body.image_url,
             contact_info=body.contact_info,
             accessibility_features=body.accessibility_features,
             cuisines=body.cuisines,
@@ -295,6 +297,7 @@ async def upsert_business_profile(
         session.add(business.profile)
     else:
         business.profile.description = body.description
+        business.profile.image_url = body.image_url
         business.profile.contact_info = body.contact_info
         business.profile.accessibility_features = body.accessibility_features
         business.profile.cuisines = body.cuisines

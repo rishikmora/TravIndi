@@ -30,7 +30,7 @@ def _auth(token: str) -> dict:
 
 
 async def _india_gate_location(client: AsyncClient) -> dict:
-    destinations = (await client.get("/api/v1/destinations")).json()["data"]
+    destinations = (await client.get("/api/v1/destinations?limit=100")).json()["data"]
     india_gate = next(d for d in destinations if d["name"] == "India Gate")
     return india_gate["location"]
 

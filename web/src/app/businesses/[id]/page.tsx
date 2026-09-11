@@ -16,7 +16,7 @@ import {
   type Verification,
 } from "@/lib/api";
 import { QrTicket } from "@/components/QrTicket";
-import { BuildingIcon, CalendarIcon, MinusIcon, PlusIcon, StarIcon, TicketIcon } from "@/components/icons";
+import { BuildingIcon, CalendarIcon, ImageIcon, MinusIcon, PlusIcon, StarIcon, TicketIcon } from "@/components/icons";
 
 const DIETARY_OPTIONS: DietaryOption[] = ["VEGETARIAN", "VEGAN", "JAIN", "HALAL", "GLUTEN_FREE", "NON_VEGETARIAN"];
 const DIETARY_LABELS: Record<DietaryOption, string> = {
@@ -57,6 +57,7 @@ function FoodProfileSection({ business, onUpdated }: { business: Business; onUpd
         business.id,
         {
           description: business.profile?.description ?? undefined,
+          image_url: business.profile?.image_url ?? null,
           cuisines: cuisinesText
             .split(",")
             .map((c) => c.trim())
@@ -65,7 +66,8 @@ function FoodProfileSection({ business, onUpdated }: { business: Business; onUpd
           price_range: priceRange || null,
           // The upsert endpoint replaces the whole profile, not a partial
           // patch — carry through fields this form doesn't own so saving
-          // food info can't silently wipe a saved accessibility profile.
+          // food info can't silently wipe a saved accessibility profile
+          // (or the business photo).
           accessibility_features: business.profile?.accessibility_features ?? {},
         },
         token
@@ -130,6 +132,73 @@ function FoodProfileSection({ business, onUpdated }: { business: Business; onUpd
   );
 }
 
+function PhotoSection({ business, onUpdated }: { business: Business; onUpdated: (b: Business) => void }) {
+  const { token } = useAuth();
+  const [imageUrl, setImageUrl] = useState(business.profile?.image_url ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  async function onSave(e: FormEvent) {
+    e.preventDefault();
+    if (!token) return;
+    setError(null);
+    setSaved(false);
+    setSubmitting(true);
+    try {
+      const updated = await api.upsertBusinessProfile(
+        business.id,
+        {
+          description: business.profile?.description ?? undefined,
+          image_url: imageUrl.trim() || null,
+          // Same reasoning as FoodProfileSection/AccessibilityProfileSection
+          // — the upsert replaces the whole profile, so carry through
+          // everything this form doesn't own.
+          cuisines: business.profile?.cuisines ?? [],
+          dietary_options: business.profile?.dietary_options ?? [],
+          price_range: business.profile?.price_range ?? null,
+          accessibility_features: business.profile?.accessibility_features ?? {},
+        },
+        token
+      );
+      onUpdated(updated);
+      setSaved(true);
+    } catch (err) {
+      setError(isApiError(err) ? err.message : "Could not update the photo.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSave} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 text-sm">
+      <h3 className="flex items-center gap-1.5 font-medium">
+        <ImageIcon width={15} height={15} className="text-foreground/50" />
+        Photo
+      </h3>
+      <p className="text-xs text-foreground/55">
+        Paste a link to a real photo of your business (no file upload is wired up yet — host the
+        image anywhere and link to it here).
+      </p>
+      <input
+        value={imageUrl}
+        onChange={(e) => setImageUrl(e.target.value)}
+        placeholder="https://…"
+        className="rounded-lg border border-border bg-background px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/40"
+      />
+      {error && <p className="text-danger">{error}</p>}
+      {saved && !error && <p className="text-success">Saved.</p>}
+      <button
+        type="submit"
+        disabled={submitting}
+        className="self-start rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+      >
+        {submitting ? "Saving…" : "Save"}
+      </button>
+    </form>
+  );
+}
+
 const ACCESSIBILITY_FLAGS: { key: string; label: string }[] = [
   { key: "wheelchair_accessible", label: "Wheelchair accessible" },
   { key: "step_free_access", label: "Step-free access" },
@@ -166,8 +235,10 @@ function AccessibilityProfileSection({ business, onUpdated }: { business: Busine
         business.id,
         {
           description: business.profile?.description ?? undefined,
+          image_url: business.profile?.image_url ?? null,
           // Same reasoning as FoodProfileSection: carry through fields this
-          // form doesn't own so this save can't wipe the food profile.
+          // form doesn't own so this save can't wipe the food profile
+          // (or the business photo).
           cuisines: business.profile?.cuisines ?? [],
           dietary_options: business.profile?.dietary_options ?? [],
           price_range: business.profile?.price_range ?? null,
@@ -830,6 +901,17 @@ export default function BusinessDetailPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      {business.profile?.image_url && (
+        <div className="washed relative -mx-4 h-56 overflow-hidden rounded-b-3xl sm:mx-0 sm:h-72 sm:rounded-3xl">
+          {/* A plain img element, not next/image — see PhotoSection's comment. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={business.profile.image_url}
+            alt={business.name}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </div>
+      )}
       <div className="flex flex-col gap-4 rounded-2xl border border-border bg-surface p-6 sm:flex-row sm:items-start">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <BuildingIcon width={26} height={26} />
@@ -884,6 +966,7 @@ export default function BusinessDetailPage() {
         </section>
 
         <div className="flex flex-col gap-6">
+          {isOwner && <PhotoSection business={business} onUpdated={setBusiness} />}
           {isOwner && (business.category === "RESTAURANT" ? <FoodProfileSection business={business} onUpdated={setBusiness} /> : null)}
           {isOwner && <AccessibilityProfileSection business={business} onUpdated={setBusiness} />}
           {isOwner && <OwnerBookingsPanel businessId={business.id} />}
