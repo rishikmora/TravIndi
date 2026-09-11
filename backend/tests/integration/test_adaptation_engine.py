@@ -42,10 +42,13 @@ from app.domains.adaptation.detection import (
     classify_incident_severity,
     detect_incident_impact,
 )
+from app.domains.adaptation.jobs import claim_next_job, enqueue_job, mark_job_done, mark_job_failed
 from app.domains.adaptation.models import (
     AdaptationEvent,
     AdaptationEventStatus,
     AdaptationEventType,
+    AdaptationJob,
+    AdaptationJobStatus,
     AdaptationProposal,
     AdaptationProposalStatus,
     AdaptationReasonCode,
@@ -504,6 +507,224 @@ async def test_accept_materializes_the_stored_changes_as_a_new_version_without_c
     )
     assert second_attempt.status_code == 409
     assert second_attempt.json()["error"]["code"] == "ADAPTATION_PROPOSAL_NOT_PENDING"
+
+
+async def _insert_decided_proposal(
+    *,
+    trip_id: uuid.UUID,
+    based_on_itinerary_id: uuid.UUID,
+    trigger_event_id: uuid.UUID,
+    changes: dict,
+    status: AdaptationProposalStatus,
+    created_at: datetime,
+    decided_at: datetime | None,
+) -> AdaptationProposal:
+    """Same as `_insert_proposal`, but backdates `created_at`/`decided_at`
+    directly — the only way to exercise the hysteresis/rate-limit windows
+    in `service._ignore_reason` deterministically without sleeping in a
+    test."""
+    async with get_session_factory()() as session:
+        proposal = AdaptationProposal(
+            trip_id=trip_id,
+            based_on_itinerary_id=based_on_itinerary_id,
+            trigger_event_id=trigger_event_id,
+            reason_code=AdaptationReasonCode.INCIDENT_IMPACT,
+            changes=changes,
+            risk_level="MODERATE",
+            confidence=0.8,
+            status=status,
+            expires_at=created_at + timedelta(hours=6),
+            decided_at=decided_at,
+            created_at=created_at,
+        )
+        session.add(proposal)
+        await session.commit()
+        await session.refresh(proposal)
+        return proposal
+
+
+async def test_rejected_proposal_applies_a_longer_hysteresis_cooldown(client: AsyncClient) -> None:
+    """A real oscillation guard: a REJECTED decision blocks a new proposal
+    for `_REJECTED_HYSTERESIS_MINUTES`, a longer window than the plain
+    15-minute cooldown — reproduces a trip owner rejecting a suggestion
+    and the same borderline signal trying to re-propose 20 minutes later
+    (well past the ordinary cooldown, but inside the rejection's own,
+    longer hysteresis window)."""
+    session_data = await _register_and_login(client)
+    user_id = uuid.UUID(_decode_sub(session_data["access_token"]))
+    attraction = await _real_attraction()
+    trip, itinerary, _item = await _create_trip_with_itinerary(
+        user_id=user_id, attraction=attraction, baseline_crowd_risk_score=None
+    )
+    dummy_trigger_event = await _insert_dummy_event(trip_id=trip.id)
+    now = datetime.now(UTC)
+    await _insert_decided_proposal(
+        trip_id=trip.id,
+        based_on_itinerary_id=itinerary.id,
+        trigger_event_id=dummy_trigger_event.id,
+        changes=_valid_changes_for(attraction),
+        status=AdaptationProposalStatus.REJECTED,
+        created_at=now - timedelta(minutes=25),
+        decided_at=now - timedelta(minutes=20),
+    )
+
+    new_event = await _insert_dummy_event(trip_id=trip.id)
+    async with get_session_factory()() as session:
+        event_row = await session.get(AdaptationEvent, new_event.id)
+        trip_row = await session.get(Trip, trip.id)
+        itinerary_row = await session.get(Itinerary, itinerary.id)
+        assert event_row is not None and trip_row is not None and itinerary_row is not None
+        result = await process_event(session, event_row, trip=trip_row, itinerary=itinerary_row)
+
+    assert result is None
+    async with get_session_factory()() as session:
+        refreshed = await session.get(AdaptationEvent, new_event.id)
+        assert refreshed is not None
+        assert refreshed.status == AdaptationEventStatus.IGNORED
+        assert refreshed.context["ignored_reason"] == "rejected_hysteresis_active"
+        proposals = (
+            await session.execute(select(AdaptationProposal).where(AdaptationProposal.trip_id == trip.id))
+        ).scalars().all()
+        assert len(proposals) == 1, "hysteresis must prevent a second proposal from being created"
+
+
+async def test_daily_proposal_rate_limit_caps_proposals_per_trip(client: AsyncClient) -> None:
+    """Backpressure bound, independent of cooldown/hysteresis: once a trip
+    has hit `_MAX_PROPOSALS_PER_TRIP_PER_DAY` proposals in the last 24h,
+    a new otherwise-valid event is ignored rather than spending another
+    AI call — reproduces a signal that keeps legitimately crossing the
+    threshold every check."""
+    session_data = await _register_and_login(client)
+    user_id = uuid.UUID(_decode_sub(session_data["access_token"]))
+    attraction = await _real_attraction()
+    trip, itinerary, _item = await _create_trip_with_itinerary(
+        user_id=user_id, attraction=attraction, baseline_crowd_risk_score=None
+    )
+    now = datetime.now(UTC)
+    # 6 REJECTED, 2-hour-old proposals: old enough to clear both the plain
+    # cooldown (PROPOSED/APPLIED only) and the 60-minute rejection
+    # hysteresis window, so only the daily count can be what trips this.
+    for _ in range(6):
+        dummy_trigger_event = await _insert_dummy_event(trip_id=trip.id)
+        await _insert_decided_proposal(
+            trip_id=trip.id,
+            based_on_itinerary_id=itinerary.id,
+            trigger_event_id=dummy_trigger_event.id,
+            changes=_valid_changes_for(attraction),
+            status=AdaptationProposalStatus.REJECTED,
+            created_at=now - timedelta(hours=2),
+            decided_at=now - timedelta(hours=2),
+        )
+
+    new_event = await _insert_dummy_event(trip_id=trip.id)
+    async with get_session_factory()() as session:
+        event_row = await session.get(AdaptationEvent, new_event.id)
+        trip_row = await session.get(Trip, trip.id)
+        itinerary_row = await session.get(Itinerary, itinerary.id)
+        assert event_row is not None and trip_row is not None and itinerary_row is not None
+        result = await process_event(session, event_row, trip=trip_row, itinerary=itinerary_row)
+
+    assert result is None
+    async with get_session_factory()() as session:
+        refreshed = await session.get(AdaptationEvent, new_event.id)
+        assert refreshed is not None
+        assert refreshed.status == AdaptationEventStatus.IGNORED
+        assert refreshed.context["ignored_reason"] == "daily_rate_limit"
+
+
+# --- Durable job queue (replaces FastAPI BackgroundTasks) ---
+
+
+async def test_create_incident_enqueues_a_durable_job_in_the_same_transaction(client: AsyncClient) -> None:
+    """The real gap this pass closes: `POST /emergency/incidents` used to
+    hand `detect_incident_impact` to a FastAPI `BackgroundTask`, which
+    only ever existed in process memory. It must now leave a real,
+    queryable row in `adaptation.adaptation_jobs` — proof the "something
+    new happened" signal is durable, not dependent on this process
+    staying alive."""
+    reporter = await _register_and_login(client)
+    created = await client.post(
+        "/api/v1/emergency/incidents",
+        json={"incident_type": "theft", "severity": "medium", "lon": 77.2, "lat": 28.6},
+        headers={**_auth(reporter["access_token"]), "Idempotency-Key": str(uuid.uuid4())},
+    )
+    assert created.status_code == 201, created.text
+    incident_id = created.json()["data"]["id"]
+
+    async with get_session_factory()() as session:
+        job = (
+            await session.execute(
+                select(AdaptationJob).where(AdaptationJob.payload["incident_id"].astext == incident_id)
+            )
+        ).scalars().first()
+
+    assert job is not None, "create_incident must enqueue a real adaptation_jobs row, not a BackgroundTask"
+    assert job.job_type == "detect_incident_impact"
+    assert job.status == AdaptationJobStatus.PENDING
+    assert job.attempt_count == 0
+
+
+async def test_claim_next_job_reclaims_a_job_past_its_stale_lease(client: AsyncClient) -> None:
+    """Simulates a worker that claimed a job and then crashed before
+    finishing it — the exact scenario a `BackgroundTask` could never
+    recover from. Past the lease window, the next `claim_next_job` call
+    must treat the stale CLAIMED row as available again, proving restart
+    survival at the queue-mechanics level."""
+    async with get_session_factory()() as session:
+        job = AdaptationJob(job_type="test_stale_claim_probe", payload={}, run_after=datetime(2000, 1, 1, tzinfo=UTC))
+        session.add(job)
+        await session.commit()
+        await session.refresh(job)
+        job_id = job.id
+
+        stale_lease = datetime.now(UTC) - timedelta(minutes=30)
+        await session.execute(
+            text(
+                "UPDATE adaptation.adaptation_jobs SET status = 'CLAIMED', locked_by = 'dead-worker', "
+                "locked_at = :locked_at WHERE id = :id"
+            ),
+            {"locked_at": stale_lease, "id": job_id},
+        )
+        await session.commit()
+
+    async with get_session_factory()() as session:
+        claimed = await claim_next_job(session, worker_id="reclaiming-worker")
+
+    assert claimed is not None
+    assert claimed.id == job_id, "run_after=epoch must make this the oldest eligible job, ahead of any other rows"
+    assert claimed.status == AdaptationJobStatus.CLAIMED
+    assert claimed.locked_by == "reclaiming-worker"
+    assert claimed.attempt_count == 1
+
+
+async def test_mark_job_failed_backs_off_then_permanently_fails_after_max_attempts() -> None:
+    async with get_session_factory()() as session:
+        job = AdaptationJob(
+            job_type="test_backoff_probe", payload={}, run_after=datetime.now(UTC), attempt_count=1, max_attempts=2
+        )
+        session.add(job)
+        await session.commit()
+        await session.refresh(job)
+
+        before = datetime.now(UTC)
+        await mark_job_failed(session, job, error="first failure")
+        assert job.status == AdaptationJobStatus.PENDING
+        assert job.last_error == "first failure"
+        assert job.run_after > before, "a retryable failure must back off, not retry immediately"
+
+        job.attempt_count = 2  # simulate the next claim's attempt_count += 1
+        await session.commit()
+        await mark_job_failed(session, job, error="second failure")
+        assert job.status == AdaptationJobStatus.FAILED, "must not retry forever past max_attempts"
+        assert job.last_error == "second failure"
+
+
+async def test_mark_job_done_marks_status_done() -> None:
+    async with get_session_factory()() as session:
+        job = await enqueue_job(session, job_type="test_done_probe", payload={})
+        await session.commit()
+        await mark_job_done(session, job)
+        assert job.status == AdaptationJobStatus.DONE
 
 
 async def test_reject_marks_the_proposal_rejected(client: AsyncClient) -> None:

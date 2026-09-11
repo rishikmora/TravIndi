@@ -1,14 +1,17 @@
 """Real, deterministic detection — "did something change that matters,"
 never AI-decided. Two independent triggers:
 
-- `detect_incident_impact` — a FastAPI `BackgroundTask` fired by
-  `app/domains/safety/router.py`'s `create_incident`, right after a real
-  incident report commits. A one-shot reaction to a real event, never a
-  polling timer.
+- `detect_incident_impact` — run by `app/domains/adaptation/worker.py`'s
+  durable job poller for a `detect_incident_impact` job row, enqueued by
+  `app/domains/safety/router.py`'s `create_incident` in the same
+  transaction as the real incident report it reacts to (see
+  `app/domains/adaptation/jobs.py`/`models.AdaptationJob`). A one-shot
+  reaction to a real event, never a polling timer over incidents
+  themselves — only the job *queue* is polled.
 - `check_crowd_adaptations` — a manual, user-initiated check
   (`POST /trips/{id}/adaptations/check`) since `crowd.crowd_cells` has no
-  discrete "something happened" row to hook a background task onto (it's
-  only ever written by the one-time seed script).
+  discrete "something happened" row to hook a job onto (it's only ever
+  written by the one-time seed script).
 
 Both hand off to `app/domains/adaptation/service.py`'s `process_event` for
 the cooldown-check-then-AI-assisted-proposal step.
@@ -112,11 +115,11 @@ async def _find_impacted_items(session: AsyncSession, incident: Incident) -> lis
 
 
 async def detect_incident_impact(incident_id: uuid.UUID) -> None:
-    """Opens its own session — the request's session is already closed by
-    the time a `BackgroundTask` runs. Escalates to the service role since
-    `safety.incidents` has RLS and no end-user principal exists in this
-    context (same escape hatch `core/notify.py`'s `notify()` already
-    uses)."""
+    """Opens its own session — called by the job worker's poll loop, long
+    after the original request's session has closed. Escalates to the
+    service role since `safety.incidents` has RLS and no end-user
+    principal exists in this context (same escape hatch `core/notify.py`'s
+    `notify()` already uses)."""
     async with get_session_factory()() as session:
         await session.execute(text("SELECT set_config('app.user_role', 'service', true)"))
         incident = await session.get(Incident, incident_id)

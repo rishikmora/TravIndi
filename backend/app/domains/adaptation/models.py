@@ -18,7 +18,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, Numeric, String
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -141,3 +141,49 @@ class AdaptationProposal(UUIDPKMixin, TimestampMixin, Base):
     applied_itinerary_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("travel.itineraries.id"))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AdaptationJobStatus(enum.StrEnum):
+    PENDING = "PENDING"
+    CLAIMED = "CLAIMED"
+    DONE = "DONE"
+    FAILED = "FAILED"
+
+
+class AdaptationJob(UUIDPKMixin, TimestampMixin, Base):
+    """Durable job queue — the real gap this pass closes. Before this,
+    `safety/router.py`'s `create_incident` handed `detect_incident_impact`
+    to FastAPI's `BackgroundTasks`, which only ever exists in this
+    process's memory: if the server restarts (deploy, crash, OOM) between
+    the incident committing and the task actually running, the task is
+    silently lost with no record it was ever supposed to happen. A row
+    here is committed in the *same* transaction as the incident it
+    describes, so the work order survives a restart — the next poll cycle
+    of `app/domains/adaptation/worker.py`'s in-process loop picks it back
+    up. This is deliberately a single polling loop, not a distributed
+    worker fleet: `locked_by`/`locked_at` plus `FOR UPDATE SKIP LOCKED`
+    (`app/domains/adaptation/jobs.py`) make the claim safe if more than
+    one poller ever runs, but nothing here requires Redis/Kafka or a
+    separate worker process, matching this pass's agreed scope."""
+
+    __tablename__ = "adaptation_jobs"
+    __table_args__ = (
+        Index("ix_adaptation_jobs_status_run_after", "status", "run_after"),
+        {"schema": "adaptation"},
+    )
+
+    job_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[AdaptationJobStatus] = mapped_column(
+        Enum(AdaptationJobStatus, name="adaptation_job_status", schema="adaptation"),
+        nullable=False,
+        default=AdaptationJobStatus.PENDING,
+    )
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    run_after: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    # No FK/enum for locked_by — it's a free-text worker identity
+    # (hostname:pid-style), not a durable reference to anything.
+    locked_by: Mapped[str | None] = mapped_column(String(64))
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(String(1024))

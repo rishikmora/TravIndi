@@ -8,7 +8,7 @@ change that already happened is worth proposing a replan for*.
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.notify import notify
@@ -28,6 +28,21 @@ _PROPOSAL_COOLDOWN_MINUTES = 15
 """Adaptation-storm protection — a trip that keeps triggering matching
 events (e.g. crowd fluctuating around the threshold) gets at most one
 proposal per window, never one per event."""
+
+_REJECTED_HYSTERESIS_MINUTES = 60
+"""A real oscillation guard on top of the plain cooldown above: once the
+trip owner explicitly rejects a proposal, re-arming minutes later on the
+same underlying signal (e.g. a crowd delta sitting just above
+`_CROWD_DELTA_THRESHOLD`, which can drift back and forth across the line
+between two checks) is worse than the flapping this is meant to prevent —
+a rejection is a stronger, more deliberate signal than an ordinary
+cooldown window accounts for, so it gets its own, longer window."""
+
+_MAX_PROPOSALS_PER_TRIP_PER_DAY = 6
+"""Backpressure bound independent of the cooldown/hysteresis windows
+above — caps worst-case AI spend and notification noise for one trip even
+under a signal that keeps legitimately crossing the threshold (e.g. crowd
+readings oscillating right at the boundary every check)."""
 
 _PROPOSAL_TTL_HOURS = 6
 """A proposal that sits unreviewed this long is stale enough that the
@@ -62,29 +77,61 @@ _HUMAN_REASON_BY_CODE = {
 }
 
 
-async def _recent_proposal_exists(session: AsyncSession, trip_id: uuid.UUID) -> bool:
-    cutoff = datetime.now(UTC) - timedelta(minutes=_PROPOSAL_COOLDOWN_MINUTES)
-    result = await session.execute(
+async def _ignore_reason(session: AsyncSession, trip_id: uuid.UUID) -> str | None:
+    """Three independent, real reasons to skip spending an AI call on an
+    otherwise-actionable event, checked cheapest/strongest-signal first.
+    Returns the reason (stored on the event for real observability) or
+    None if none apply."""
+    now = datetime.now(UTC)
+
+    rejected_cutoff = now - timedelta(minutes=_REJECTED_HYSTERESIS_MINUTES)
+    recently_rejected = await session.execute(
+        select(AdaptationProposal.id)
+        .where(
+            AdaptationProposal.trip_id == trip_id,
+            AdaptationProposal.status == AdaptationProposalStatus.REJECTED,
+            AdaptationProposal.decided_at >= rejected_cutoff,
+        )
+        .limit(1)
+    )
+    if recently_rejected.first() is not None:
+        return "rejected_hysteresis_active"
+
+    cooldown_cutoff = now - timedelta(minutes=_PROPOSAL_COOLDOWN_MINUTES)
+    recent_active = await session.execute(
         select(AdaptationProposal.id)
         .where(
             AdaptationProposal.trip_id == trip_id,
             AdaptationProposal.status.in_([AdaptationProposalStatus.PROPOSED, AdaptationProposalStatus.APPLIED]),
-            AdaptationProposal.created_at >= cutoff,
+            AdaptationProposal.created_at >= cooldown_cutoff,
         )
         .limit(1)
     )
-    return result.first() is not None
+    if recent_active.first() is not None:
+        return "cooldown_active"
+
+    daily_count = await session.scalar(
+        select(func.count())
+        .select_from(AdaptationProposal)
+        .where(AdaptationProposal.trip_id == trip_id, AdaptationProposal.created_at >= now - timedelta(hours=24))
+    )
+    if daily_count is not None and daily_count >= _MAX_PROPOSALS_PER_TRIP_PER_DAY:
+        return "daily_rate_limit"
+
+    return None
 
 
 async def process_event(
     session: AsyncSession, event: AdaptationEvent, *, trip: Trip, itinerary: Itinerary
 ) -> AdaptationProposal | None:
-    """Cooldown check -> AI-assisted proposal build -> commit -> notify ->
-    publish. Returns None (with `event.status` set to `IGNORED` or
-    `FAILED`) whenever no proposal is created — never fabricates one."""
-    if await _recent_proposal_exists(session, event.trip_id):
+    """Cooldown/hysteresis/rate-limit check -> AI-assisted proposal build
+    -> commit -> notify -> publish. Returns None (with `event.status` set
+    to `IGNORED` or `FAILED`) whenever no proposal is created — never
+    fabricates one."""
+    ignored_reason = await _ignore_reason(session, event.trip_id)
+    if ignored_reason is not None:
         event.status = AdaptationEventStatus.IGNORED
-        event.context = {**event.context, "ignored_reason": "cooldown_active"}
+        event.context = {**event.context, "ignored_reason": ignored_reason}
         await session.commit()
         return None
 

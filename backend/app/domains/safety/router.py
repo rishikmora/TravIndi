@@ -12,7 +12,7 @@ specific officer/geography is out of scope here).
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, Depends
 from geoalchemy2.shape import to_shape
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,7 +21,7 @@ from app.api.deps import Principal, get_current_principal, get_rls_session, requ
 from app.core.errors import AppError
 from app.core.notify import notify
 from app.core.opa import require_allowed
-from app.domains.adaptation.detection import detect_incident_impact
+from app.domains.adaptation.jobs import enqueue_job, incident_impact_job_payload
 from app.domains.safety.models import Incident, IncidentEvent, IncidentStatus
 from app.domains.safety.schemas import IncidentActionIn, IncidentCreateIn, IncidentOut
 from app.domains.sync.service import claim_operation, get_existing_operation, mark_operation_result
@@ -83,7 +83,6 @@ def _require_open(incident: Incident) -> None:
 @router.post("", response_model=DataResponse[IncidentOut], status_code=201)
 async def create_incident(
     body: IncidentCreateIn,
-    background_tasks: BackgroundTasks,
     principal: Principal = Depends(get_current_principal),
     idempotency_key: str = Depends(require_idempotency_key),
     session: AsyncSession = Depends(get_rls_session),
@@ -129,17 +128,23 @@ async def create_incident(
     await session.flush()
     mark_operation_result(claimed, result_entity_id=incident.id)
     _add_event(session, incident, "REPORTED", uuid.UUID(principal.user_id), {"idempotency_key": idempotency_key})
+    # Durable job row, not a FastAPI BackgroundTask — see
+    # app/domains/adaptation/models.py's AdaptationJob docstring. Enqueued
+    # in the SAME transaction as the incident itself, so the "something
+    # new happened" signal for the adaptive journey engine is committed
+    # atomically with the incident — it can never be silently lost even if
+    # this process crashes immediately after responding. Picked up by
+    # app/domains/adaptation/worker.py's poll loop; a slow/failed AI call
+    # inside that job (e.g. the current Anthropic credit outage) can never
+    # delay or break the reporter's own incident submission.
+    await enqueue_job(
+        session, job_type="detect_incident_impact", payload=incident_impact_job_payload(incident.id)
+    )
     # Refresh before commit, while RLS's session GUCs are still valid for
     # this transaction — same reasoning as create_sos in
     # app/domains/emergency/router.py.
     await session.refresh(incident)
     await session.commit()
-    # Real "something new happened" trigger for the adaptive journey engine
-    # — a one-shot reaction to this real report, never a polling timer.
-    # Runs after the response would otherwise be sent, so a slow/failed AI
-    # call inside it (e.g. the current Anthropic credit outage) can never
-    # delay or break the reporter's own incident submission.
-    background_tasks.add_task(detect_incident_impact, incident.id)
     return DataResponse(data=_to_incident_out(incident))
 
 
