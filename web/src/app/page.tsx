@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { ArrowRightIcon, CompassIcon, ShieldIcon, SparkleIcon, TicketIcon } from "@/components/icons";
+import { HomeTripPrompt } from "@/components/HomeTripPrompt";
+import { ReturningTripBanner } from "@/components/ReturningTripBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,8 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-16">
+      <ReturningTripBanner />
+
       <section className="overflow-hidden rounded-3xl border border-border">
         <div className="grid sm:grid-cols-[1.05fr_.95fr]">
           <div className="flex flex-col gap-6 bg-surface px-8 py-12 pb-24 sm:px-12 sm:py-16">
@@ -103,22 +107,7 @@ export default async function Home() {
                 background: "linear-gradient(180deg, rgba(8,26,47,.15) 0%, rgba(8,26,47,.55) 65%, rgba(8,26,47,.92) 100%)",
               }}
             />
-            <div className="absolute bottom-5 left-5 right-5 rounded-2xl border border-gold/40 bg-ink-2/90 p-4 backdrop-blur">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.2em] text-gold">
-                <SparkleIcon width={11} height={11} />
-                ASK THE AI PLANNER
-              </div>
-              <p className="mt-2 font-display text-base leading-snug text-[#F5EFE3]">
-                &ldquo;Something peaceful and local, 3 days, under ₹15,000.&rdquo;
-              </p>
-              <Link
-                href="/trips/plan"
-                className="mt-3 flex items-center justify-center gap-1 rounded-full bg-gold py-2 text-xs font-bold text-ink"
-              >
-                Create journey
-                <ArrowRightIcon width={12} height={12} />
-              </Link>
-            </div>
+            <HomeTripPrompt />
           </div>
         </div>
 

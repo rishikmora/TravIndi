@@ -23,6 +23,56 @@ function NavLink({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
+interface MoreMenuGroup {
+  label: string;
+  items: { href: string; label: string }[];
+}
+
+// Grouped by what the item is *for*, not alphabetically or by when it was
+// added — a flat 16-item dropdown gave no hierarchy at all. Each group
+// keeps the same hrefs/labels/authed-vs-logged-out set as before; this is
+// an information-architecture pass, not a feature change.
+const EXPLORE_GROUP: MoreMenuGroup = {
+  label: "Explore",
+  items: [
+    { href: "/crowd", label: "Crowd Heatmap" },
+    { href: "/ai/guide", label: "AI Tourist Guide" },
+    { href: "/ai/translate", label: "Translate" },
+    { href: "/accessibility", label: "Accessibility" },
+  ],
+};
+
+const AUTHED_GROUPS: MoreMenuGroup[] = [
+  EXPLORE_GROUP,
+  {
+    label: "Trip & safety",
+    items: [
+      { href: "/report", label: "Report an incident" },
+      { href: "/trusted-contacts", label: "Trusted contacts" },
+      { href: "/location-sharing", label: "Location sharing" },
+      { href: "/trust/fraud", label: "Fraud reports" },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href: "/profile", label: "My Profile" },
+      { href: "/gamification", label: "Travel Passport" },
+      { href: "/lost-found", label: "Lost & Found" },
+      { href: "/notifications", label: "Notifications" },
+      { href: "/consents", label: "Privacy" },
+    ],
+  },
+  {
+    label: "Authority",
+    items: [
+      { href: "/authority", label: "Authority" },
+      { href: "/authority/analytics", label: "Analytics" },
+      { href: "/authority/admin", label: "Administration" },
+    ],
+  },
+];
+
 function MoreMenu({ token }: { token: string | null }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -35,51 +85,35 @@ function MoreMenu({ token }: { token: string | null }) {
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
-  const items: { href: string; label: string }[] = token
-    ? [
-        { href: "/profile", label: "My Profile" },
-        { href: "/crowd", label: "Crowd Heatmap" },
-        { href: "/ai/guide", label: "AI Tourist Guide" },
-        { href: "/ai/translate", label: "Translate" },
-        { href: "/accessibility", label: "Accessibility" },
-        { href: "/gamification", label: "Travel Passport" },
-        { href: "/lost-found", label: "Lost & Found" },
-        { href: "/report", label: "Report an incident" },
-        { href: "/trust/fraud", label: "Fraud reports" },
-        { href: "/trusted-contacts", label: "Trusted contacts" },
-        { href: "/location-sharing", label: "Location sharing" },
-        { href: "/notifications", label: "Notifications" },
-        { href: "/consents", label: "Privacy" },
-        { href: "/authority", label: "Authority" },
-        { href: "/authority/analytics", label: "Analytics" },
-        { href: "/authority/admin", label: "Administration" },
-      ]
-    : [
-        { href: "/crowd", label: "Crowd Heatmap" },
-        { href: "/ai/guide", label: "AI Tourist Guide" },
-        { href: "/ai/translate", label: "Translate" },
-        { href: "/accessibility", label: "Accessibility" },
-      ];
+  const groups = token ? AUTHED_GROUPS : [EXPLORE_GROUP];
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full px-3 py-1.5 text-foreground/70 transition-colors hover:bg-surface-muted hover:text-foreground"
+        aria-expanded={open}
+        className="rounded-pill px-3 py-1.5 text-foreground/70 transition-colors hover:bg-surface-muted hover:text-foreground"
       >
         More
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-foreground/80 hover:bg-surface-muted"
-            >
-              {item.label}
-            </Link>
+        <div className="absolute right-0 z-20 mt-2 w-60 overflow-hidden rounded-card border border-border bg-surface py-1 shadow-raised">
+          {groups.map((group, idx) => (
+            <div key={group.label} className={idx > 0 ? "border-t border-border pt-1" : ""}>
+              <p className="px-4 pt-1.5 pb-1 text-[11px] font-semibold uppercase tracking-wide text-foreground/40">
+                {group.label}
+              </p>
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setOpen(false)}
+                  className="block px-4 py-2 text-sm text-foreground/80 hover:bg-surface-muted"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           ))}
         </div>
       )}

@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { SparkleIcon, MapPinIcon, CalendarIcon } from "@/components/icons";
 import { ListSkeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
 
 const CATEGORIES: LostFoundCategory[] = ["ELECTRONICS", "DOCUMENTS", "BAG_LUGGAGE", "CLOTHING", "JEWELRY", "OTHER"];
 
@@ -232,7 +233,9 @@ function LostItemRow({ item }: { item: LostItem }) {
       {expanded && (
         <div className="mt-3">
           {matches === null && <ListSkeleton count={2} />}
-          {matches?.length === 0 && <p className="text-sm text-foreground/60">No matches yet — real matching runs automatically as new found items come in.</p>}
+          {matches?.length === 0 && (
+            <EmptyState title="No matches yet — real matching runs automatically as new found items come in." />
+          )}
           {matches && matches.length > 0 && (
             <ul className="flex flex-col gap-2">
               {matches.map((m) => (
@@ -377,7 +380,7 @@ function LostFoundHome() {
       {tab === "my-lost" && (
         <div>
           {myLostItems === null && <ListSkeleton count={3} />}
-          {myLostItems?.length === 0 && <p className="text-sm text-foreground/60">You haven&apos;t reported anything lost.</p>}
+          {myLostItems?.length === 0 && <EmptyState title="You haven't reported anything lost." />}
           {myLostItems && myLostItems.length > 0 && (
             <ul className="flex flex-col gap-3">
               {myLostItems.map((item) => (
@@ -391,7 +394,7 @@ function LostFoundHome() {
       {tab === "my-found" && (
         <div>
           {myFoundItems === null && <ListSkeleton count={3} />}
-          {myFoundItems?.length === 0 && <p className="text-sm text-foreground/60">You haven&apos;t reported anything found.</p>}
+          {myFoundItems?.length === 0 && <EmptyState title="You haven't reported anything found." />}
           {myFoundItems && myFoundItems.length > 0 && (
             <ul className="flex flex-col gap-3">
               {myFoundItems.map((item) => (
@@ -405,7 +408,7 @@ function LostFoundHome() {
       {tab === "browse-found" && (
         <div>
           {foundItems === null && <ListSkeleton count={3} />}
-          {foundItems?.length === 0 && <p className="text-sm text-foreground/60">No open found-item reports right now.</p>}
+          {foundItems?.length === 0 && <EmptyState title="No open found-item reports right now." />}
           {foundItems && foundItems.length > 0 && (
             <ul className="flex flex-col gap-3">
               {foundItems.map((item) => (

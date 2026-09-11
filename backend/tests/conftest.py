@@ -36,7 +36,10 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.db.session import get_session_factory
-from app.db.test_data_cleanup import cleanup_test_business_pollution
+from app.db.test_data_cleanup import (
+    cleanup_test_business_pollution,
+    cleanup_test_crowd_cell_pollution,
+)
 from app.main import app
 
 
@@ -52,3 +55,4 @@ async def _cleanup_test_business_pollution():
     yield
     async with get_session_factory()() as session:
         await cleanup_test_business_pollution(session)
+        await cleanup_test_crowd_cell_pollution(session)

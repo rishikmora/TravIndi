@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.booking.models import Booking, Ticket
 from app.domains.business.models import Availability, Business, BusinessProfile, Service
+from app.domains.crowd.models import CrowdCell
 from app.domains.trust.models import (
     FraudCase,
     Review,
@@ -153,3 +154,20 @@ async def cleanup_test_business_pollution(session: AsyncSession) -> dict[str, in
 
     await session.commit()
     return counts
+
+
+async def cleanup_test_crowd_cell_pollution(session: AsyncSession) -> int:
+    """`test_adaptation_engine.py`'s crowd-threshold tests each insert a
+    real `CrowdCell` row with a fresh `h3_cell=f"test-{uuid4().hex[:8]}"`
+    (see that file) so `_latest_per_cell`'s dedup logic never collides
+    across runs — but nothing ever deleted them afterward. Found live
+    2026-09-11: `/crowd/heatmap` real destinations were being crowded out
+    of its (small, real) result limit by an accumulated pile of these,
+    all sharing India Gate's `destination_id` and all more recent than the
+    real seed data. Identifiable precisely by the `"test-"` prefix — no
+    real seed/demo/production row anywhere uses that convention (compare
+    `source="seed"` / `source="demo_manual_bump"`, both distinct)."""
+    await session.execute(text("SELECT set_config('app.user_role', 'service', true)"))
+    result = await session.execute(delete(CrowdCell).where(CrowdCell.h3_cell.like("test-%")))
+    await session.commit()
+    return result.rowcount or 0

@@ -756,7 +756,11 @@ async def apply_adaptation_proposal(
         generated_by="SYSTEM",
         currency=trip.currency,
         destination_id=current_itinerary.destination_id,
-        replan_reason=f"System-detected adaptation: {reason_code}",
+        # Humanized inline rather than importing adaptation/service.py's
+        # own reason-code label map — that module already imports this
+        # one (build_adaptation_proposal_changes), so importing back would
+        # be a circular import for the sake of a two-word string.
+        replan_reason=f"System-detected adaptation: {reason_code.replace('_', ' ').title()}",
         previous_version=current_itinerary.version,
     )
     session.add(itinerary)

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Destination, type Guide } from "@/lib/api";
 import { ArrowRightIcon, LanguageIcon, UsersIcon } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 function RegisterGuideForm({ onCreated }: { onCreated: (g: Guide) => void }) {
   const { token } = useAuth();
@@ -155,7 +157,10 @@ export default function GuidesPage() {
   function refresh() {
     api
       .listGuides({ destination_id: destinationId || undefined, verified_only: verifiedOnly || undefined })
-      .then(setGuides)
+      .then((data) => {
+        setGuides(data);
+        setError(null);
+      })
       .catch(() => setError("Could not load guides."));
   }
 
@@ -211,7 +216,7 @@ export default function GuidesPage() {
         </label>
       </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <ErrorState title={error} onRetry={refresh} />}
 
       {guides === null && !error && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -232,10 +237,7 @@ export default function GuidesPage() {
       )}
 
       {guides !== null && guides.length === 0 && !error && (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-12 text-center">
-          <UsersIcon width={28} height={28} className="text-foreground/30" />
-          <p className="text-sm text-foreground/60">No guides match these filters.</p>
-        </div>
+        <EmptyState icon={<UsersIcon width={28} height={28} />} title="No guides match these filters." />
       )}
     </div>
   );

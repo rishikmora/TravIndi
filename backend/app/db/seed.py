@@ -273,6 +273,63 @@ _SEED_CROWD_SAFETY = {
     "Hampi": {"density": 0.40, "risk_score": 0.30, "safety_score": 0.85},
     "Golden Temple": {"density": 0.75, "risk_score": 0.25, "safety_score": 0.93},
     "Meenakshi Amman Temple": {"density": 0.60, "risk_score": 0.35, "safety_score": 0.80},
+    # Added 2026-09-11 — same illustrative-signal treatment as the original
+    # 10 above, extended to the other 50 destinations added later (2026-09-08's
+    # "destinations expansion") once left deliberately empty. Values are
+    # place-appropriate estimates (pilgrimage/market sites skew higher
+    # density and lower safety than a remote hill station or nature
+    # reserve), not computed from any formula — same honesty bar as the
+    # original 10, never reported as real telemetry.
+    "Red Fort": {"density": 0.75, "risk_score": 0.45, "safety_score": 0.75},
+    "Qutub Minar": {"density": 0.55, "risk_score": 0.30, "safety_score": 0.85},
+    "Humayun's Tomb": {"density": 0.45, "risk_score": 0.25, "safety_score": 0.88},
+    "City Palace Jaipur": {"density": 0.65, "risk_score": 0.35, "safety_score": 0.80},
+    "Hawa Mahal": {"density": 0.70, "risk_score": 0.40, "safety_score": 0.78},
+    "Jaisalmer Fort": {"density": 0.45, "risk_score": 0.30, "safety_score": 0.82},
+    "Udaipur City Palace": {"density": 0.55, "risk_score": 0.30, "safety_score": 0.85},
+    "Mehrangarh Fort": {"density": 0.50, "risk_score": 0.30, "safety_score": 0.85},
+    "Ranthambore National Park": {"density": 0.35, "risk_score": 0.40, "safety_score": 0.75},
+    "Ajanta Caves": {"density": 0.40, "risk_score": 0.20, "safety_score": 0.88},
+    "Ellora Caves": {"density": 0.40, "risk_score": 0.20, "safety_score": 0.88},
+    "Lonavala": {"density": 0.60, "risk_score": 0.35, "safety_score": 0.78},
+    "Shirdi": {"density": 0.80, "risk_score": 0.35, "safety_score": 0.80},
+    "Calangute Beach": {"density": 0.75, "risk_score": 0.45, "safety_score": 0.70},
+    "Basilica of Bom Jesus": {"density": 0.45, "risk_score": 0.20, "safety_score": 0.88},
+    "Alleppey Backwaters": {"density": 0.55, "risk_score": 0.25, "safety_score": 0.85},
+    "Munnar": {"density": 0.50, "risk_score": 0.25, "safety_score": 0.87},
+    "Wayanad": {"density": 0.35, "risk_score": 0.30, "safety_score": 0.85},
+    "Kovalam Beach": {"density": 0.55, "risk_score": 0.35, "safety_score": 0.80},
+    "Ooty": {"density": 0.65, "risk_score": 0.30, "safety_score": 0.83},
+    "Kodaikanal": {"density": 0.55, "risk_score": 0.30, "safety_score": 0.85},
+    "Mahabalipuram": {"density": 0.55, "risk_score": 0.25, "safety_score": 0.85},
+    "Brihadeeswarar Temple": {"density": 0.50, "risk_score": 0.20, "safety_score": 0.88},
+    "Rameswaram": {"density": 0.60, "risk_score": 0.30, "safety_score": 0.80},
+    "Coorg": {"density": 0.45, "risk_score": 0.25, "safety_score": 0.87},
+    "Belur Halebidu": {"density": 0.30, "risk_score": 0.15, "safety_score": 0.90},
+    "Bandipur National Park": {"density": 0.30, "risk_score": 0.40, "safety_score": 0.78},
+    "Charminar": {"density": 0.75, "risk_score": 0.45, "safety_score": 0.72},
+    "Golconda Fort": {"density": 0.45, "risk_score": 0.25, "safety_score": 0.85},
+    "Konark Sun Temple": {"density": 0.45, "risk_score": 0.20, "safety_score": 0.87},
+    "Puri Jagannath Temple": {"density": 0.85, "risk_score": 0.45, "safety_score": 0.72},
+    "Chilika Lake": {"density": 0.30, "risk_score": 0.25, "safety_score": 0.85},
+    "Sundarbans National Park": {"density": 0.25, "risk_score": 0.50, "safety_score": 0.70},
+    "Darjeeling": {"density": 0.55, "risk_score": 0.30, "safety_score": 0.83},
+    "Victoria Memorial": {"density": 0.55, "risk_score": 0.20, "safety_score": 0.88},
+    "Kaziranga National Park": {"density": 0.30, "risk_score": 0.40, "safety_score": 0.78},
+    "Shillong": {"density": 0.40, "risk_score": 0.25, "safety_score": 0.85},
+    "Gangtok": {"density": 0.40, "risk_score": 0.30, "safety_score": 0.83},
+    "Rishikesh": {"density": 0.60, "risk_score": 0.35, "safety_score": 0.80},
+    "Haridwar": {"density": 0.75, "risk_score": 0.40, "safety_score": 0.75},
+    "Nainital": {"density": 0.55, "risk_score": 0.30, "safety_score": 0.83},
+    "Valley of Flowers": {"density": 0.15, "risk_score": 0.35, "safety_score": 0.80},
+    "Shimla": {"density": 0.65, "risk_score": 0.30, "safety_score": 0.82},
+    "Manali": {"density": 0.65, "risk_score": 0.35, "safety_score": 0.80},
+    "Dharamshala": {"density": 0.40, "risk_score": 0.25, "safety_score": 0.85},
+    "Leh": {"density": 0.35, "risk_score": 0.35, "safety_score": 0.80},
+    "Vaishno Devi": {"density": 0.85, "risk_score": 0.45, "safety_score": 0.75},
+    "Dal Lake": {"density": 0.55, "risk_score": 0.30, "safety_score": 0.78},
+    "Statue of Unity": {"density": 0.55, "risk_score": 0.25, "safety_score": 0.87},
+    "Somnath Temple": {"density": 0.60, "risk_score": 0.30, "safety_score": 0.82},
 }
 _H3_RESOLUTION = 9
 
@@ -344,10 +401,11 @@ async def seed() -> None:
         for row in _SEED_DESTINATIONS:
             signals = _SEED_CROWD_SAFETY.get(row["name"])
             if signals is None:
-                # Real gap, not an oversight: only the original 10 have an
-                # illustrative crowd/safety signal — the 50 added later have
-                # none yet, same "legitimately empty until real telemetry"
-                # posture as everywhere else this data is read.
+                # Every seeded destination has an entry above as of
+                # 2026-09-11; this stays as a guard rather than an
+                # assertion so a genuinely new destination added later
+                # without one falls back to the honest "no signal yet"
+                # posture instead of crashing the seed script.
                 continue
             destination = destinations_by_name[row["name"]]
             h3_cell = h3.latlng_to_cell(row["lat"], row["lon"], _H3_RESOLUTION)

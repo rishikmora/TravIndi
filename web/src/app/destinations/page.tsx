@@ -1,5 +1,6 @@
 import { api } from "@/lib/api";
 import { DestinationsGrid } from "./DestinationsGrid";
+import { EmptyState } from "@/components/EmptyState";
 
 export const dynamic = "force-dynamic"; // public data still changes at runtime; no need to cache across requests yet
 
@@ -38,7 +39,7 @@ export default async function DestinationsPage() {
         </p>
       </div>
       {destinations.length === 0 ? (
-        <p className="text-foreground/60">No destinations yet.</p>
+        <EmptyState title="No destinations yet." />
       ) : (
         <DestinationsGrid destinations={destinations} accessibleCounts={accessibleCounts} />
       )}

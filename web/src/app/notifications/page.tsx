@@ -5,6 +5,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/lib/auth-context";
 import { api, type AppNotification } from "@/lib/api";
 import { AlertTriangleIcon, BellIcon, MapPinIcon, ShieldIcon, UsersIcon } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
 
 const TYPE_META: Record<string, { icon: typeof BellIcon; tone: string; label: string }> = {
   sos_update: { icon: ShieldIcon, tone: "bg-danger/10 text-danger", label: "SOS updates" },
@@ -157,10 +158,7 @@ function NotificationsPanel() {
         </div>
       )}
       {notifications?.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-10 text-center">
-          <BellIcon width={26} height={26} className="text-foreground/30" />
-          <p className="text-sm text-foreground/60">No notifications yet.</p>
-        </div>
+        <EmptyState icon={<BellIcon width={26} height={26} />} title="No notifications yet." />
       )}
       {notifications && notifications.length > 0 && (
         <ul className="flex flex-col gap-2">

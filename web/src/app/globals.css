@@ -23,6 +23,21 @@
   --ink: #081a2f;
   --ink-2: #0e2942;
   --gold: #d9b56d;
+
+  /* Radius scale — three stops cover every real shape in this app: a
+     small control (chip/input), a card, and a full pill. Nothing here
+     needed a fourth stop once cards/inputs/pills were named explicitly. */
+  --radius-control: 0.5rem;
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+
+  /* Elevation scale — "resting" (a card sitting on the page background)
+     vs "raised" (a popover/dropdown/modal above other content). Most of
+     this app deliberately uses borders instead of shadows for
+     separation (see §13 card discipline); these two stops exist for the
+     real cases that need to visually lift off the page. */
+  --shadow-resting: 0 1px 2px rgba(14, 41, 66, 0.06);
+  --shadow-raised: 0 12px 32px -8px rgba(14, 41, 66, 0.22);
 }
 
 @theme inline {
@@ -44,6 +59,11 @@
   --font-sans: var(--font-manrope);
   --font-display: var(--font-marcellus);
   --font-mono: var(--font-geist-mono);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
+  --shadow-resting: var(--shadow-resting);
+  --shadow-raised: var(--shadow-raised);
 }
 
 @media (prefers-color-scheme: dark) {

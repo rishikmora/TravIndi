@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Business, type BusinessCategory, type Destination, type DietaryOption } from "@/lib/api";
 import { ArrowRightIcon, BuildingIcon, SearchIcon } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 const CATEGORIES: BusinessCategory[] = [
   "HOTEL",
@@ -229,7 +231,10 @@ export default function BusinessesPage() {
         dietary_option: (overrides?.dietaryFilter ?? dietaryFilter) || undefined,
         accessible_only: overrides?.accessibleOnly ?? accessibleOnly,
       })
-      .then(setBusinesses)
+      .then((data) => {
+        setBusinesses(data);
+        setError(null);
+      })
       .catch(() => setError("Could not load businesses."));
   }
 
@@ -357,7 +362,7 @@ export default function BusinessesPage() {
         </label>
       </div>
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <ErrorState title={error} onRetry={() => refresh()} />}
 
       {businesses === null && !error && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -378,10 +383,7 @@ export default function BusinessesPage() {
       )}
 
       {businesses !== null && filtered.length === 0 && !error && (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-12 text-center">
-          <BuildingIcon width={28} height={28} className="text-foreground/30" />
-          <p className="text-sm text-foreground/60">No business matches these filters.</p>
-        </div>
+        <EmptyState icon={<BuildingIcon width={28} height={28} />} title="No business matches these filters." />
       )}
     </div>
   );

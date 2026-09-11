@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth, isApiError } from "@/lib/auth-context";
@@ -12,6 +13,7 @@ import {
   type Itinerary,
   type ItineraryItem,
   type Destination,
+  type Attraction,
   type Business,
   type Expense,
   type ExpenseCategory,
@@ -27,6 +29,13 @@ import { useOfflineQueue } from "@/lib/offline/useOfflineQueue";
 import { useRealtimeConnection } from "@/lib/realtime/useRealtimeConnection";
 import { CalendarIcon, SparkleIcon, UsersIcon } from "@/components/icons";
 import { Skeleton } from "@/components/Skeleton";
+import { ErrorState } from "@/components/ErrorState";
+import type { ItineraryMapStop } from "@/components/ItineraryMap";
+
+const ItineraryMap = dynamic(() => import("@/components/ItineraryMap").then((m) => m.ItineraryMap), {
+  ssr: false,
+  loading: () => <div className="flex h-full items-center justify-center text-sm text-foreground/50">Loading map…</div>,
+});
 
 function formatRelativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -43,6 +52,7 @@ const REASON_CODE_LABELS: Record<string, string> = {
   accessibility_grounded: "Accessibility-grounded pick",
   safety_priority: "Weighed for safety",
   ai_recommended: "AI recommended",
+  adaptation_proposed: "Added from an accepted trip update",
 };
 
 const TIME_OF_DAY_LABELS: Record<string, string> = { morning: "Morning", afternoon: "Afternoon", evening: "Evening" };
@@ -620,7 +630,15 @@ function ItineraryItemRow({
   );
 }
 
-function AdaptationBanner({ trip, onApplied }: { trip: Trip; onApplied: (itinerary: Itinerary) => void }) {
+function AdaptationBanner({
+  trip,
+  itinerary,
+  onApplied,
+}: {
+  trip: Trip;
+  itinerary: Itinerary;
+  onApplied: (itinerary: Itinerary) => void;
+}) {
   const { token } = useAuth();
   const [proposals, setProposals] = useState<AdaptationProposal[]>([]);
   const [checking, setChecking] = useState(false);
@@ -695,11 +713,14 @@ function AdaptationBanner({ trip, onApplied }: { trip: Trip; onApplied: (itinera
       {pending.map((p) => {
         const added = new Set(p.changes.added_attraction_ids);
         const removed = new Set(p.changes.removed_attraction_ids);
+        const addedItems = p.changes.proposed_items.filter((i) => added.has(i.attraction_id));
+        const removedItems = itinerary.items.filter((i) => i.attraction_id && removed.has(i.attraction_id));
+        const keptCount = p.changes.kept_attraction_ids.length;
         return (
-          <div key={p.id} className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+          <div key={p.id} className="rounded-card border border-primary/30 bg-primary/5 p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-sm font-semibold text-primary">Your trip may need an update</h2>
-              <span className="whitespace-nowrap rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase text-primary">
+              <h2 className="text-sm font-semibold text-primary">Change detected</h2>
+              <span className="whitespace-nowrap rounded-pill bg-primary/10 px-2 py-0.5 text-xs font-medium uppercase text-primary">
                 {p.risk_level} impact
               </span>
             </div>
@@ -707,22 +728,34 @@ function AdaptationBanner({ trip, onApplied }: { trip: Trip; onApplied: (itinera
               {ADAPTATION_REASON_LABELS[p.reason_code] ?? p.reason_code}
             </p>
             <p className="mt-2 text-sm text-foreground/80">{p.changes.summary}</p>
-            {(added.size > 0 || removed.size > 0) && (
-              <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
-                {p.changes.proposed_items
-                  .filter((i) => added.has(i.attraction_id))
-                  .map((i) => (
-                    <span
-                      key={i.attraction_id}
-                      className="rounded-full bg-success/10 px-2 py-0.5 font-medium text-success"
-                    >
-                      + {i.attraction_name ?? "Unnamed stop"}
+            {(removedItems.length > 0 || addedItems.length > 0 || keptCount > 0) && (
+              <div className="mt-3 flex flex-col gap-1.5">
+                {removedItems.map((i) => (
+                  <div key={i.id} className="flex items-center gap-2 rounded-control bg-danger/5 px-2.5 py-1.5 text-xs">
+                    <span className="shrink-0 rounded-pill bg-danger/15 px-1.5 py-0.5 font-semibold uppercase text-danger">
+                      Removed
                     </span>
-                  ))}
-                {removed.size > 0 && (
-                  <span className="rounded-full bg-surface-muted px-2 py-0.5 font-medium text-foreground/60">
-                    {removed.size} stop{removed.size > 1 ? "s" : ""} removed
-                  </span>
+                    <span className="text-foreground/70 line-through">{i.attraction_name ?? "Unnamed stop"}</span>
+                  </div>
+                ))}
+                {addedItems.map((i) => (
+                  <div
+                    key={i.attraction_id}
+                    className="flex flex-col gap-0.5 rounded-control bg-success/5 px-2.5 py-1.5 text-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="shrink-0 rounded-pill bg-success/15 px-1.5 py-0.5 font-semibold uppercase text-success">
+                        Added
+                      </span>
+                      <span className="font-medium text-foreground/85">{i.attraction_name ?? "Unnamed stop"}</span>
+                    </div>
+                    {i.reason && <p className="pl-1 text-foreground/55">{i.reason}</p>}
+                  </div>
+                ))}
+                {keptCount > 0 && (
+                  <p className="px-1 text-xs text-foreground/50">
+                    {keptCount} other stop{keptCount > 1 ? "s" : ""} unchanged
+                  </p>
                 )}
               </div>
             )}
@@ -757,6 +790,34 @@ function AdaptationBanner({ trip, onApplied }: { trip: Trip; onApplied: (itinera
   );
 }
 
+/** Groups items into real calendar/day buckets regardless of which shape
+ * this itinerary's data has (scheduled_time for a dated trip, day_offset
+ * for a duration-only one) — one day-tab model for both, instead of two
+ * separate rendering branches. */
+function groupItineraryByDay(items: ItineraryItem[]): { label: string; items: ItineraryItem[] }[] {
+  const hasScheduledTimes = items.some((i) => i.scheduled_time);
+  const groups = new Map<number, { label: string; sortKey: number; items: ItineraryItem[] }>();
+  for (const item of items) {
+    let key: number;
+    let label: string;
+    let sortKey: number;
+    if (hasScheduledTimes && item.scheduled_time) {
+      const date = new Date(item.scheduled_time);
+      key = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+      label = date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      sortKey = key;
+    } else {
+      key = item.day_offset ?? 0;
+      label = `Day ${key + 1}`;
+      sortKey = key;
+    }
+    const bucket = groups.get(key);
+    if (bucket) bucket.items.push(item);
+    else groups.set(key, { label, sortKey, items: [item] });
+  }
+  return [...groups.values()].sort((a, b) => a.sortKey - b.sortKey).map(({ label, items }) => ({ label, items }));
+}
+
 function ItineraryView({
   trip,
   itinerary,
@@ -766,77 +827,97 @@ function ItineraryView({
   itinerary: Itinerary;
   onItemUpdated: (item: ItineraryItem) => void;
 }) {
-  // Real calendar dates give a natural chronological read on their own; a
-  // duration-only trip (no start_date) has none, so day_offset/time_of_day
-  // (the AI's own real output, now persisted — see backend/app/domains/
-  // travel/planner.py) become the only real structure to group by.
-  const hasScheduledTimes = itinerary.items.some((i) => i.scheduled_time);
-  const byDay = new Map<number, ItineraryItem[]>();
-  if (!hasScheduledTimes) {
-    for (const item of itinerary.items) {
-      const day = item.day_offset ?? 0;
-      const bucket = byDay.get(day);
-      if (bucket) bucket.push(item);
-      else byDay.set(day, [item]);
-    }
-  }
+  const [activeDay, setActiveDay] = useState(0);
+  const [attractionLocations, setAttractionLocations] = useState<Map<string, Attraction>>(new Map());
+
+  const days = useMemo(() => groupItineraryByDay(itinerary.items), [itinerary.items]);
+  const clampedActiveDay = Math.min(activeDay, Math.max(days.length - 1, 0));
+
+  useEffect(() => {
+    if (!itinerary.destination_id) return;
+    api
+      .listAttractions(itinerary.destination_id)
+      .then((attractions) => setAttractionLocations(new Map(attractions.map((a) => [a.id, a]))))
+      .catch(() => setAttractionLocations(new Map()));
+  }, [itinerary.destination_id]);
+
+  const activeDayItems = days[clampedActiveDay]?.items ?? [];
+  const mapStops: ItineraryMapStop[] = activeDayItems
+    .filter((item): item is ItineraryItem & { attraction_id: string } => item.attraction_id != null && attractionLocations.has(item.attraction_id))
+    .map((item, idx) => ({
+      id: item.id,
+      location: attractionLocations.get(item.attraction_id)!.location,
+      sequence: idx + 1,
+      name: item.attraction_name ?? "Unnamed stop",
+      timeLabel: item.scheduled_time
+        ? new Date(item.scheduled_time).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
+        : item.time_of_day
+          ? TIME_OF_DAY_LABELS[item.time_of_day] ?? item.time_of_day
+          : null,
+      completed: item.completed,
+    }));
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between text-sm text-foreground/60">
         <span>Version {itinerary.version}</span>
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+        <span className="rounded-pill bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           Generated by {itinerary.generated_by}
         </span>
       </div>
 
       {itinerary.replan_reason && (
-        <p className="rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
+        <p className="rounded-card border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
           Replanned{itinerary.previous_version != null ? ` from v${itinerary.previous_version}` : ""} because:{" "}
           {itinerary.replan_reason}
         </p>
       )}
 
       {itinerary.unmatched_avoid_terms.length > 0 && (
-        <p className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+        <p className="rounded-card border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
           No real data to exclude for: {itinerary.unmatched_avoid_terms.join(", ")}
         </p>
       )}
 
-      {hasScheduledTimes ? (
-        <ol className="relative flex flex-col gap-4 border-l border-border pl-5">
-          {itinerary.items.map((item) => (
-            <ItineraryItemRow
-              key={item.id}
-              item={item}
-              tripId={trip.id}
-              itineraryId={itinerary.id}
-              onUpdated={onItemUpdated}
-            />
+      {days.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Trip days">
+          {days.map((d, idx) => (
+            <button
+              key={idx}
+              role="tab"
+              aria-selected={idx === clampedActiveDay}
+              onClick={() => setActiveDay(idx)}
+              className={`shrink-0 rounded-pill px-3 py-1.5 text-xs font-medium transition ${
+                idx === clampedActiveDay
+                  ? "bg-primary text-primary-foreground"
+                  : "border border-border text-foreground/60 hover:bg-surface-muted"
+              }`}
+            >
+              {d.label}
+            </button>
           ))}
-        </ol>
-      ) : (
-        [...byDay.entries()]
-          .sort(([a], [b]) => a - b)
-          .map(([day, items]) => (
-            <div key={day} className="flex flex-col gap-2">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground/50">Day {day + 1}</h3>
-              <ol className="relative flex flex-col gap-3 border-l border-border pl-5">
-                {items.map((item) => (
-                  <ItineraryItemRow
-                    key={item.id}
-                    item={item}
-                    tripId={trip.id}
-                    itineraryId={itinerary.id}
-                    onUpdated={onItemUpdated}
-                  />
-                ))}
-              </ol>
-            </div>
-          ))
+        </div>
       )}
 
-      <div className="rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
+      <ol className="relative flex flex-col gap-3 border-l border-border pl-5">
+        {activeDayItems.map((item) => (
+          <ItineraryItemRow
+            key={item.id}
+            item={item}
+            tripId={trip.id}
+            itineraryId={itinerary.id}
+            onUpdated={onItemUpdated}
+          />
+        ))}
+      </ol>
+
+      {mapStops.length > 0 && (
+        <div className="h-64 overflow-hidden rounded-card border border-border">
+          <ItineraryMap stops={mapStops} />
+        </div>
+      )}
+
+      <div className="rounded-card border border-border bg-surface-muted px-3 py-2 text-xs text-foreground/60">
         {itinerary.cost_estimate_available && itinerary.total_cost != null
           ? `Estimated cost: ${itinerary.currency} ${itinerary.total_cost}`
           : "Cost estimates aren't available for this itinerary — no attraction has real price data yet."}
@@ -1127,7 +1208,17 @@ function TripDetail() {
       </div>
     );
   }
-  if (error || !trip) return <p className="text-sm text-danger">{error ?? "Trip not found."}</p>;
+  if (error || !trip) {
+    return (
+      <div className="mx-auto max-w-lg">
+        <ErrorState
+          title={error ?? "Trip not found."}
+          description={error ? "Your other trips are still available." : undefined}
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-lg flex-col gap-6">
@@ -1170,7 +1261,7 @@ function TripDetail() {
 
       {itinerary ? (
         <>
-          <AdaptationBanner trip={trip} onApplied={setItinerary} />
+          <AdaptationBanner trip={trip} itinerary={itinerary} onApplied={setItinerary} />
           <ItineraryView trip={trip} itinerary={itinerary} onItemUpdated={onItemUpdated} />
           <ReplanForm itineraryId={itinerary.id} onReplanned={setItinerary} />
           <CarbonFootprintCard tripId={trip.id} />

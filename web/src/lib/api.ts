@@ -2073,9 +2073,15 @@ export const api = {
     request<{ data: CarbonFootprint }>(`/api/v1/trips/${tripId}/carbon-footprint`, { token }).then((r) => r.data),
 
   // --- Crowd heatmap ---
+  // Explicit limit=100 (the API's own max) — the endpoint defaults to 20
+  // per the shared pagination default, which silently truncated the map
+  // to fewer than all seeded destinations once there were more than 20 of
+  // them. This is "global, every destination" data (the router's own
+  // docstring), never a paged list, so requesting the max is correct here
+  // rather than adding real pagination UI for a dataset this small.
   getCrowdHeatmap: () =>
-    request<{ data: CrowdHeatmapPoint[] }>("/api/v1/crowd/heatmap").then((r) => r.data),
+    request<{ data: CrowdHeatmapPoint[] }>("/api/v1/crowd/heatmap?limit=100").then((r) => r.data),
 
   getCrowdRiskRanking: () =>
-    request<{ data: CrowdHeatmapPoint[] }>("/api/v1/crowd/risk").then((r) => r.data),
+    request<{ data: CrowdHeatmapPoint[] }>("/api/v1/crowd/risk?limit=100").then((r) => r.data),
 };

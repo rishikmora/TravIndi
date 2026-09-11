@@ -7,19 +7,26 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { api, type Trip } from "@/lib/api";
 import { ArrowRightIcon, CalendarIcon, SparkleIcon } from "@/components/icons";
 import { CardGridSkeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 function TripsList() {
   const { token } = useAuth();
   const [trips, setTrips] = useState<Trip[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refresh() {
     if (!token) return;
     api
       .listTrips(token)
-      .then((all) => setTrips(all.filter((t) => t.status !== "CANCELLED")))
+      .then((all) => {
+        setTrips(all.filter((t) => t.status !== "CANCELLED"));
+        setError(null);
+      })
       .catch(() => setError("Could not load your trips."));
-  }, [token]);
+  }
+
+  useEffect(refresh, [token]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,20 +51,22 @@ function TripsList() {
           </Link>
         </div>
       </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <ErrorState title={error} onRetry={refresh} />}
       {trips === null && !error && <CardGridSkeleton count={4} />}
       {trips?.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
-          <CalendarIcon width={28} height={28} className="text-foreground/40" />
-          <p className="text-sm text-foreground/60">No trips yet — create your first one.</p>
-          <Link
-            href="/trips/plan"
-            className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-          >
-            Plan with AI
-            <ArrowRightIcon width={14} height={14} />
-          </Link>
-        </div>
+        <EmptyState
+          icon={<CalendarIcon width={28} height={28} />}
+          title="No trips yet — create your first one."
+          action={
+            <Link
+              href="/trips/plan"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            >
+              Plan with AI
+              <ArrowRightIcon width={14} height={14} />
+            </Link>
+          }
+        />
       )}
       {trips && trips.length > 0 && (
         <ul className="grid gap-3 sm:grid-cols-2">

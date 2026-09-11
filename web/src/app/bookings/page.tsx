@@ -7,6 +7,8 @@ import { useAuth, isApiError } from "@/lib/auth-context";
 import { api, type Booking } from "@/lib/api";
 import { QrTicket } from "@/components/QrTicket";
 import { TicketIcon } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 function statusTone(status: string) {
   if (status === "CONFIRMED") return "bg-success/10 text-success";
@@ -107,13 +109,18 @@ function BookingsList() {
   const [bookings, setBookings] = useState<Booking[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function refresh() {
     if (!token) return;
     api
       .listBookings(token)
-      .then(setBookings)
+      .then((data) => {
+        setBookings(data);
+        setError(null);
+      })
       .catch(() => setError("Could not load your bookings."));
-  }, [token]);
+  }
+
+  useEffect(refresh, [token]);
 
   function update(updated: Booking) {
     setBookings((prev) => (prev ? prev.map((x) => (x.id === updated.id ? updated : x)) : prev));
@@ -133,7 +140,7 @@ function BookingsList() {
         <h1 className="text-2xl font-semibold tracking-tight">My bookings</h1>
         <p className="mt-1 text-sm text-foreground/60">Real time-slot bookings with a QR ticket for check-in.</p>
       </div>
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <ErrorState title={error} onRetry={refresh} />}
       {bookings === null && !error && (
         <div className="flex flex-col gap-3">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -145,13 +152,15 @@ function BookingsList() {
         </div>
       )}
       {bookings?.length === 0 && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-10 text-center">
-          <TicketIcon width={28} height={28} className="text-foreground/40" />
-          <p className="text-sm text-foreground/60">No bookings yet.</p>
-          <Link href="/businesses" className="text-sm font-medium text-primary">
-            Browse businesses
-          </Link>
-        </div>
+        <EmptyState
+          icon={<TicketIcon width={28} height={28} />}
+          title="No bookings yet."
+          action={
+            <Link href="/businesses" className="text-sm font-medium text-primary">
+              Browse businesses
+            </Link>
+          }
+        />
       )}
       {bookings && bookings.length > 0 && (
         <>

@@ -26,6 +26,8 @@ import {
   ShieldIcon,
   UsersIcon,
 } from "@/components/icons";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 const LocationShareMap = dynamic(() => import("@/components/LocationShareMap").then((m) => m.LocationShareMap), {
   ssr: false,
@@ -424,13 +426,15 @@ function SetupWizard({
 
             {recipientType === "TRUSTED_CONTACT" &&
               (contacts.length === 0 ? (
-                <p className="mt-3 text-xs text-foreground/60">
-                  You have no trusted contacts yet.{" "}
-                  <Link href="/trusted-contacts" className="font-medium text-primary underline">
-                    Add one first
-                  </Link>
-                  .
-                </p>
+                <EmptyState
+                  className="mt-3"
+                  title="You have no trusted contacts yet."
+                  action={
+                    <Link href="/trusted-contacts" className="text-sm font-medium text-primary underline">
+                      Add one first
+                    </Link>
+                  }
+                />
               ) : (
                 <select
                   value={contactId}
@@ -447,13 +451,15 @@ function SetupWizard({
 
             {recipientType === "GROUP" &&
               (trips.length === 0 ? (
-                <p className="mt-3 text-xs text-foreground/60">
-                  You have no trips yet.{" "}
-                  <Link href="/trips" className="font-medium text-primary underline">
-                    Plan one first
-                  </Link>
-                  .
-                </p>
+                <EmptyState
+                  className="mt-3"
+                  title="You have no trips yet."
+                  action={
+                    <Link href="/trips" className="text-sm font-medium text-primary underline">
+                      Plan one first
+                    </Link>
+                  }
+                />
               ) : (
                 <select
                   value={tripId}
@@ -607,7 +613,13 @@ function LocationSharingPanel() {
 
   function refresh() {
     if (!token) return;
-    api.listLocationShares(token).then(setShares).catch(() => setError("Could not load your location shares."));
+    api
+      .listLocationShares(token)
+      .then((data) => {
+        setShares(data);
+        setError(null);
+      })
+      .catch(() => setError("Could not load your location shares."));
     api.listTrustedContacts(token).then(setContacts).catch(() => {});
     api.listTrips(token).then(setTrips).catch(() => {});
     api.listSos(token).then((list) => setOpenSos(list.find(isOpenSos) ?? null)).catch(() => {});
@@ -776,7 +788,7 @@ function LocationSharingPanel() {
         </div>
       )}
 
-      {error && <p className="text-sm text-danger">{error}</p>}
+      {error && <ErrorState title={error} onRetry={refresh} />}
 
       {wizardOpen && (
         <SetupWizard contacts={contacts} trips={trips} onCreated={onCreated} onClose={() => setWizardOpen(false)} />
@@ -810,10 +822,10 @@ function LocationSharingPanel() {
         )}
 
         {shares !== null && activeShares.length === 0 && !wizardOpen && (
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-8 text-center">
-            <RefreshIcon width={22} height={22} className="text-foreground/30" />
-            <p className="text-sm text-foreground/60">You&apos;re not sharing your location with anyone right now.</p>
-          </div>
+          <EmptyState
+            icon={<RefreshIcon width={22} height={22} />}
+            title="You're not sharing your location with anyone right now."
+          />
         )}
 
         {activeShares.map((share) => (

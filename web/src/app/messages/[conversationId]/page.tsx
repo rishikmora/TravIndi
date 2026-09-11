@@ -9,6 +9,7 @@ import { api, type ChatMessage, type Conversation } from "@/lib/api";
 import { useRealtimeConnection, type RealtimeEvent } from "@/lib/realtime/useRealtimeConnection";
 import { ArrowRightIcon, CloseIcon, UsersIcon } from "@/components/icons";
 import { Skeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
 
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "🎉", "😮"];
 const TYPING_IDLE_MS = 2500;
@@ -308,7 +309,7 @@ function ChatroomPanel() {
             {loadingOlder ? "Loading…" : "Load earlier messages"}
           </button>
         )}
-        {messages.length === 0 && <p className="text-center text-sm text-foreground/50">No messages yet — say hello.</p>}
+        {messages.length === 0 && <EmptyState title="No messages yet — say hello." />}
         {messages.map((message) => (
           <MessageRow
             key={message.id}

@@ -9,6 +9,7 @@ import { api, type Conversation } from "@/lib/api";
 import { useRealtimeConnection, type RealtimeEvent } from "@/lib/realtime/useRealtimeConnection";
 import { ChatIcon, UsersIcon } from "@/components/icons";
 import { ListSkeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
 
 function conversationTitle(conv: Conversation, myUserId: string | undefined): string {
   if (conv.title) return conv.title;
@@ -129,12 +130,11 @@ function MessagesPanel() {
       {sorted === null && <ListSkeleton />}
 
       {sorted !== null && sorted.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-10 text-center">
-          <ChatIcon width={22} height={22} className="text-foreground/30" />
-          <p className="text-sm text-foreground/60">
-            No conversations yet. Trip chats appear automatically once you open a trip.
-          </p>
-        </div>
+        <EmptyState
+          icon={<ChatIcon width={22} height={22} />}
+          title="No conversations yet."
+          description="Trip chats appear automatically once you open a trip."
+        />
       )}
 
       <div className="flex flex-col gap-2">

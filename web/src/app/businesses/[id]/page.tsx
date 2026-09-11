@@ -21,6 +21,8 @@ import {
 import { QrTicket } from "@/components/QrTicket";
 import { BuildingIcon, CalendarIcon, ImageIcon, MinusIcon, PlusIcon, StarIcon, TicketIcon } from "@/components/icons";
 import { Skeleton } from "@/components/Skeleton";
+import { EmptyState } from "@/components/EmptyState";
+import { ErrorState } from "@/components/ErrorState";
 
 const DIETARY_OPTIONS: DietaryOption[] = ["VEGETARIAN", "VEGAN", "JAIN", "HALAL", "GLUTEN_FREE", "NON_VEGETARIAN"];
 const DIETARY_LABELS: Record<DietaryOption, string> = {
@@ -519,7 +521,7 @@ function ServiceCard({
 
       <div className="mt-3 flex flex-col gap-1.5">
         {slots === null && <p className="text-xs text-foreground/50">Loading availability…</p>}
-        {slots?.length === 0 && <p className="text-xs text-foreground/50">No time slots open yet.</p>}
+        {slots?.length === 0 && <EmptyState title="No time slots open yet." />}
         {slots?.map((slot) =>
           isOwner ? (
             <div key={slot.id} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs">
@@ -717,7 +719,7 @@ function ServicesSection({ business, isOwner }: { business: Business; isOwner: b
         </div>
       )}
       {services === null && <Skeleton className="h-16 w-full" />}
-      {services?.length === 0 && <p className="text-sm text-foreground/60">No services listed yet.</p>}
+      {services?.length === 0 && <EmptyState title="No services listed yet." />}
       {services && services.length > 0 && (
         <ul className="flex flex-col gap-2">
           {services.map((s) => (
@@ -793,7 +795,7 @@ function OwnerBookingsPanel({ businessId }: { businessId: string }) {
               </span>
             </li>
           ))}
-          {bookings.length === 0 && <p className="text-xs text-foreground/50">No bookings yet.</p>}
+          {bookings.length === 0 && <EmptyState title="No bookings yet." />}
         </ul>
       </div>
     </div>
@@ -886,7 +888,7 @@ function ReviewsSection({ businessId }: { businessId: string }) {
             )}
           </li>
         ))}
-        {reviews.length === 0 && <p className="text-sm text-foreground/60">No reviews yet.</p>}
+        {reviews.length === 0 && <EmptyState title="No reviews yet." />}
       </ul>
     </div>
   );
@@ -961,7 +963,11 @@ export default function BusinessDetailPage() {
     api.getDestination(business.destination_id).then((d) => setDestinationName(d.name)).catch(() => {});
   }, [business?.destination_id]);
 
-  if (error) return <p className="text-sm text-danger">{error}</p>;
+  if (error) {
+    return (
+      <ErrorState title={error} onRetry={() => window.location.reload()} />
+    );
+  }
   if (!business) {
     return (
       <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">

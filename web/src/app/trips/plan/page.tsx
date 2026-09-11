@@ -17,6 +17,20 @@ import {
   type TripPace,
 } from "@/lib/api";
 import { MapPinIcon, ShieldIcon, SparkleIcon } from "@/components/icons";
+import { PENDING_TRIP_PROMPT_KEY } from "@/components/HomeTripPrompt";
+
+// One-time carry from the home page's real NL input (see
+// HomeTripPrompt.tsx) — read once on mount and cleared immediately so a
+// stale value never resurfaces on a later, unrelated visit to this page.
+function takePendingPromptFromHome(): string {
+  try {
+    const value = sessionStorage.getItem(PENDING_TRIP_PROMPT_KEY);
+    if (value) sessionStorage.removeItem(PENDING_TRIP_PROMPT_KEY);
+    return value ?? "";
+  } catch {
+    return "";
+  }
+}
 
 const PROGRESS_STEPS = [
   "Understanding your preferences",
@@ -174,7 +188,7 @@ function CapturePanel({
   onSkip: () => void;
 }) {
   const { token } = useAuth();
-  const [prompt, setPrompt] = useState("");
+  const [prompt, setPrompt] = useState(takePendingPromptFromHome);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
