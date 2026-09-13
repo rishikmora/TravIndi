@@ -16,17 +16,17 @@ function trimSlash(value: string | undefined): string {
   return (value ?? '').trim().replace(/\/+$/, '');
 }
 
-function resolveDataMode(requested: string | undefined): DataMode {
-  if (requested === 'api') return 'api';
-  if (requested === 'mock') {
-    // Production builds may only run on the mock backend for explicit demos.
-    if (isProductionBuild && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') return 'api';
-    return 'mock';
-  }
-  return isProductionBuild ? 'api' : 'mock';
-}
-
 const apiBaseUrl = trimSlash(process.env.NEXT_PUBLIC_API_BASE_URL);
+
+function resolveDataMode(requested: string | undefined): DataMode {
+  if (!isProductionBuild) return requested === 'api' ? 'api' : 'mock';
+  // With no backend configured there is nothing to talk to: serve the clearly
+  // labelled sample data instead of a site (and build) that cannot load.
+  if (!apiBaseUrl) return 'mock';
+  // With a backend configured, production uses it unless a demo is explicitly requested.
+  if (requested === 'mock' && process.env.NEXT_PUBLIC_DEMO_MODE === 'true') return 'mock';
+  return 'api';
+}
 
 export const env = {
   appName: 'TravIndi',
