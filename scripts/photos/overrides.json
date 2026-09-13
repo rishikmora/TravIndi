@@ -1,0 +1,130 @@
+{
+  "delhi": { "exclude": ["20191204 Czerwony Fort w Agrze 0934 6593 DxO.jpg"] },
+  "agra": { "hero": "Taj Mahal, Agra, India edit2.jpg" },
+  "varanasi": { "exclude": ["India - Varanasi paper bag maker - 0078.jpg", "Buddhist monk in Sarnath.jpg", "India - Varanasi green peas - 2714.jpg"] },
+  "rishikesh": { "exclude": ["Star trail in Rishikesh.jpg", "Bags In Rishikesh.jpg", "Langoor In Rishikesh.jpg", "Masked wagtail near Rishikesh 02.jpg"] },
+  "manali": { "exclude": ["Yaks on Manali, Himachal Pradesh.jpg", "Top View of Sissu , Lahaul.jpg"] },
+  "khajuraho": { "exclude": ["20120303 zoophilia Lakshmana Temple Khajuraho India (panoramic version).jpg"] },
+  "valley-of-flowers": { "exclude": ["Breathtaking beauty of Dzukou Valley in Manipur-Nagaland border (edit).jpg"] },
+  "jaipur": { "hero": "20191218 Amber Fort seen from Jaigarh Fort 1617 9427.jpg", "exclude": ["Fulda, Schlossgarten, 2019-10 CN-06.jpg"] },
+  "udaipur": { "exclude": ["20191206 Uliczny grajek w Udajpurze 1215 6822 DxO.jpg", "20191207 Street musician in Udaipur 1511 7249 01.jpg"] },
+  "jaisalmer": { "exclude": ["Toilet Inside Battlement Jaisalmer Fort Dec14 DSC 6258.jpg"] },
+  "jodhpur": { "hero": "Mehrangarh Fort 5, Jodhpur, Rajasthan, India.jpg", "exclude": ["Fresco 2, Mehrangarh Fort, Jodhpur, Rajasthan.jpg"] },
+  "mumbai": {
+    "hero": "Chhatrapati Shivaji Terminus (Victoria Terminus).jpg",
+    "exclude": [
+      "Wół w Bombaju.jpg",
+      "Commemorative Inscription for the Landing of King George V and Queen Mary at Gateway of India, 1911.jpg",
+      "San Francisco (CA, USA), Fort Point -- 2022 -- 3039 (bw).jpg",
+      "Mumbai - Chhatrapati Shivaji Terminus Tracks.jpg"
+    ]
+  },
+  "goa": {
+    "hero": "Mandrem Beach and Mandrem River, Mandrem, Goa, India.jpg",
+    "exclude": [
+      "A Packaging office builiding of Panaji post office.jpg",
+      "A Jewellery store near Fontainhas, Panaji.jpg",
+      "Outpost store at Fontainhas, Panaji.jpg",
+      "Basilica of Bom Jesus and vehicles parked infront.jpg"
+    ]
+  },
+  "rann-of-kutch": {
+    "hero": "The White Desert in Kutch, the great rann of kutch.jpg",
+    "exclude": ["Peregrine Falcon (male) cropped.jpg", "The great rann of kutch flooded with tourists.jpg"]
+  },
+  "ajanta-ellora": { "exclude": ["Buddhist Monks inside premises of Ajanta Caves, Maharashtra, India 19.jpg"] },
+  "alappuzha": {
+    "hero": "Kerala backwater 20080218-11.jpg",
+    "exclude": [
+      "Pheasant-tailed jacana (Hydrophasianus chirurgus) juvenile.jpg",
+      "Bronze-winged jacana (Metopidius indicus) 2.jpg",
+      "Pheasant-tailed jacana (Hydrophasianus chirurgus).jpg",
+      "Grey-headed swamphen (Porphyrio poliocephalus) female.jpg",
+      "Grey-headed swamphen (Porphyrio poliocephalus) male.jpg",
+      "Common picture wing (Rhyothemis variegata) male.jpg",
+      "Common tailorbird (Orthotomus sutorius guzuratus) male Kerala.jpg",
+      "Bronze-winged jacana (Metopidius indicus).jpg",
+      "Alappuzha loves Wikimedia IMG 7650.JPG",
+      "Alappuzha loves Wikimedia IMG 7655.JPG"
+    ]
+  },
+  "munnar": {
+    "exclude": [
+      "Pu'er tea, Rostov-on-Don, Russia.jpg",
+      "The top station of a cableway.jpg",
+      "Remote view of the Villarais area from the Villard slope, Villard-Reculas, 2026.jpg",
+      "Jaflong Sylhet.jpg",
+      "Cime de Caron France top station from SE on 2015-01-05.png",
+      "Nilgiri tahr (Nilgiritragus hylocrius) female head.jpg"
+    ]
+  },
+  "kochi": { "hero": "Kochi chinese fishing-net-20080215-01a.jpg", "exclude": ["Mad Crab.jpg"] },
+  "hampi": { "exclude": ["M104 ngc4594 sombrero galaxy hi-res.jpg", "Virupaksha - Eating Monkey.jpg"] },
+  "mysuru": { "exclude": ["Gopalswamy, 35 year old tusker, Nagarahole TR AJTJ P1080603.jpg"] },
+  "coorg": {
+    "exclude": [
+      "Ripe Seeds Coffee Robusta Coorg Karnataka India Feb24 D72 25688.jpg",
+      "Moss Rivetment Singnally Coorg Jun24 A7CR 01496.jpg",
+      "Flower Buds Coffee Robusta Coorg Feb24 D72 25939.jpg",
+      "ABBEY FALLS MADIKERI.jpg",
+      "Abbey Falls Madikeri.jpg",
+      "Abbey falls - Madikeri.jpg",
+      "Abbey Falls, Madikeri.jpg",
+      "Abbey Falls Madkeri 2018 (1).jpg"
+    ]
+  },
+  "warangal": { "exclude": ["WAG9 of Ajni Jn.jpg", "Adi Shankaracharya with Disciples.jpg", "WL KMM Border 07122014.jpg"] },
+  "mahabalipuram": { "exclude": ["Ghost Crab Burrow Mahabalipuram Sep24 A7CR 03085.jpg"] },
+  "puducherry": {
+    "exclude": [
+      "Bourbon St, French Quarter, New Orleans, USA2.jpg",
+      "Jackson Square, New Orleans, USA1.jpg",
+      "The Spot Cafe on Puducherry beach road.jpg",
+      "A Tree on the footpath infront of Puducherry beach.jpg"
+    ]
+  },
+  "kolkata": {
+    "exclude": [
+      "Victoria Memorial London 2020 Morning 02.jpg",
+      "Memorial a Victoria y Palacio de Buckingham, Londres, Inglaterra, 2014-08-11, DD 189.JPG",
+      "Red Vinca or Periwinkle in a garden in Kolkata.jpg"
+    ]
+  },
+  "darjeeling": {
+    "exclude": [
+      "Dark-breasted Rosefinch.jpg",
+      "A ground spiral firework captured in long exposure.jpg",
+      "2024-Apr Suzhou - Tiger Hill Scenic Area (Hu Qiu) 虎丘 - img 02.jpg",
+      "Black Redstart in Tabakoshi April 2025 by Tisha Mukherjee 03.jpg"
+    ]
+  },
+  "gangtok": {
+    "exclude": [
+      "Open wing basking upon cemented floor of Bassarona durga (Moore, 1858) - Blue Duke WLB IMG 4446.jpg",
+      "Pink Hydrangea (common names hydrangea or hortensia).jpg"
+    ]
+  },
+  "meghalaya": {
+    "exclude": [
+      "Fungus Dead Log Nokrek Daribokgre Oct24 A7CR 03596.jpg",
+      "Sign Sonja Huro West Garo India Oct24 A7CR 03355.jpg",
+      "Indian White-eye Sasatgre Meghalaya Oct24 A7CR 03697.jpg"
+    ]
+  },
+  "kaziranga": {
+    "exclude": [
+      "Greater one-horned rhinoceros at Chitwan.jpg",
+      "Open wing basking of Papilio polytes Linnaeus, 1758 - Common Mormon WLB MG 4282.jpg",
+      "Asian Barred Owlet in Kaziranga National Park March 2025 by Tisha Mukherjee 01.jpg"
+    ]
+  },
+  "ziro": {
+    "exclude": [
+      "An Apatani Old lady in Ziro valley of Arunachal Pradesh.jpg",
+      "Close wing moisture sucking of Charaxes kahruba (Moore, 1895) - Variegated Rajah WLB.jpg",
+      "Apatani culture.jpg",
+      "Ziro Festival of Music - 2019 (Arunachal Pradesh) (48868248663).jpg"
+    ]
+  },
+  "puri-konark": { "exclude": ["Moonbeam - Brest 2008-10.jpg"] }
+}

@@ -1,0 +1,559 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------------ */
+/* Design tokens                                                             */
+/* ------------------------------------------------------------------------ */
+
+@theme {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-ink: #0a0a0b;
+  --color-ink-2: #121214;
+  --color-ink-3: #1b1b1e;
+  --color-ink-4: #26262a;
+  --color-paper: #f4f1ea;
+  --color-paper-2: #e9e4da;
+  --color-paper-3: #d9d2c4;
+  --color-stone: #8c877e;
+  --color-stone-2: #6b665e;
+  --color-saffron: #e8a04b;
+  --color-marigold: #f0b64a;
+  --color-vermilion: #d2553f;
+  --color-peacock: #1f6f78;
+  --color-jade: #2f8f6f;
+  --color-indigo: #3d4e93;
+
+  /* TravIndi heritage palette: stone, terracotta, brass, warm ivory, deep navy, teal. */
+  --color-navy: #14213d;
+  --color-navy-2: #1c2b4a;
+  --color-navy-3: #2a3a5c;
+  --color-ivory: #faf6ee;
+  --color-ivory-2: #f2ebdd;
+  --color-sandstone: #e4d6bd;
+  --color-terracotta: #a84a2a;
+  --color-terracotta-2: #8c3b1f;
+  --color-teal: #1d6b6b;
+  --color-teal-2: #155454;
+  --color-brass: #b08a3e;
+  --color-gold: #d4a649;
+  --color-saffron-muted: #d98f3a;
+  --color-stone-warm: #6f665b;
+
+  /* Semantic colours (AA on ivory). */
+  --color-success: #276b43;
+  --color-warning: #8a5300;
+  --color-danger: #b3261e;
+  --color-info: #2b5f9e;
+
+  --ease-cinematic: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.55, 0, 0.75, 0.3);
+
+  --tracking-display: -0.045em;
+  --tracking-tightish: -0.02em;
+  --tracking-label: 0.18em;
+
+  --shadow-float: 0 24px 64px -24px rgb(0 0 0 / 0.5);
+  --shadow-soft: 0 8px 30px -12px rgb(0 0 0 / 0.25);
+
+  --breakpoint-xs: 26rem;
+}
+
+:root {
+  --vh: 1vh;
+  --nav-height: 4.5rem;
+  --page-gutter: clamp(1.25rem, 4vw, 3.5rem);
+  --measure: 34rem;
+  color-scheme: dark;
+}
+
+/* Surface themes. Sections opt in and the navigation adapts to them. */
+.theme-dark {
+  --surface: var(--color-ink);
+  --surface-raised: var(--color-ink-2);
+  --text: var(--color-paper);
+  --text-muted: rgb(244 241 234 / 0.66);
+  --text-subtle: rgb(244 241 234 / 0.44);
+  --hairline: rgb(244 241 234 / 0.12);
+  --focus: var(--color-marigold);
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.theme-light {
+  --surface: var(--color-paper);
+  --surface-raised: #fbf9f5;
+  --text: var(--color-ink);
+  --text-muted: rgb(10 10 11 / 0.64);
+  --text-subtle: rgb(10 10 11 / 0.46);
+  --hairline: rgb(10 10 11 / 0.1);
+  --focus: var(--color-peacock);
+  background-color: var(--surface);
+  color: var(--text);
+  color-scheme: light;
+}
+
+/* Product surfaces: warm ivory by day, deep navy for night and safety moments. */
+.theme-app {
+  --surface: var(--color-ivory);
+  --surface-raised: #fffdf8;
+  --surface-sunken: var(--color-ivory-2);
+  --text: var(--color-navy);
+  --text-muted: #5c574f;
+  --text-subtle: #6f665b;
+  --hairline: rgb(20 33 61 / 0.12);
+  --hairline-strong: rgb(20 33 61 / 0.26);
+  --accent: var(--color-terracotta);
+  --accent-hover: var(--color-terracotta-2);
+  --accent-text: #fffdf8;
+  --link: var(--color-teal);
+  --focus: var(--color-teal);
+  --tone-neutral-bg: rgb(20 33 61 / 0.07);
+  --tone-neutral-fg: var(--color-navy);
+  --tone-info-bg: rgb(43 95 158 / 0.11);
+  --tone-info-fg: #214b7d;
+  --tone-success-bg: rgb(39 107 67 / 0.12);
+  --tone-success-fg: #1f5a37;
+  --tone-warning-bg: rgb(217 143 58 / 0.18);
+  --tone-warning-fg: #7a4900;
+  --tone-danger-bg: rgb(179 38 30 / 0.1);
+  --tone-danger-fg: #9c2019;
+  --tone-accent-bg: rgb(168 74 42 / 0.1);
+  --tone-accent-fg: var(--color-terracotta-2);
+  background-color: var(--surface);
+  color: var(--text);
+  color-scheme: light;
+}
+
+.theme-app-dark {
+  --surface: var(--color-navy);
+  --surface-raised: var(--color-navy-2);
+  --surface-sunken: #0f1a31;
+  --text: var(--color-ivory);
+  --text-muted: rgb(250 246 238 / 0.74);
+  --text-subtle: rgb(250 246 238 / 0.58);
+  --hairline: rgb(250 246 238 / 0.14);
+  --hairline-strong: rgb(250 246 238 / 0.3);
+  --accent: var(--color-gold);
+  --accent-hover: #e2b85f;
+  --accent-text: var(--color-navy);
+  --link: #7fc4c4;
+  --focus: var(--color-gold);
+  --tone-neutral-bg: rgb(250 246 238 / 0.1);
+  --tone-neutral-fg: var(--color-ivory);
+  --tone-info-bg: rgb(120 170 230 / 0.16);
+  --tone-info-fg: #b9d4f3;
+  --tone-success-bg: rgb(110 200 150 / 0.16);
+  --tone-success-fg: #a9e2c1;
+  --tone-warning-bg: rgb(230 170 80 / 0.18);
+  --tone-warning-fg: #f3cf8f;
+  --tone-danger-bg: rgb(240 110 100 / 0.18);
+  --tone-danger-fg: #f7b4ad;
+  --tone-accent-bg: rgb(212 166 73 / 0.18);
+  --tone-accent-fg: #efd08c;
+  background-color: var(--surface);
+  color: var(--text);
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Base                                                                      */
+/* ------------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    background: var(--color-ink);
+    color: var(--color-paper);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+    scroll-padding-top: var(--nav-height);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-feature-settings: 'ss01', 'cv11';
+    overflow-x: clip;
+    min-height: 100%;
+  }
+
+  ::selection {
+    background: var(--color-marigold);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus, var(--color-marigold));
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  img,
+  video,
+  canvas {
+    display: block;
+  }
+}
+
+/* Lenis smooth scroll */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis:not(.lenis-autoToggle).lenis-stopped {
+  overflow: clip;
+}
+.lenis [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Typography                                                                */
+/* ------------------------------------------------------------------------ */
+
+@utility display-hero {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(3.25rem, 12.5vw, 12.5rem);
+  line-height: 0.86;
+  letter-spacing: -0.055em;
+  text-transform: uppercase;
+}
+
+@utility display-xl {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(2.75rem, 8.2vw, 8.5rem);
+  line-height: 0.9;
+  letter-spacing: var(--tracking-display);
+  text-transform: uppercase;
+}
+
+@utility display-lg {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(2.25rem, 5vw, 4.75rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+@utility display-md {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+}
+
+@utility editorial {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.08;
+}
+
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+@utility body-lg {
+  font-size: clamp(1.0625rem, 1.25vw, 1.25rem);
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+}
+
+@utility page-gutter {
+  padding-inline: var(--page-gutter);
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility text-pretty {
+  text-wrap: pretty;
+}
+
+/* Minimum comfortable touch target (WCAG 2.5.8 recommends 24px; we use 44px). */
+@utility tap-target {
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+}
+
+/* Raised card on product surfaces. */
+@utility surface-card {
+  background-color: var(--surface-raised);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 0 0 1px var(--hairline),
+    0 10px 30px -22px rgb(20 33 61 / 0.35);
+}
+
+/* A soft, legible scrim for text placed over live 3D. */
+@utility scene-scrim {
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 0.35),
+    0 8px 40px rgb(0 0 0 / 0.35);
+}
+
+/* ------------------------------------------------------------------------ */
+/* Motion primitives                                                         */
+/* ------------------------------------------------------------------------ */
+
+/*
+ * Progressive reveal driven by a data attribute that the journey engine flips
+ * when a beat enters its scroll window. Animations are time based (not
+ * scrubbed) so they always resolve to a crisp final state.
+ */
+[data-reveal] {
+  --reveal-delay: 0ms;
+  opacity: 0;
+  transform: translate3d(0, 1.25rem, 0);
+  filter: blur(6px);
+  transition:
+    opacity 900ms var(--ease-cinematic) var(--reveal-delay),
+    transform 1100ms var(--ease-cinematic) var(--reveal-delay),
+    filter 900ms var(--ease-cinematic) var(--reveal-delay);
+  /* Filter included so the blur resolves on the compositor instead of repainting text every frame. */
+  will-change: opacity, transform, filter;
+}
+[data-reveal='in'] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+[data-reveal='out'] {
+  opacity: 0;
+  transform: translate3d(0, -0.75rem, 0);
+  filter: blur(4px);
+  transition-duration: 500ms, 600ms, 500ms;
+  transition-timing-function: var(--ease-soft);
+  transition-delay: 0ms;
+}
+
+/* Large atmospheric layers fade only — no transform or blur on full-screen elements. */
+[data-reveal].reveal-fade,
+[data-reveal='out'].reveal-fade {
+  transform: none;
+  filter: none;
+  transition: opacity 1200ms var(--ease-soft);
+}
+
+/* Interactive beats leave the tab order and hit-testing while hidden. */
+[data-reveal][data-interactive] {
+  transition:
+    opacity 900ms var(--ease-cinematic) var(--reveal-delay),
+    transform 1100ms var(--ease-cinematic) var(--reveal-delay),
+    filter 900ms var(--ease-cinematic) var(--reveal-delay),
+    visibility 0s linear 0s;
+}
+[data-reveal][data-interactive]:not([data-reveal='in']) {
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, 0s, 0s, 650ms;
+}
+
+/* Journey chapters: scroll length is data-driven (viewport heights). */
+.journey-chapter {
+  height: calc(var(--len, 3) * 100lvh);
+}
+@media (max-width: 767px) {
+  .journey-chapter {
+    height: calc(var(--len-mobile, 2) * 100lvh);
+  }
+}
+html.journey-locked,
+html.journey-locked body {
+  overflow: hidden;
+}
+
+.outline-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-line 2.8s var(--ease-cinematic) forwards;
+}
+html[data-motion='reduced'] .outline-draw {
+  stroke-dashoffset: 0;
+}
+
+.loading-bar {
+  animation: loading-bar 1.6s var(--ease-soft) infinite;
+}
+@keyframes loading-bar {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+/* Per-character reveal for display titles. */
+.split-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(0, 0.6em, 0) rotateX(-70deg);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 700ms var(--ease-cinematic),
+    transform 1100ms var(--ease-cinematic);
+  transition-delay: calc(var(--char-index, 0) * 28ms + var(--reveal-delay, 0ms));
+}
+[data-reveal='in'] .split-char {
+  opacity: 1;
+  transform: none;
+}
+[data-reveal='out'] .split-char {
+  opacity: 0;
+  transform: translate3d(0, -0.3em, 0);
+  transition-duration: 400ms;
+  transition-delay: 0ms;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes draw-line {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes scroll-cue {
+  0% {
+    transform: translateY(-100%);
+  }
+  60%,
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Accessibility preferences                                                 */
+/* ------------------------------------------------------------------------ */
+
+html[data-motion='reduced'] *,
+html[data-motion='reduced'] *::before,
+html[data-motion='reduced'] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+}
+html[data-motion='reduced'] [data-reveal],
+html[data-motion='reduced'] .split-char {
+  transform: none !important;
+  filter: none !important;
+  transition-property: opacity !important;
+  transition-duration: 300ms !important;
+  transition-delay: 0ms !important;
+}
+
+html[data-contrast='high'] {
+  --page-gutter: clamp(1.25rem, 4vw, 3.5rem);
+}
+html[data-contrast='high'] .theme-dark {
+  --text-muted: rgb(244 241 234 / 0.9);
+  --text-subtle: rgb(244 241 234 / 0.8);
+  --hairline: rgb(244 241 234 / 0.4);
+}
+html[data-contrast='high'] .theme-light {
+  --text-muted: rgb(10 10 11 / 0.9);
+  --text-subtle: rgb(10 10 11 / 0.8);
+  --hairline: rgb(10 10 11 / 0.4);
+}
+html[data-contrast='high'] .scene-copy {
+  background: rgb(0 0 0 / 0.72);
+  padding: 1.25rem 1.5rem;
+  border-radius: 1rem;
+}
+html[data-contrast='high'] :focus-visible {
+  outline-width: 3px;
+}
+
+html[data-contrast='high'] .theme-app {
+  --text-muted: #3d3a35;
+  --text-subtle: #4a463f;
+  --hairline: rgb(20 33 61 / 0.4);
+  --hairline-strong: rgb(20 33 61 / 0.7);
+}
+html[data-contrast='high'] .theme-app-dark {
+  --text-muted: rgb(250 246 238 / 0.92);
+  --text-subtle: rgb(250 246 238 / 0.84);
+  --hairline: rgb(250 246 238 / 0.42);
+}
+
+/* Larger text scales every rem-based size; senior mode also enlarges targets. */
+html[data-text='large'] {
+  font-size: 112.5%;
+}
+html[data-senior='on'] {
+  font-size: 118.75%;
+}
+html[data-senior='on'] .tap-target {
+  min-height: 3.25rem;
+  min-width: 3.25rem;
+}
+html[data-senior='on'] [data-senior-hide] {
+  display: none !important;
+}
+
+@media (prefers-contrast: more) {
+  .theme-dark {
+    --text-muted: rgb(244 241 234 / 0.9);
+    --text-subtle: rgb(244 241 234 / 0.8);
+  }
+}
+
+/* Hide the native cursor only when the custom cursor is active. */
+html[data-cursor='custom'] body,
+html[data-cursor='custom'] a,
+html[data-cursor='custom'] button,
+html[data-cursor='custom'] [role='button'] {
+  cursor: none;
+}
+html[data-cursor='custom'] input,
+html[data-cursor='custom'] textarea {
+  cursor: text;
+}
