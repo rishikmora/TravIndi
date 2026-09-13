@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
     qualities: [60, 75, 85],
     deviceSizes: [640, 828, 1080, 1440, 1920, 2560],
   },
+  async redirects() {
+    // Browsers that ignore the SVG icon link still ask for /favicon.ico.
+    return [{ source: '/favicon.ico', destination: '/icon.svg', permanent: true }];
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

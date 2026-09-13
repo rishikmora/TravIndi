@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { PageHeader, PageShell, Section } from '@/components/app/PageShell';
 import { BOOKING_STATUS, quantityLabel } from '@/components/providers/bookingVocabulary';
@@ -54,13 +54,16 @@ function PartnerDashboardView() {
   const [slot, setSlot] = useState({ serviceId: '', date: localDate(1), timeSlot: '08:00', capacity: 6, status: 'open' as 'open' | 'closed' });
   const [responding, setResponding] = useState<Complaint | null>(null);
   const [response, setResponse] = useState('');
+  const [loadedDashboard, setLoadedDashboard] = useState<typeof dashboard.data>(undefined);
 
-  useEffect(() => {
-    if (!dashboard.data) return;
-    setDescription(dashboard.data.profile.description);
-    setLanguages(dashboard.data.profile.languages.join(', '));
-    setSlot((s) => ({ ...s, serviceId: s.serviceId || dashboard.data.profile.services[0]?.serviceId || '' }));
-  }, [dashboard.data]);
+  // Refresh the editable fields whenever the dashboard reloads.
+  if (dashboard.data && dashboard.data !== loadedDashboard) {
+    const data = dashboard.data;
+    setLoadedDashboard(data);
+    setDescription(data.profile.description);
+    setLanguages(data.profile.languages.join(', '));
+    setSlot((s) => ({ ...s, serviceId: s.serviceId || data.profile.services[0]?.serviceId || '' }));
+  }
 
   if (dashboard.isPending) return <LoadingBlock label="Loading partner dashboard" className="grid gap-4"><Skeleton className="h-32 w-full rounded-[1.25rem]" /><Skeleton className="h-64 w-full rounded-[1.25rem]" /></LoadingBlock>;
   if (dashboard.isError) return <ErrorState error={dashboard.error} onRetry={() => void dashboard.refetch()} />;

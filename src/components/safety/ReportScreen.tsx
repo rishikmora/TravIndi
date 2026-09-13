@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useNow } from '@/hooks/useNow';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { PageHeader, PageShell } from '@/components/app/PageShell';
 import { Button, ButtonLink } from '@/components/ui/Button';
@@ -44,13 +45,18 @@ function ReportForm() {
   const [tripId, setTripId] = useState('');
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const clientReportId = useRef(crypto.randomUUID());
+  const now = useNow();
 
-  useEffect(() => setOccurredAt(localDateTime(new Date())), []);
+  // "When" defaults to now once the clock is available (it isn't during server render).
+  const [whenDefaulted, setWhenDefaulted] = useState(false);
+  if (!whenDefaulted && now) {
+    setWhenDefaulted(true);
+    setOccurredAt(localDateTime(new Date(now)));
+  }
 
-  useEffect(() => {
-    const active = trips.data?.find((t) => t.status === 'active');
-    if (active && !tripId) setTripId(active.tripId);
-  }, [trips.data, tripId]);
+  // Link the report to the active trip unless another is chosen.
+  const activeTrip = !tripId ? trips.data?.find((t) => t.status === 'active') : undefined;
+  if (activeTrip) setTripId(activeTrip.tripId);
 
   useEffect(
     () =>
@@ -174,7 +180,7 @@ function ReportForm() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="When" error={fieldErrors.occurredAt}>
-          {(control) => <TextInput {...control} type="datetime-local" max={localDateTime(new Date())} value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} />}
+          {(control) => <TextInput {...control} type="datetime-local" max={now ? localDateTime(new Date(now)) : undefined} value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} />}
         </Field>
         <Field label="Trip" optional>
           {(control) => (

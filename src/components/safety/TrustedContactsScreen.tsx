@@ -30,12 +30,18 @@ function ContactDialog({ contact, open, onClose }: { contact: TrustedContact | n
   const mutation = contact ? update : add;
   const fieldErrors = isApiError(mutation.error) ? mutation.error.fieldErrors : {};
 
+  // Fill the form each time the dialog opens, or switches to another contact.
+  const [formFor, setFormFor] = useState<{ open: boolean; contact: TrustedContact | null }>({ open: false, contact: null });
+  if (formFor.open !== open || formFor.contact !== contact) {
+    setFormFor({ open, contact });
+    if (open) setForm({ name: contact?.name ?? '', relationship: contact?.relationship ?? '', phone: '', email: '', notifyOn: contact?.notifyOn ?? ['sos'] });
+  }
+
   useEffect(() => {
     if (!open) return;
     add.reset();
     update.reset();
-    setForm({ name: contact?.name ?? '', relationship: contact?.relationship ?? '', phone: '', email: '', notifyOn: contact?.notifyOn ?? ['sos'] });
-    // Reset only when the dialog opens.
+    // Clear earlier errors only when the dialog opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, contact]);
 

@@ -107,9 +107,8 @@ function SosPanel() {
   const detail = useSosAlert(alertId);
   const alert = detail.data ?? active.data ?? null;
 
-  useEffect(() => {
-    if (active.data && !alertId) setAlertId(active.data.alertId);
-  }, [active.data, alertId]);
+  // Pick up an alert that is already open, e.g. one sent from another tab.
+  if (active.data && !alertId) setAlertId(active.data.alertId);
 
   // An alert saved while offline (even in an earlier visit) is picked up again.
   useEffect(() => {

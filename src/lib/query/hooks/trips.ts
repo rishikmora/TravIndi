@@ -155,7 +155,7 @@ export function useReplan(tripId: string) {
 export function useHomeSummary(enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.me.home,
-    queryFn: ({ signal }) => api.profile.home(),
+    queryFn: () => api.profile.home(),
     enabled,
   });
 }

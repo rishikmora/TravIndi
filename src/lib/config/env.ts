@@ -32,7 +32,10 @@ export const env = {
   appName: 'TravIndi',
   environment: ((process.env.NEXT_PUBLIC_APP_ENV as AppEnvironment | undefined) ??
     (isProductionBuild ? 'production' : 'development')) as AppEnvironment,
-  siteUrl: trimSlash(process.env.NEXT_PUBLIC_SITE_URL) || 'http://localhost:3000',
+  siteUrl:
+    trimSlash(process.env.NEXT_PUBLIC_SITE_URL) ||
+    // On Vercel, fall back to the project's production domain for canonical URLs and the sitemap.
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : 'http://localhost:3000'),
 
   /** `mock` uses the in-browser development backend; `api` talks to FastAPI. */
   dataMode: resolveDataMode(process.env.NEXT_PUBLIC_DATA_MODE),

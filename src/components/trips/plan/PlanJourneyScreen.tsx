@@ -123,16 +123,21 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
     headingRef.current?.focus();
   }, [step]);
 
+  // Move the progress view on once the planning job finishes.
+  const jobStatus = job.data?.status;
+  const [handledJob, setHandledJob] = useState<string | null>(null);
+  const jobOutcome = jobStatus === 'completed' && tripId ? `completed:${tripId}` : jobStatus === 'failed' ? `failed:${jobId}` : null;
+  if (jobOutcome && jobOutcome !== handledJob) {
+    setHandledJob(jobOutcome);
+    send(jobStatus === 'failed' ? 'JOB_FAILED' : 'JOB_COMPLETED');
+  }
+
   useEffect(() => {
-    const status = job.data?.status;
-    if (status === 'completed' && tripId) {
-      send('JOB_COMPLETED');
-      void deleteDraft(DRAFT_KEY);
-      const timer = setTimeout(() => router.push(`/trips/${tripId}`), 1600);
-      return () => clearTimeout(timer);
-    }
-    if (status === 'failed') send('JOB_FAILED');
-  }, [job.data?.status, tripId, router, send]);
+    if (jobStatus !== 'completed' || !tripId) return;
+    void deleteDraft(DRAFT_KEY);
+    const timer = setTimeout(() => router.push(`/trips/${tripId}`), 1600);
+    return () => clearTimeout(timer);
+  }, [jobStatus, tripId, router]);
 
   const build = async () => {
     if (!signedIn) {

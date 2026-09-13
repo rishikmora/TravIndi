@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { api } from '@/lib/api';
 import { isApiError } from '@/lib/api/errors';
 import { useAuth } from '@/lib/auth/provider';
-import { broadcastingIds, onBroadcastingChange, unmarkBroadcasting, useBroadcastStatus } from '@/lib/location/broadcast';
+import { unmarkBroadcasting, useBroadcastingIds, useBroadcastStatus } from '@/lib/location/broadcast';
 import { watchPosition } from '@/lib/location/geolocation';
 import { isBrowserOnline } from '@/lib/offline/connectivity';
 import { useMyShares } from '@/lib/query/hooks/location';
@@ -21,12 +21,7 @@ const MIN_DISTANCE_M = 50;
 export function LocationBroadcaster() {
   const { status } = useAuth();
   const shares = useMyShares(status === 'authenticated');
-  const [ids, setIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setIds(broadcastingIds());
-    return onBroadcastingChange(() => setIds(broadcastingIds()));
-  }, []);
+  const ids = useBroadcastingIds();
 
   // Forget shares that have ended elsewhere (expired, stopped on another device, consent withdrawn).
   useEffect(() => {

@@ -7,29 +7,23 @@ export interface SetComponentProps {
 
 type SetModule = { default: ComponentType<SetComponentProps> };
 
+const loadIndia = (): Promise<SetModule> => import('./sets/india/IndiaSet');
+
 /**
  * Every scene world is its own code-split chunk, fetched only as the journey
  * approaches it. Sets not listed here fall back to the India map flyover.
  */
 const loaders: Partial<Record<SetId, () => Promise<SetModule>>> = {
-  india: () => import('./sets/india/IndiaSet'),
+  india: loadIndia,
 };
 
-const components = new Map<SetId, LazyExoticComponent<ComponentType<SetComponentProps>>>();
+/** Lazy components, created once at module load so rendering never creates a component. */
+export const SET_COMPONENTS: Partial<Record<SetId, LazyExoticComponent<ComponentType<SetComponentProps>>>> = {
+  india: lazy(loadIndia),
+};
 
 export function hasSet(id: SetId): boolean {
   return Boolean(loaders[id]);
-}
-
-export function getSetComponent(id: SetId) {
-  const loader = loaders[id];
-  if (!loader) return null;
-  let component = components.get(id);
-  if (!component) {
-    component = lazy(loader);
-    components.set(id, component);
-  }
-  return component;
 }
 
 export function preloadSet(id: SetId) {

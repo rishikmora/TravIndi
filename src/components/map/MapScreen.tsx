@@ -39,7 +39,7 @@ export function MapScreen({ focus, destinationSlug }: { focus: { lat: number; ln
   const { capabilities } = useCapabilities();
   const destinations = useDestinations({ limit: 60 });
   const destination = destinationSlug ? destinations.data?.items.find((d) => d.slug === destinationSlug) : undefined;
-  const center = focus ?? (destination ? { ...destination.coordinates, label: destination.name } : null);
+  const center = useMemo(() => focus ?? (destination ? { ...destination.coordinates, label: destination.name } : null), [focus, destination]);
   // Layers are off by default: the map starts calm and the traveller chooses what to add.
   const [layers, setLayers] = useState<LayerChoice[]>([]);
   const [selected, setSelected] = useState<string | null>(null);

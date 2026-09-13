@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader, PageShell } from '@/components/app/PageShell';
 import { Button } from '@/components/ui/Button';
 import { ToggleChip } from '@/components/ui/Chip';
@@ -24,6 +24,9 @@ export function RoutesScreen({ initialTripId }: { initialTripId: string | null }
   const { status } = useAuth();
   const trips = useTrips(status === 'authenticated');
   const [tripId, setTripId] = useState(initialTripId ?? '');
+  // Default to the traveller's active trip until they choose one.
+  const activeTrip = !tripId ? trips.data?.find((t) => t.status === 'active' || t.status === 'ready') : undefined;
+  if (activeTrip) setTripId(activeTrip.tripId);
   const itinerary = useItinerary(tripId, Boolean(tripId));
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -31,13 +34,6 @@ export function RoutesScreen({ initialTripId }: { initialTripId: string | null }
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!tripId && trips.data) {
-      const active = trips.data.find((t) => t.status === 'active' || t.status === 'ready');
-      if (active) setTripId(active.tripId);
-    }
-  }, [trips.data, tripId]);
 
   const stops = useMemo(
     () =>
@@ -58,7 +54,7 @@ export function RoutesScreen({ initialTripId }: { initialTripId: string | null }
     onSuccess: (result: RoutePlan) => setSelected(result.options[0]?.routeId ?? null),
   });
 
-  const useMyLocation = async () => {
+  const startFromMyLocation = async () => {
     setLocationError(null);
     try {
       const position = await getCurrentPosition();
@@ -117,7 +113,7 @@ export function RoutesScreen({ initialTripId }: { initialTripId: string | null }
                 </Select>
               )}
             </Field>
-            <Button variant="subtle" size="sm" className="justify-self-start" onClick={() => void useMyLocation()}>
+            <Button variant="subtle" size="sm" className="justify-self-start" onClick={() => void startFromMyLocation()}>
               Start from my location
             </Button>
             {locationError && <InlineNotice tone="warning">{locationError}</InlineNotice>}

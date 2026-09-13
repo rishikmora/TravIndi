@@ -115,29 +115,46 @@ export function BookingSheet({ service, providerName, open, onClose, initial }: 
   const pkg = service.packageDetails;
   const maxQuantity = service.capacity ?? 20;
 
+  // Start from a clean form (and the suggested details) each time the sheet opens.
+  const [openedFor, setOpenedFor] = useState(false);
+  if (openedFor !== open) {
+    setOpenedFor(open);
+    if (open) {
+      setState('selecting');
+      setCurrent(null);
+      setBookingId(null);
+      setContactName(user?.displayName ?? '');
+      setDate(initial?.date && initial.date >= localDate(0) ? initial.date : localDate(1));
+      setTimeSlot(initial?.timeSlot ?? '09:00');
+      setQuantity(clamp(initial?.quantity ?? 1, 1, maxQuantity));
+      setNights(clamp(initial?.nights ?? 1, 1, 30));
+      const active = trips.data?.find((t) => t.status === 'active' || t.status === 'ready');
+      setTripId(initial?.tripId ?? active?.tripId ?? '');
+    }
+  }
+
   useEffect(() => {
     if (!open) return;
-    setState('selecting');
-    setCurrent(null);
-    setBookingId(null);
     quote.reset();
     create.reset();
-    setContactName(user?.displayName ?? '');
-    setDate(initial?.date && initial.date >= localDate(0) ? initial.date : localDate(1));
-    setTimeSlot(initial?.timeSlot ?? '09:00');
-    setQuantity(clamp(initial?.quantity ?? 1, 1, maxQuantity));
-    setNights(clamp(initial?.nights ?? 1, 1, 30));
-    const active = trips.data?.find((t) => t.status === 'active' || t.status === 'ready');
-    setTripId(initial?.tripId ?? active?.tripId ?? '');
-    // Reset only when the sheet opens.
+    // Clear earlier quote and booking errors only when the sheet opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // The provider's answer arrives by polling while the booking is processing.
+  const outcome = booking.data;
+  if (state === 'processing' && outcome && outcome.status !== 'processing') {
+    setState(bookingMachine.next(state, eventFor(outcome)));
+  }
+
+  const announced = useRef<string | null>(null);
   useEffect(() => {
-    if (state !== 'processing' || !booking.data || booking.data.status === 'processing') return;
-    send(eventFor(booking.data));
-    announce(`Booking ${BOOKING_STATUS[booking.data.status].label.toLowerCase()}.`, 'assertive');
-  }, [state, booking.data]);
+    if (!outcome || outcome.status === 'processing' || state === 'processing') return;
+    const key = `${outcome.bookingId}:${outcome.status}`;
+    if (announced.current === key) return;
+    announced.current = key;
+    announce(`Booking ${BOOKING_STATUS[outcome.status].label.toLowerCase()}.`, 'assertive');
+  }, [state, outcome]);
 
   const requestQuote = () => {
     send('REQUEST_QUOTE');

@@ -50,7 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const user = session.data?.user ?? null;
   const status: AuthStatus = expired ? 'expired' : session.isPending ? 'loading' : user ? 'authenticated' : 'anonymous';
   const statusRef = useRef(status);
-  statusRef.current = status;
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(
     () =>

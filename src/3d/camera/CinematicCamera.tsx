@@ -1,7 +1,7 @@
 'use client';
 
-import { useFrame, useThree } from '@react-three/fiber';
-import { useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useRef } from 'react';
 import { type PerspectiveCamera, Vector3 } from 'three';
 import { runtime } from '@/3d/core/runtime';
 import { getEffectiveScenes, introTrack } from '@/scenes/timeline';
@@ -13,24 +13,27 @@ const DEG = Math.PI / 180;
 const DESIGN_ASPECT = 16 / 9;
 const WORLD_UP = new Vector3(0, 1, 0);
 
+/** Scratch objects reused every frame. */
+function createRig() {
+  return {
+    sample: createCameraSample(),
+    introSample: createCameraSample(),
+    pose: { position: new Vector3(), target: new Vector3(), fov: 40, roll: 0, chapter: -1, lite: false },
+    axes: { forward: new Vector3(), right: new Vector3(), up: new Vector3() },
+  };
+}
+
 /**
  * Scroll-driven camera. Samples the active chapter's spline, layers pointer
  * parallax, idle drift and optional handheld shake, then eases the physical
  * camera towards that pose. Chapter changes (hidden by transitions) cut.
  */
 export function CinematicCamera() {
-  const camera = useThree((s) => s.camera) as PerspectiveCamera;
-  const size = useThree((s) => s.size);
+  const rig = useRef<ReturnType<typeof createRig> | null>(null);
 
-  const sample = useMemo(createCameraSample, []);
-  const introSample = useMemo(createCameraSample, []);
-  const state = useMemo(
-    () => ({ position: new Vector3(), target: new Vector3(), fov: 40, roll: 0, chapter: -1, lite: false }),
-    [],
-  );
-  const axes = useMemo(() => ({ forward: new Vector3(), right: new Vector3(), up: new Vector3() }), []);
-
-  useFrame((_, delta) => {
+  useFrame((frame, delta) => {
+    const { sample, introSample, pose, axes } = (rig.current ??= createRig());
+    const camera = frame.camera as PerspectiveCamera;
     const dt = Math.min(delta, 1 / 20);
     const chapter = runtime.chapter;
     const scene = getEffectiveScenes(useQualityStore.getState().level)[chapter];
@@ -66,30 +69,30 @@ export function CinematicCamera() {
       sample.position.y += (Math.sin(t * 9.7 + 0.4) * 0.6 + Math.sin(t * 15.3) * 0.4) * s;
     }
 
-    const cut = state.chapter !== chapter || state.lite !== scene.lite;
+    const cut = pose.chapter !== chapter || pose.lite !== scene.lite;
     if (cut) {
-      state.position.copy(sample.position);
-      state.target.copy(sample.target);
-      state.fov = sample.fov;
-      state.roll = sample.roll;
-      state.chapter = chapter;
-      state.lite = scene.lite;
+      pose.position.copy(sample.position);
+      pose.target.copy(sample.target);
+      pose.fov = sample.fov;
+      pose.roll = sample.roll;
+      pose.chapter = chapter;
+      pose.lite = scene.lite;
     } else {
       const k = 1 - Math.exp(-7.5 * dt);
-      state.position.lerp(sample.position, k);
-      state.target.lerp(sample.target, k);
-      state.fov += (sample.fov - state.fov) * k;
-      state.roll += (sample.roll - state.roll) * k;
+      pose.position.lerp(sample.position, k);
+      pose.target.lerp(sample.target, k);
+      pose.fov += (sample.fov - pose.fov) * k;
+      pose.roll += (sample.roll - pose.roll) * k;
     }
 
-    camera.position.copy(state.position);
+    camera.position.copy(pose.position);
     camera.up.copy(WORLD_UP);
-    camera.lookAt(state.target);
-    if (state.roll !== 0) camera.rotateZ(state.roll * DEG);
+    camera.lookAt(pose.target);
+    if (pose.roll !== 0) camera.rotateZ(pose.roll * DEG);
 
     // Preserve the designed horizontal framing on narrow screens.
-    const aspect = size.width / Math.max(1, size.height);
-    let fov = state.fov;
+    const aspect = frame.size.width / Math.max(1, frame.size.height);
+    let fov = pose.fov;
     if (aspect < DESIGN_ASPECT) {
       const horizontal = 2 * Math.atan(Math.tan((fov * DEG) / 2) * DESIGN_ASPECT);
       fov = Math.min((2 * Math.atan(Math.tan(horizontal / 2) / aspect)) / DEG, fov * 1.6, 78);

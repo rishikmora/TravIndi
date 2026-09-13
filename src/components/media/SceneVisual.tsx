@@ -34,8 +34,11 @@ export function SceneVisual({
   imageClassName,
 }: SceneVisualProps) {
   const asset = getStill(still);
+  // Callers may position the frame themselves (e.g. `absolute inset-0`); only
+  // default to `relative` otherwise, or the two would clash and collapse it.
+  const positioned = /(^|\s)(absolute|fixed|sticky)(\s|$)/.test(className ?? '');
   return (
-    <div className={cn('relative overflow-hidden bg-ink-3', className)}>
+    <div className={cn(!positioned && 'relative', 'overflow-hidden bg-ink-3', className)}>
       {photo ? (
         // Photos arrive already resized by their host.
         <Image src={photo.src} alt={alt} fill sizes={sizes} priority={priority} unoptimized className={cn('object-cover', imageClassName)} />

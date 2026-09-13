@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { FreshnessBadge } from '@/components/ui/FreshnessBadge';
@@ -47,12 +47,15 @@ export function AdaptationReview({ tripId, proposal, currentVersion, onClose }: 
   const reject = useRejectAdaptation(tripId);
   const send = (event: AdaptationUiEvent) => setState((current) => adaptationMachine.next(current, event));
 
-  useEffect(() => {
+  // Start fresh whenever a different proposal is shown.
+  const [shownProposalId, setShownProposalId] = useState(proposal?.proposalId);
+  if (shownProposalId !== proposal?.proposalId) {
+    setShownProposalId(proposal?.proposalId);
     setState('reviewing');
     setChoice('recommended');
     setResult(null);
     setError(null);
-  }, [proposal?.proposalId]);
+  }
 
   if (!proposal) return <Dialog open={false} onClose={onClose} title="" />;
 

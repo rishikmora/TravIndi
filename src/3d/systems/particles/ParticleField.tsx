@@ -1,7 +1,7 @@
 'use client';
 
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   AdditiveBlending,
   BufferGeometry,
@@ -169,12 +169,15 @@ export function ParticleField({ preset, density, getOpacity }: ParticleFieldProp
     [points],
   );
 
+  const objectRef = useRef<Points>(null);
+
   useFrame(() => {
+    const object = objectRef.current;
+    if (!object) return;
     const opacity = getOpacity();
-    const material = points.material as ShaderMaterial;
-    material.uniforms.uOpacity!.value = spec.opacity * opacity;
-    points.visible = opacity > 0.002;
+    (object.material as ShaderMaterial).uniforms.uOpacity!.value = spec.opacity * opacity;
+    object.visible = opacity > 0.002;
   });
 
-  return <primitive object={points} />;
+  return <primitive ref={objectRef} object={points} />;
 }

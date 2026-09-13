@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, createElement, type ReactNode, useEffect, useRef } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef } from 'react';
 
 type RevealTag = 'div' | 'section' | 'li' | 'article' | 'header' | 'span';
 
@@ -19,7 +19,7 @@ interface RevealProps {
  * assistive tech) from the start; only its presentation animates.
  */
 export function Reveal({ as = 'div', children, className, delay = 0, id }: RevealProps) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const element = ref.current;
@@ -41,15 +41,11 @@ export function Reveal({ as = 'div', children, className, delay = 0, id }: Revea
     return () => observer.disconnect();
   }, []);
 
-  return createElement(
-    as,
-    {
-      ref,
-      id,
-      className,
-      'data-reveal': '',
-      style: { '--reveal-delay': `${delay}ms` } as CSSProperties,
-    },
-    children,
+  // Every allowed tag shares the same props; typed as one for the ref.
+  const Tag = as as 'div';
+  return (
+    <Tag ref={ref} id={id} className={className} data-reveal="" style={{ '--reveal-delay': `${delay}ms` } as CSSProperties}>
+      {children}
+    </Tag>
   );
 }

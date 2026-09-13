@@ -1,8 +1,8 @@
 'use client';
 
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
-import { Color, type DirectionalLight, FogExp2, type HemisphereLight, Object3D } from 'three';
+import { Color, type DirectionalLight, type FogExp2, type HemisphereLight, type Object3D } from 'three';
 import { stageFocus } from '@/3d/core/focus';
 import { runtime } from '@/3d/core/runtime';
 import { globalUniforms, postState } from '@/3d/core/uniforms';
@@ -39,15 +39,16 @@ function scaleForMap(env: ResolvedEnvironment) {
  * world is re-lit from one place each frame.
  */
 export function EnvironmentController() {
-  const scene = useThree((s) => s.scene);
   const shadows = useQualityStore((s) => s.settings.shadows);
   const shadowMapSize = useQualityStore((s) => s.settings.shadowMapSize);
   const sunRef = useRef<DirectionalLight>(null);
   const hemiRef = useRef<HemisphereLight>(null);
+  const targetRef = useRef<Object3D>(null);
+  const fogRef = useRef<FogExp2>(null);
   const lastRadius = useRef(-1);
+  // Environments evaluated each frame, reused rather than reallocated.
+  const scratch = useRef<{ env: ResolvedEnvironment; neighbour: ResolvedEnvironment; intro: ResolvedEnvironment } | null>(null);
 
-  const target = useMemo(() => new Object3D(), []);
-  const fog = useMemo(() => new FogExp2(0x000000, 0.001), []);
   const chapterKeys = useMemo(() => journeyScenes.map((s) => resolveKeys(s.environment)), []);
   const introKeys = useMemo(() => resolveKeys(introEnvironment), []);
   const transitionColors = useMemo(
@@ -59,20 +60,19 @@ export function EnvironmentController() {
       })),
     [],
   );
-  const env = useMemo(createResolvedEnvironment, []);
-  const neighbour = useMemo(createResolvedEnvironment, []);
-  const intro = useMemo(createResolvedEnvironment, []);
-
+  // The sun aims at a target that follows the stage's focus.
   useEffect(() => {
-    scene.fog = fog;
-    scene.add(target);
-    return () => {
-      scene.fog = null;
-      scene.remove(target);
-    };
-  }, [scene, fog, target]);
+    const sun = sunRef.current;
+    const target = targetRef.current;
+    if (sun && target) sun.target = target;
+  }, []);
 
   useFrame(() => {
+    const { env, neighbour, intro } = (scratch.current ??= {
+      env: createResolvedEnvironment(),
+      neighbour: createResolvedEnvironment(),
+      intro: createResolvedEnvironment(),
+    });
     const { chapter, chapterT, transition } = runtime;
     const keys = chapterKeys[chapter];
     if (!keys) return;
@@ -118,8 +118,11 @@ export function EnvironmentController() {
     u.uWetness.value = env.wetness;
     u.uNight.value = clamp(1 - (env.sunIntensity - 0.3) / 1.2);
 
-    fog.color.copy(env.fogColor);
-    fog.density = env.fogDensity;
+    const fog = fogRef.current;
+    if (fog) {
+      fog.color.copy(env.fogColor);
+      fog.density = env.fogDensity;
+    }
 
     const hemi = hemiRef.current;
     if (hemi) {
@@ -133,8 +136,11 @@ export function EnvironmentController() {
       sun.color.copy(env.sunColor);
       sun.intensity = env.sunIntensity * smoothstep(-4, 2, env.sunElevation);
       sun.position.copy(stageFocus.center).addScaledVector(direction, stageFocus.radius * 2.5 + 20);
-      target.position.copy(stageFocus.center);
-      target.updateMatrixWorld();
+      const target = targetRef.current;
+      if (target) {
+        target.position.copy(stageFocus.center);
+        target.updateMatrixWorld();
+      }
       if (lastRadius.current !== stageFocus.radius) {
         const r = stageFocus.radius;
         const cam = sun.shadow.camera;
@@ -170,10 +176,11 @@ export function EnvironmentController() {
 
   return (
     <>
+      <fogExp2 ref={fogRef} attach="fog" args={[0x000000, 0.001]} />
       <hemisphereLight ref={hemiRef} />
+      <object3D ref={targetRef} />
       <directionalLight
         ref={sunRef}
-        target={target}
         castShadow={shadows}
         shadow-mapSize={[shadowMapSize, shadowMapSize]}
         shadow-bias={-0.0003}

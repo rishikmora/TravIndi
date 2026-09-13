@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { PageHeader, PageShell, Section } from '@/components/app/PageShell';
 import { Button, ButtonLink } from '@/components/ui/Button';
@@ -16,7 +16,7 @@ import { useNow } from '@/hooks/useNow';
 import { isApiError } from '@/lib/api/errors';
 import { useAuth } from '@/lib/auth/provider';
 import { LOCATION_FRESHNESS_LABEL, locationFreshness, relativeTime } from '@/lib/format/freshness';
-import { broadcastingIds, markBroadcasting, onBroadcastingChange, unmarkBroadcasting, useBroadcastStatus } from '@/lib/location/broadcast';
+import { broadcastingIds, markBroadcasting, unmarkBroadcasting, useBroadcastingIds, useBroadcastStatus } from '@/lib/location/broadcast';
 import { getCurrentPosition, GeolocationError } from '@/lib/location/geolocation';
 import { api } from '@/lib/api';
 import { useConversations } from '@/lib/query/hooks/chat';
@@ -35,15 +35,6 @@ const DURATIONS = [
   { value: '240', label: '4 hours' },
   { value: '480', label: '8 hours' },
 ] as const;
-
-function useBroadcasting() {
-  const [ids, setIds] = useState<string[]>([]);
-  useEffect(() => {
-    setIds(broadcastingIds());
-    return onBroadcastingChange(() => setIds(broadcastingIds()));
-  }, []);
-  return ids;
-}
 
 function MyShareCard({ share, sendingHere }: { share: LocationShare; sendingHere: boolean }) {
   const now = useNow();
@@ -167,9 +158,8 @@ function StartShareForm({ initialTripId }: { initialTripId: string | null }) {
   const send = (event: LocationSharingEvent) => setMachine((state) => locationSharingMachine.next(state, event));
 
   const shareableTrips = (trips.data ?? []).filter((t) => t.status !== 'completed' && t.status !== 'cancelled' && t.membersCount > 1);
-  useEffect(() => {
-    if (!tripId && shareableTrips[0]) setTripId(shareableTrips[0].tripId);
-  }, [shareableTrips, tripId]);
+  // Default to the first trip that can be shared with.
+  if (!tripId && shareableTrips[0]) setTripId(shareableTrips[0].tripId);
 
   const candidates = useMemo(() => {
     const map = new Map<string, string>();
@@ -180,7 +170,8 @@ function StartShareForm({ initialTripId }: { initialTripId: string | null }) {
     return [...map.entries()].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [conversations.data, user?.userId]);
 
-  const until = new Date(Date.now() + Number(duration) * 60_000).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+  const now = useNow();
+  const until = now ? new Date(now + Number(duration) * 60_000).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '…';
   const who =
     audience === 'trip_members'
       ? `Everyone on “${shareableTrips.find((t) => t.tripId === tripId)?.title ?? 'your trip'}”`
@@ -336,7 +327,7 @@ function SharingManager({ initialTripId }: { initialTripId: string | null }) {
   const history = useShareHistory();
   const consents = useConsents();
   const stopAll = useStopAllShares();
-  const broadcasting = useBroadcasting();
+  const broadcasting = useBroadcastingIds();
   const [confirmAll, setConfirmAll] = useState(false);
   const consentOff = consents.data && !consents.data.find((c) => c.consentId === 'location_sharing')?.granted;
 

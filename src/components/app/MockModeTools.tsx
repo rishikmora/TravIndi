@@ -12,8 +12,8 @@ import { toast } from '@/lib/ui/toast';
 type Backend = Awaited<ReturnType<typeof loadBackend>>;
 
 async function loadBackend() {
-  const module = await import('@/lib/mock-backend');
-  return { backend: module.getMockBackend(), accounts: module.DEMO_ACCOUNTS, password: module.DEMO_PASSWORD, network: module.mockNetwork };
+  const mock = await import('@/lib/mock-backend');
+  return { backend: mock.getMockBackend(), accounts: mock.DEMO_ACCOUNTS, password: mock.DEMO_PASSWORD, network: mock.mockNetwork };
 }
 
 /**
@@ -135,7 +135,8 @@ export function MockModeTools() {
                 onClick={() => {
                   loaded.backend.reset();
                   queryClient.clear();
-                  window.location.assign('/');
+                  // A full page load, so no in-memory state survives the reset.
+                  window.location.assign(new URL('/', window.location.origin).href);
                 }}
               >
                 Reset all sample data

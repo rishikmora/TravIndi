@@ -208,7 +208,9 @@ function LiveMap({ points, lines = [], areas = [], selectedId, onSelect, label, 
   const mapRef = useRef<MapInstance | null>(null);
   const [ready, setReady] = useState(false);
   const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
 
   useEffect(() => {
     let cancelled = false;

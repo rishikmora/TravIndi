@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { create } from 'zustand';
 
 /*
@@ -8,14 +9,29 @@ import { create } from 'zustand';
 
 const KEY = 'travindi:broadcasting';
 const EVENT = 'travindi:broadcasting-change';
+const NONE: string[] = [];
 
+let lastRaw: string | null = null;
+let lastIds: string[] = NONE;
+
+/** The ids from session storage; the same array is returned until they change. */
 export function broadcastingIds(): string[] {
+  let raw: string | null = null;
   try {
-    const parsed = JSON.parse(window.sessionStorage.getItem(KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : [];
+    raw = window.sessionStorage.getItem(KEY);
   } catch {
-    return [];
+    raw = null;
   }
+  if (raw !== lastRaw) {
+    lastRaw = raw;
+    try {
+      const parsed = JSON.parse(raw ?? '[]');
+      lastIds = Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : NONE;
+    } catch {
+      lastIds = NONE;
+    }
+  }
+  return lastIds;
 }
 
 function write(ids: string[]) {
@@ -33,6 +49,11 @@ export const unmarkBroadcasting = (shareId: string) => write(broadcastingIds().f
 export function onBroadcastingChange(listener: () => void) {
   window.addEventListener(EVENT, listener);
   return () => window.removeEventListener(EVENT, listener);
+}
+
+/** Share ids this tab is sending for, kept in sync across every component that reads them. */
+export function useBroadcastingIds(): string[] {
+  return useSyncExternalStore(onBroadcastingChange, broadcastingIds, () => NONE);
 }
 
 interface BroadcastStatus {

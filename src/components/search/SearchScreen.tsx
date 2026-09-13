@@ -43,10 +43,16 @@ export function SearchScreen({ initialQuery }: { initialQuery: string }) {
   const id = useId();
   const listId = `${id}-results`;
 
+  // A new query clears the keyboard selection.
+  const [selectionQuery, setSelectionQuery] = useState(q);
+  if (selectionQuery !== q) {
+    setSelectionQuery(q);
+    setActive(-1);
+  }
+
   useEffect(() => {
     const url = q ? `/search?q=${encodeURIComponent(q)}` : '/search';
     window.history.replaceState(null, '', url);
-    setActive(-1);
   }, [q]);
 
   const results = useMemo(() => (q.length >= 2 ? (search.data?.results ?? []) : []), [q, search.data]);

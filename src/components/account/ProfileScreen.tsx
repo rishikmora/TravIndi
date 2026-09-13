@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { PageHeader, PageShell } from '@/components/app/PageShell';
 import { ACCOMMODATION_LABEL, DIET_LABEL, INTEREST_OPTIONS, TRANSPORT_LABEL } from '@/components/trips/plan/intent';
@@ -43,13 +43,14 @@ function ProfileEditor() {
   const [draft, setDraft] = useState<Profile | null>(null);
   const [languages, setLanguages] = useState('');
   const [signingOut, setSigningOut] = useState(false);
+  const [loadedProfile, setLoadedProfile] = useState<Profile | null>(null);
 
-  useEffect(() => {
-    if (profile.data) {
-      setDraft(profile.data);
-      setLanguages(profile.data.languages.join(', '));
-    }
-  }, [profile.data]);
+  // Start editing from the latest saved profile whenever it changes.
+  if (profile.data && profile.data !== loadedProfile) {
+    setLoadedProfile(profile.data);
+    setDraft(profile.data);
+    setLanguages(profile.data.languages.join(', '));
+  }
 
   const saved = profile.data;
   if (!saved || !draft) {

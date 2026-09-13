@@ -6,7 +6,7 @@ import type { Group, Object3D } from 'three';
 import { runtime } from '@/3d/core/runtime';
 import { useJourneyStore } from '@/store/journey';
 import { useQualityStore } from '@/store/quality';
-import { getSetComponent, preloadSet } from './registry';
+import { preloadSet, SET_COMPONENTS } from './registry';
 import { getEffectiveScenes } from './timeline';
 import type { SetId } from './types';
 
@@ -47,7 +47,7 @@ export function SetManager() {
 
 function SetSlot({ id }: { id: SetId }) {
   const group = useRef<Group>(null);
-  const SetComponent = getSetComponent(id);
+  const SetComponent = SET_COMPONENTS[id];
 
   useFrame(() => {
     const g = group.current;
