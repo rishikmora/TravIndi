@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "செயலாக்கத்தில்",
+      "description": "சேவை வழங்குநரின் உறுதிப்படுத்தலுக்காகக் காத்திருக்கிறது."
+    },
+    "confirmed": {
+      "label": "உறுதிசெய்யப்பட்டது",
+      "description": "சேவை வழங்குநர் இந்த முன்பதிவை உறுதிசெய்தார்."
+    },
+    "payment_pending": {
+      "label": "கட்டணம் நிலுவையில்",
+      "description": "சேவை வழங்குநருக்கு நேரடியாகச் செலுத்துங்கள். TravIndi-இல் ஆன்லைன் கட்டணம் இன்னும் கிடைக்கவில்லை."
+    },
+    "failed": {
+      "label": "தோல்வியடைந்தது",
+      "description": "இந்த முன்பதிவை முடிக்க முடியவில்லை. எந்தக் கட்டணமும் பெறப்படவில்லை."
+    },
+    "cancelled": {
+      "label": "ரத்துசெய்யப்பட்டது",
+      "description": "இந்த முன்பதிவு ரத்துசெய்யப்பட்டது."
+    }
+  },
+  "unitPrice": {
+    "person": "ஒருவருக்கு",
+    "room_night": "ஓர் அறைக்கு, ஓர் இரவுக்கு",
+    "vehicle": "ஒரு வாகனத்துக்கு",
+    "group": "ஒரு முன்பதிவுக்கு"
+  },
+  "unitQuantity": {
+    "person": "பயணிகள்",
+    "room_night": "அறைகள்",
+    "vehicle": "வாகனங்கள்",
+    "group": "குழு அளவு"
+  },
+  "quantity": {
+    "rooms_one": "{count} அறை",
+    "rooms_other": "{count} அறைகள்",
+    "nights_one": "{count} இரவு",
+    "nights_other": "{count} இரவுகள்",
+    "vehicles_one": "{count} வாகனம்",
+    "vehicles_other": "{count} வாகனங்கள்",
+    "people_one": "{count} நபர்",
+    "people_other": "{count} நபர்கள்",
+    "group": "{count} பேர் கொண்ட குழு"
+  }
+}

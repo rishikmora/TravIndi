@@ -1,4 +1,4 @@
-import type { ID, ISODateTime } from './common';
+import type { ID, ISODateTime, LanguageCode } from './common';
 
 export type UserRole = 'traveller' | 'business' | 'guide' | 'authority' | 'admin';
 
@@ -85,6 +85,8 @@ export interface ProfileDto {
   phone_masked: string | null;
   home_city: string | null;
   languages: string[];
+  /** Interface language for content the backend sends later (notifications, trip updates, safety alerts). */
+  preferred_language: LanguageCode | null;
   travel_preferences: TravelPreferencesDto;
   accessibility: AccessibilityNeedsDto;
   safety_preferences: SafetyPreferencesDto;
@@ -98,6 +100,7 @@ export type ProfileUpdateDto = Partial<
     | 'display_name'
     | 'home_city'
     | 'languages'
+    | 'preferred_language'
     | 'travel_preferences'
     | 'accessibility'
     | 'safety_preferences'

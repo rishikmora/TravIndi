@@ -1,0 +1,291 @@
+{
+  "interests": {
+    "heritage": "Heritage",
+    "temples": "Temples",
+    "food": "Food",
+    "nature": "Nature",
+    "museums": "Museums",
+    "shopping": "Shopping",
+    "art_crafts": "Art & crafts",
+    "photography": "Photography",
+    "spiritual": "Spiritual",
+    "wildlife": "Wildlife",
+    "beaches": "Beaches",
+    "trekking": "Trekking",
+    "culture": "Culture"
+  },
+  "avoid": {
+    "crowds": "Crowds",
+    "long_drives": "Long drives",
+    "late_night_travel": "Late-night travel",
+    "chip": "Avoid {value}"
+  },
+  "pace": {
+    "relaxed": "Relaxed pace",
+    "balanced": "Balanced pace",
+    "active": "Full days"
+  },
+  "safety": {
+    "standard": "Standard care",
+    "high": "Extra safety care",
+    "maximum": "Maximum safety care"
+  },
+  "tripType": {
+    "leisure": "Leisure",
+    "family": "Family trip",
+    "heritage": "Heritage trip",
+    "pilgrimage": "Pilgrimage",
+    "adventure": "Adventure",
+    "honeymoon": "Honeymoon",
+    "solo": "Solo",
+    "friends": "With friends",
+    "business": "Business"
+  },
+  "diet": {
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "jain": "Jain",
+    "non_vegetarian": "Non-vegetarian",
+    "eggetarian": "Eggetarian",
+    "halal": "Halal",
+    "no_preference": "No food preference"
+  },
+  "transport": {
+    "walk": "Walking",
+    "car": "Own car",
+    "taxi": "Taxi or cab",
+    "auto_rickshaw": "Auto-rickshaw",
+    "metro": "Metro",
+    "bus": "Bus",
+    "train": "Train",
+    "flight": "Flight",
+    "boat": "Boat"
+  },
+  "accommodation": {
+    "budget": "Budget stays",
+    "mid_range": "Mid-range hotels",
+    "premium": "Premium hotels",
+    "heritage": "Heritage stays",
+    "homestay": "Homestays"
+  },
+  "travellers": {
+    "adults_one": "{count} adult",
+    "adults_other": "{count} adults",
+    "seniors_one": "{count} senior",
+    "seniors_other": "{count} seniors",
+    "children_one": "{count} child",
+    "children_other": "{count} children"
+  },
+  "duration": {
+    "days_one": "{count} day",
+    "days_other": "{count} days",
+    "nights_one": "{count} night",
+    "nights_other": "{count} nights",
+    "withRange": "{range} ({days})"
+  },
+  "chips": {
+    "destination": "Destination",
+    "when": "When",
+    "who": "Who",
+    "tripType": "Trip type",
+    "pace": "Pace",
+    "interest": "Interest",
+    "access": "Access",
+    "lessWalking": "Less walking",
+    "wheelchair": "Wheelchair access",
+    "stepFree": "Step-free access",
+    "avoid": "Avoid",
+    "budget": "Budget",
+    "upTo": "Up to {amount} per {per}",
+    "per": {
+      "trip": "trip",
+      "day": "day",
+      "person": "person"
+    },
+    "budgetLevel": {
+      "budget": "Budget",
+      "moderate": "Moderate budget",
+      "premium": "Premium budget"
+    },
+    "safety": "Safety",
+    "food": "Food",
+    "gettingAround": "Getting around",
+    "stay": "Stay",
+    "bookings": "Bookings",
+    "verifiedOnly": "Verified providers only"
+  },
+  "screen": {
+    "progressLabel": "Planning progress",
+    "steps": {
+      "describe": "Describe",
+      "review": "Review",
+      "generating": "Plan"
+    },
+    "headings": {
+      "describe": "Plan a journey",
+      "review": "Review your trip",
+      "details": "Trip details",
+      "generating": "Building your itinerary"
+    },
+    "restoredTitle": "Restored your draft",
+    "discardDraft": "Discard draft",
+    "restoredWhen": "Saved on this device {when}.",
+    "restoredEarlier": "Saved on this device earlier.",
+    "preferForm": "Prefer a form?",
+    "fillDetails": "Fill in the details yourself",
+    "reviewTrip": "Review trip",
+    "openItinerary": "Open itinerary",
+    "openingAutomatically": "Opening automatically…",
+    "editDetails": "Edit details",
+    "goToSavedTrip": "Go to the saved trip"
+  },
+  "composer": {
+    "label": "Tell us about your trip.",
+    "hint": "Where, when, who’s coming, what you enjoy and anything to avoid. You’ll review everything before we plan.",
+    "placeholder": "e.g. 5 days in Kerala in December with two kids, beaches and backwaters",
+    "characters": "characters",
+    "examplesLabel": "Example trip descriptions",
+    "examples": {
+      "parents": "4 days in Hyderabad with my parents — temples and food, not too much walking",
+      "weekend": "A relaxed long weekend in Jaipur for two, heritage and shopping, under ₹25,000",
+      "solo": "A week in Kochi on my own, vegetarian food, avoid crowds"
+    },
+    "useProfile": "Use my saved preferences",
+    "useProfileDetail": "Fills in food, pace, safety and access needs from your profile where your description doesn’t say.",
+    "reading": "Reading your trip…",
+    "understand": "Understand my trip",
+    "privacy": "Processed by TravIndi’s planning service. Not shared with other travellers."
+  },
+  "generation": {
+    "stages": {
+      "understanding_trip": {
+        "label": "Understanding your trip",
+        "detail": "Reading who’s travelling and what matters to you."
+      },
+      "checking_destination": {
+        "label": "Checking the destination",
+        "detail": "Opening days, distances and seasonal notes."
+      },
+      "finding_places": {
+        "label": "Finding places that fit",
+        "detail": "Matching places to your interests."
+      },
+      "checking_preferences": {
+        "label": "Checking pace and access",
+        "detail": "Walking, rest breaks, food and safety preferences."
+      },
+      "building_itinerary": {
+        "label": "Building your day-by-day plan",
+        "detail": "Ordering stops to keep travel time sensible."
+      },
+      "validating_journey": {
+        "label": "Validating the journey",
+        "detail": "Looking for timing conflicts and closures."
+      }
+    },
+    "announceReady": "Your itinerary is ready.",
+    "announceFailed": "We couldn’t finish building your itinerary.",
+    "announceStage": "{stage}…",
+    "planning": "Planning",
+    "planningFor": "Planning · {name}",
+    "readyTitle": "Your itinerary is ready",
+    "failedTitle": "We couldn’t finish your itinerary",
+    "buildingTitle": "Building your journey",
+    "stepsLabel": "Planning steps",
+    "stepStatus": {
+      "done": "— done",
+      "failed": "— failed",
+      "current": "— in progress",
+      "waiting": "— waiting"
+    }
+  },
+  "form": {
+    "fewer": "Fewer {label}",
+    "more": "More {label}",
+    "whereWhen": {
+      "title": "Where and when",
+      "description": "Dates are optional — tell us how many days if you’re flexible."
+    },
+    "destination": "Destination",
+    "chooseDestination": "Choose a destination",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "days": "Number of days",
+    "who": {
+      "title": "Who’s travelling"
+    },
+    "adults": "Adults",
+    "seniors": "Seniors (60+)",
+    "children": "Children",
+    "tripType": "Kind of trip",
+    "notSpecified": "Not specified",
+    "style": {
+      "title": "Your style"
+    },
+    "pace": "Pace",
+    "paceOptions": {
+      "relaxed": "Relaxed",
+      "balanced": "Balanced",
+      "active": "Full days"
+    },
+    "interests": "Interests",
+    "avoid": "Avoid",
+    "avoidLabel": "Things to avoid",
+    "access": {
+      "title": "Access, safety and food",
+      "description": "We use these to choose places and pace the days — never to show you less."
+    },
+    "lowWalking": "Keep walking to a minimum",
+    "wheelchair": "Wheelchair access needed",
+    "stepFree": "Prefer step-free places",
+    "safety": "Safety preference",
+    "safetyOptions": {
+      "standard": "Standard",
+      "high": "Extra care",
+      "maximum": "Maximum"
+    },
+    "food": "Food preference",
+    "budget": {
+      "title": "Budget, transport and stay",
+      "description": "Leave these empty if you’re not sure."
+    },
+    "budgetAmount": "Budget in rupees",
+    "budgetHint": "Only known costs are counted against it; we’ll say when a cost isn’t available.",
+    "per": "Per",
+    "perOptions": {
+      "trip": "Whole trip",
+      "day": "Day",
+      "person": "Person"
+    },
+    "gettingAround": "Getting around",
+    "stay": "Where you’d like to stay",
+    "verifiedOnly": "Only suggest verified guides and businesses",
+    "notes": "Anything else we should know?"
+  },
+  "review": {
+    "eyebrow": "Here’s what we understood",
+    "title": "Check this looks right",
+    "detailsLabel": "Details we picked out",
+    "chipLabel": "{kind}: {label}",
+    "fromProfile": "from your profile",
+    "noneFound": "We couldn’t pick out any details. Add them below or in the full form.",
+    "questionsTitle": "A few quick questions",
+    "notSure": "Not sure yet",
+    "from": "From",
+    "to": "To",
+    "useDates": "Use dates",
+    "flexible": "Flexible",
+    "missingTitle": "Needed before we can plan",
+    "whereTo": "Where would you like to go?",
+    "howManyDays": "How many days?",
+    "howManyDaysHint": "Or add exact dates in the full form.",
+    "signInTitle": "Sign in to build and save this journey",
+    "signInBody": "Your details are kept on this device while you sign in.",
+    "build": "Build my itinerary",
+    "signInToBuild": "Sign in to build my itinerary",
+    "editAll": "Edit all details",
+    "startOver": "Start over",
+    "answerQuestions": "Answer or skip the questions above to continue.",
+    "addRequired": "Add a destination and how long you’re travelling to continue."
+  }
+}

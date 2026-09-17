@@ -1,0 +1,30 @@
+{
+  "columns": {
+    "explore": "Explore",
+    "travel": "Travel",
+    "safety": "Safety & trust",
+    "you": "You"
+  },
+  "links": {
+    "destinations": "Destinations",
+    "map": "Map of India",
+    "guides": "Local guides",
+    "businesses": "Local businesses",
+    "plan": "Plan a journey",
+    "trips": "My trips",
+    "bookings": "Bookings",
+    "messages": "Messages",
+    "safetyCentre": "Safety centre",
+    "sos": "Emergency SOS",
+    "verify": "Verify a provider",
+    "fraud": "Report fraud",
+    "accessibility": "Accessibility",
+    "consents": "Privacy & consents",
+    "settings": "Settings",
+    "partners": "For partners"
+  },
+  "copyright": "© {year} TravIndi.",
+  "disclaimer": "Travel information is indicative and labelled with its source. In an emergency, call 112.",
+  "legal": "Map outline adapted from svg-maps by Victor Cazanave (CC BY 4.0). Journey scenes are rendered live in your browser.",
+  "photoCredits": "Photo credits"
+}

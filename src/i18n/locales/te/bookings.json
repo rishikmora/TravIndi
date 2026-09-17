@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "ప్రాసెస్ అవుతోంది",
+      "description": "సేవా ప్రదాత నిర్ధారణ కోసం వేచి ఉంది."
+    },
+    "confirmed": {
+      "label": "నిర్ధారించబడింది",
+      "description": "సేవా ప్రదాత ఈ బుకింగ్‌ను నిర్ధారించారు."
+    },
+    "payment_pending": {
+      "label": "చెల్లింపు బాకీ ఉంది",
+      "description": "సేవా ప్రదాతకు నేరుగా చెల్లించండి. TravIndiలో ఆన్‌లైన్ చెల్లింపు ఇంకా అందుబాటులో లేదు."
+    },
+    "failed": {
+      "label": "విఫలమైంది",
+      "description": "ఈ బుకింగ్ పూర్తి కాలేదు. ఎలాంటి చెల్లింపు తీసుకోలేదు."
+    },
+    "cancelled": {
+      "label": "రద్దు చేయబడింది",
+      "description": "ఈ బుకింగ్ రద్దు చేయబడింది."
+    }
+  },
+  "unitPrice": {
+    "person": "ఒక్కరికి",
+    "room_night": "ఒక్క గదికి, ఒక్క రాత్రికి",
+    "vehicle": "ఒక్క వాహనానికి",
+    "group": "ఒక్క బుకింగ్‌కు"
+  },
+  "unitQuantity": {
+    "person": "ప్రయాణికులు",
+    "room_night": "గదులు",
+    "vehicle": "వాహనాలు",
+    "group": "బృందం పరిమాణం"
+  },
+  "quantity": {
+    "rooms_one": "{count} గది",
+    "rooms_other": "{count} గదులు",
+    "nights_one": "{count} రాత్రి",
+    "nights_other": "{count} రాత్రులు",
+    "vehicles_one": "{count} వాహనం",
+    "vehicles_other": "{count} వాహనాలు",
+    "people_one": "{count} వ్యక్తి",
+    "people_other": "{count} మంది",
+    "group": "{count} మంది బృందం"
+  }
+}

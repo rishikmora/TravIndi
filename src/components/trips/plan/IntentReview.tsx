@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { RemovableChip } from '@/components/ui/Chip';
 import { Field, Select, TextInput } from '@/components/ui/Field';
 import { InlineNotice } from '@/components/ui/States';
+import { useTranslation } from '@/i18n/react';
 import type { DestinationSummary, IntentExtraction, TripIntent } from '@/types/domain';
 import { applyAmbiguity, intentChips, readiness } from './intent';
 
@@ -35,6 +36,7 @@ export function IntentReview({
   building,
   signedIn,
 }: IntentReviewProps) {
+  const { t } = useTranslation();
   const chips = intentChips(intent, extraction);
   const questions = (extraction?.ambiguities ?? []).filter((a) => !answered[a.field]);
   const { ready, missing } = readiness(intent);
@@ -43,17 +45,17 @@ export function IntentReview({
   return (
     <div className="grid gap-8">
       <section aria-labelledby="understood-title" className="grid gap-3">
-        <p className="label text-[var(--text-subtle)]">Here’s what we understood</p>
+        <p className="label text-[var(--text-subtle)]">{t('planner.review.eyebrow')}</p>
         <h2 id="understood-title" className="text-[1.5rem] font-semibold tracking-[-0.02em]">
-          Check this looks right
+          {t('planner.review.title')}
         </h2>
         {chips.length > 0 ? (
-          <ul className="flex flex-wrap gap-2" aria-label="Details we picked out">
+          <ul className="flex flex-wrap gap-2" aria-label={t('planner.review.detailsLabel')}>
             {chips.map((chip) => (
               <li key={chip.id}>
                 <RemovableChip
-                  label={`${chip.kind}: ${chip.label}`}
-                  source={chip.fromProfile ? 'from your profile' : undefined}
+                  label={t('planner.review.chipLabel', { kind: chip.kind, label: chip.label })}
+                  source={chip.fromProfile ? t('planner.review.fromProfile') : undefined}
                   onRemove={() => onChange(chip.remove(intent))}
                   onEdit={onEditDetails}
                 >
@@ -64,14 +66,14 @@ export function IntentReview({
             ))}
           </ul>
         ) : (
-          <p className="text-[var(--text-muted)]">We couldn’t pick out any details. Add them below or in the full form.</p>
+          <p className="text-[var(--text-muted)]">{t('planner.review.noneFound')}</p>
         )}
       </section>
 
       {questions.length > 0 && (
         <section aria-labelledby="questions-title" className="grid gap-3">
           <h2 id="questions-title" className="text-[1.125rem] font-semibold">
-            A few quick questions
+            {t('planner.review.questionsTitle')}
           </h2>
           <ul className="grid gap-3">
             {questions.map((question) => (
@@ -93,15 +95,15 @@ export function IntentReview({
                       </Button>
                     ))}
                     <Button variant="ghost" size="sm" onClick={() => onAnswered(question.field)}>
-                      Not sure yet
+                      {t('planner.review.notSure')}
                     </Button>
                   </div>
                 ) : (
                   <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                    <Field label="From">
+                    <Field label={t('planner.review.from')}>
                       {(control) => <TextInput {...control} type="date" value={dates.start} onChange={(e) => setDates((d) => ({ ...d, start: e.target.value }))} />}
                     </Field>
-                    <Field label="To">
+                    <Field label={t('planner.review.to')}>
                       {(control) => <TextInput {...control} type="date" min={dates.start || undefined} value={dates.end} onChange={(e) => setDates((d) => ({ ...d, end: e.target.value }))} />}
                     </Field>
                     <div className="flex gap-2">
@@ -115,10 +117,10 @@ export function IntentReview({
                           onAnswered(question.field);
                         }}
                       >
-                        Use dates
+                        {t('planner.review.useDates')}
                       </Button>
                       <Button variant="ghost" size="md" onClick={() => onAnswered(question.field)}>
-                        Flexible
+                        {t('planner.review.flexible')}
                       </Button>
                     </div>
                   </div>
@@ -132,11 +134,11 @@ export function IntentReview({
       {missing.length > 0 && (
         <section aria-labelledby="missing-title" className="grid gap-3">
           <h2 id="missing-title" className="text-[1.125rem] font-semibold">
-            Needed before we can plan
+            {t('planner.review.missingTitle')}
           </h2>
           <div className="surface-card grid gap-4 p-4 sm:grid-cols-2">
             {missing.includes('destination') && (
-              <Field label="Where would you like to go?">
+              <Field label={t('planner.review.whereTo')}>
                 {(control) => (
                   <Select
                     {...control}
@@ -146,7 +148,7 @@ export function IntentReview({
                       onChange({ ...intent, destinationId: destination?.destinationId ?? null, destination: destination?.name ?? null });
                     }}
                   >
-                    <option value="">Choose a destination</option>
+                    <option value="">{t('planner.form.chooseDestination')}</option>
                     {destinations.map((d) => (
                       <option key={d.destinationId} value={d.destinationId}>
                         {d.name}, {d.state}
@@ -157,7 +159,7 @@ export function IntentReview({
               </Field>
             )}
             {missing.includes('duration') && (
-              <Field label="How many days?" hint="Or add exact dates in the full form.">
+              <Field label={t('planner.review.howManyDays')} hint={t('planner.review.howManyDaysHint')}>
                 {(control) => (
                   <TextInput
                     {...control}
@@ -179,24 +181,24 @@ export function IntentReview({
       )}
 
       {!signedIn && ready && (
-        <InlineNotice tone="info" title="Sign in to build and save this journey">
-          Your details are kept on this device while you sign in.
+        <InlineNotice tone="info" title={t('planner.review.signInTitle')}>
+          {t('planner.review.signInBody')}
         </InlineNotice>
       )}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-[var(--hairline)] pt-6">
         <Button variant="accent" size="lg" onClick={onBuild} disabled={!ready || questions.length > 0} loading={building}>
-          {signedIn ? 'Build my itinerary' : 'Sign in to build my itinerary'}
+          {signedIn ? t('planner.review.build') : t('planner.review.signInToBuild')}
         </Button>
         <Button variant="secondary" onClick={onEditDetails}>
-          Edit all details
+          {t('planner.review.editAll')}
         </Button>
         <Button variant="ghost" onClick={onStartOver}>
-          Start over
+          {t('planner.review.startOver')}
         </Button>
         {(!ready || questions.length > 0) && (
           <p className="w-full text-[0.875rem] text-[var(--text-muted)]">
-            {questions.length > 0 ? 'Answer or skip the questions above to continue.' : 'Add a destination and how long you’re travelling to continue.'}
+            {questions.length > 0 ? t('planner.review.answerQuestions') : t('planner.review.addRequired')}
           </p>
         )}
       </div>

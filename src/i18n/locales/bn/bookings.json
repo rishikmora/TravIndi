@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "প্রক্রিয়াধীন",
+      "description": "পরিষেবা প্রদানকারীর নিশ্চিতকরণের অপেক্ষায়।"
+    },
+    "confirmed": {
+      "label": "নিশ্চিত",
+      "description": "পরিষেবা প্রদানকারী এই বুকিং নিশ্চিত করেছেন।"
+    },
+    "payment_pending": {
+      "label": "পেমেন্ট বাকি",
+      "description": "সরাসরি পরিষেবা প্রদানকারীকে টাকা দিন। TravIndi-তে অনলাইন পেমেন্ট এখনও চালু হয়নি।"
+    },
+    "failed": {
+      "label": "ব্যর্থ",
+      "description": "এই বুকিং সম্পন্ন করা যায়নি। কোনো টাকা নেওয়া হয়নি।"
+    },
+    "cancelled": {
+      "label": "বাতিল",
+      "description": "এই বুকিং বাতিল করা হয়েছে।"
+    }
+  },
+  "unitPrice": {
+    "person": "মাথাপিছু",
+    "room_night": "প্রতি ঘর, প্রতি রাত",
+    "vehicle": "প্রতি গাড়ি",
+    "group": "প্রতি বুকিং"
+  },
+  "unitQuantity": {
+    "person": "যাত্রী",
+    "room_night": "ঘর",
+    "vehicle": "গাড়ি",
+    "group": "দলের আকার"
+  },
+  "quantity": {
+    "rooms_one": "{count}টি ঘর",
+    "rooms_other": "{count}টি ঘর",
+    "nights_one": "{count} রাত",
+    "nights_other": "{count} রাত",
+    "vehicles_one": "{count}টি গাড়ি",
+    "vehicles_other": "{count}টি গাড়ি",
+    "people_one": "{count} জন",
+    "people_other": "{count} জন",
+    "group": "{count} জনের দল"
+  }
+}

@@ -100,6 +100,18 @@ export const endpoints = {
     detail: (bookingId: string) => `/v1/bookings/${e(bookingId)}`,
     cancel: (bookingId: string) => `/v1/bookings/${e(bookingId)}/cancel`,
   },
+  /** See `src/types/api/transport.ts` for which of these the backend serves today. */
+  transport: {
+    /** Flights, buses and trains: the backend's own transport search. */
+    search: '/v1/services/search',
+    places: '/v1/transport/places',
+    quotes: '/v1/transport/quotes',
+    metroNetworks: '/v1/transport/metro/networks',
+    metroNetwork: (networkId: string) => `/v1/transport/metro/networks/${e(networkId)}`,
+    metroFare: '/v1/transport/metro/fare',
+    cabPlaces: '/v1/transport/cabs/places',
+    cabOptions: '/v1/transport/cabs/options',
+  },
   businesses: {
     list: '/v1/businesses',
     detail: (businessId: string) => `/v1/businesses/${e(businessId)}`,

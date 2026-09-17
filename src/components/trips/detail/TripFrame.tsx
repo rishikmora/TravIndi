@@ -11,6 +11,7 @@ import { ChevronLeftIcon } from '@/components/ui/icons';
 import { LoadingBlock, Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
 import { isApiError } from '@/lib/api/errors';
 import { formatDateRange } from '@/lib/format/dates';
 import { useTrip } from '@/lib/query/hooks/trips';
@@ -20,12 +21,13 @@ import { TRIP_STATUS } from '../tripStatus';
 
 function TripHeader({ tripId }: { tripId: string }) {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const trip = useTrip(tripId);
   useChannel(`trip:${tripId}`);
 
   if (trip.isPending) {
     return (
-      <LoadingBlock label="Loading trip" className="mb-8 grid gap-3">
+      <LoadingBlock label={t('trips.frame.loading')} className="mb-8 grid gap-3">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-10 w-2/3" />
         <Skeleton className="h-10 w-full" />
@@ -38,11 +40,11 @@ function TripHeader({ tripId }: { tripId: string }) {
       return (
         <EmptyState
           as="h1"
-          title="We couldn’t find this trip"
-          description="It may have been deleted, or you may not be a member of it."
+          title={t('trips.frame.notFoundTitle')}
+          description={t('trips.frame.notFoundDescription')}
           action={
             <ButtonLink href="/trips" variant="secondary">
-              Back to your trips
+              {t('trips.frame.backToTrips')}
             </ButtonLink>
           }
         />
@@ -51,48 +53,52 @@ function TripHeader({ tripId }: { tripId: string }) {
     return <ErrorState error={trip.error} context="trip.load" onRetry={() => void trip.refetch()} retrying={trip.isFetching} />;
   }
 
-  const t = trip.data;
+  const data = trip.data;
   const base = `/trips/${tripId}`;
-  const tabs = [
-    { label: 'Overview', href: base, exact: true },
-    { label: 'Itinerary', href: `${base}/itinerary`, badge: t.pendingAdaptations },
-    { label: 'Map', href: `${base}/map` },
-    { label: 'Chat', href: `${base}/chat`, badge: t.unreadMessages },
-    { label: 'People', href: `${base}/people` },
-    { label: 'Bookings', href: `${base}/bookings` },
-    { label: 'Safety', href: `${base}/safety` },
+  const tabs: Array<{ id: 'overview' | 'itinerary' | 'map' | 'chat' | 'people' | 'bookings' | 'safety'; href: string; exact?: boolean; badge?: number }> = [
+    { id: 'overview', href: base, exact: true },
+    { id: 'itinerary', href: `${base}/itinerary`, badge: data.pendingAdaptations },
+    { id: 'map', href: `${base}/map` },
+    { id: 'chat', href: `${base}/chat`, badge: data.unreadMessages },
+    { id: 'people', href: `${base}/people` },
+    { id: 'bookings', href: `${base}/bookings` },
+    { id: 'safety', href: `${base}/safety` },
   ];
-  const status = TRIP_STATUS[t.status];
+  const status = TRIP_STATUS[data.status];
 
   return (
     <header className="mb-8 grid gap-5">
       <Link href="/trips" className="inline-flex w-fit items-center gap-1 rounded-full text-[0.875rem] text-[var(--text-muted)] hover:text-[var(--text)]">
         <ChevronLeftIcon size={16} />
-        All trips
+        {t('trips.frame.allTrips')}
       </Link>
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill tone={status.tone}>{status.label}</StatusPill>
-            {t.currentItineraryVersion && <StatusPill>Version {t.currentItineraryVersion}</StatusPill>}
+            {data.currentItineraryVersion && <StatusPill>{t('trips.frame.version', { version: data.currentItineraryVersion })}</StatusPill>}
           </div>
-          <h1 className="text-balance text-[clamp(1.875rem,4vw,2.75rem)] font-semibold leading-[1.05] tracking-[-0.03em]">{t.title}</h1>
+          <h1 className="text-balance text-[clamp(1.875rem,4vw,2.75rem)] font-semibold leading-[1.05] tracking-[-0.03em]">{data.title}</h1>
           <p className="text-[var(--text-muted)]">
-            {[t.destination ? `${t.destination.name}, ${t.destination.state}` : 'Destination not set', formatDateRange(t.startDate, t.endDate) ?? 'Dates not set', t.days ? `${t.days} days` : null]
+            {[
+              data.destination ? t('trips.frame.place', { name: data.destination.name, state: data.destination.state }) : t('trips.frame.destinationNotSet'),
+              formatDateRange(data.startDate, data.endDate) ?? t('trips.card.datesNotSet'),
+              data.days ? t('planner.duration.days', { count: data.days }) : null,
+            ]
               .filter(Boolean)
               .join(' · ')}
           </p>
         </div>
-        <ul className="flex items-center" aria-label={`${t.members.length} travellers`}>
-          {t.members.slice(0, 5).map((member, index) => (
+        <ul className="flex items-center" aria-label={t('trips.card.travellers', { count: data.members.length })}>
+          {data.members.slice(0, 5).map((member, index) => (
             <li key={member.userId} className={cn(index > 0 && '-ml-2')} title={member.displayName}>
               <Avatar name={member.displayName} src={member.avatarUrl} size="sm" presence={member.presence} className="rounded-full ring-2 ring-[var(--surface)]" />
             </li>
           ))}
-          {t.members.length > 5 && <li className="-ml-2 inline-flex size-8 items-center justify-center rounded-full bg-[var(--tone-neutral-bg)] text-[0.75rem] font-semibold ring-2 ring-[var(--surface)]">+{t.members.length - 5}</li>}
+          {data.members.length > 5 && <li className="-ml-2 inline-flex size-8 items-center justify-center rounded-full bg-[var(--tone-neutral-bg)] text-[0.75rem] font-semibold ring-2 ring-[var(--surface)]">+{data.members.length - 5}</li>}
         </ul>
       </div>
-      <nav aria-label="Trip sections" className="-mx-[var(--page-gutter)] overflow-x-auto px-[var(--page-gutter)] [scrollbar-width:none]">
+      <nav aria-label={t('trips.frame.sectionsLabel')} className="-mx-[var(--page-gutter)] overflow-x-auto px-[var(--page-gutter)] [scrollbar-width:none]">
         <ul className="flex min-w-max gap-1 border-b border-[var(--hairline)]">
           {tabs.map((tab) => {
             const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
@@ -106,11 +112,11 @@ function TripHeader({ tripId }: { tripId: string }) {
                     active ? 'border-terracotta text-[var(--text)]' : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]',
                   )}
                 >
-                  {tab.label}
+                  {t(`trips.frame.tabs.${tab.id}`)}
                   {tab.badge ? (
                     <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-terracotta px-1.5 text-[0.6875rem] font-bold text-white">
                       {tab.badge}
-                      <span className="sr-only"> {tab.label === 'Chat' ? 'unread' : 'to review'}</span>
+                      <span className="sr-only"> {tab.id === 'chat' ? t('trips.frame.badgeUnread') : t('trips.frame.badgeToReview')}</span>
                     </span>
                   ) : null}
                 </Link>
@@ -125,9 +131,10 @@ function TripHeader({ tripId }: { tripId: string }) {
 
 /** Shared frame for every trip screen: privacy guard, header, contextual navigation, realtime channel. */
 export function TripFrame({ tripId, children }: { tripId: string; children: ReactNode }) {
+  const { t } = useTranslation();
   return (
     <PageShell width="wide">
-      <RequireAuth description="Trips are private to the people travelling on them.">
+      <RequireAuth description={t('trips.frame.signIn')}>
         <TripHeader tripId={tripId} />
         {children}
       </RequireAuth>

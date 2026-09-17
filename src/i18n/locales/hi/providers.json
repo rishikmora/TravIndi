@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "पहचान",
+      "business_registration": "व्यवसाय पंजीकरण",
+      "credential": "गाइड लाइसेंस",
+      "review_authenticity": "समीक्षाओं की प्रामाणिकता",
+      "availability": "उपलब्धता"
+    },
+    "evidenceStatus": {
+      "verified": "सत्यापित",
+      "pending": "लंबित",
+      "expired": "समाप्त",
+      "unverified": "सत्यापित नहीं",
+      "rejected": "अस्वीकृत"
+    },
+    "summary": {
+      "verified": "सत्यापित",
+      "identity": "पहचान सत्यापित",
+      "pending": "सत्यापन लंबित",
+      "unverified": "सत्यापित नहीं"
+    },
+    "reputation": {
+      "underReview": "समीक्षाओं की जाँच हो रही है",
+      "notEnough": "रेटिंग के लिए अभी पर्याप्त समीक्षाएँ नहीं ({count})",
+      "none": "अभी कोई समीक्षा नहीं",
+      "rating_one": "{count} समीक्षा के आधार पर {rating}",
+      "rating_other": "{count} समीक्षाओं के आधार पर {rating}",
+      "limited": "{base} · सीमित डेटा"
+    }
+  }
+}

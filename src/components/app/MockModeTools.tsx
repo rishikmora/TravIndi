@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialog } from '@/components/ui/Dialog';
 import { Switch } from '@/components/ui/Field';
+import { useTranslation } from '@/i18n/react';
 import { useAuth } from '@/lib/auth/provider';
 import { isMockMode } from '@/lib/config/env';
 import { toast } from '@/lib/ui/toast';
@@ -26,6 +27,7 @@ export function MockModeTools() {
   const [, force] = useState(0);
   const { login, status, user } = useAuth();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   if (!isMockMode) return null;
 
@@ -43,7 +45,7 @@ export function MockModeTools() {
 
   const run = (label: string, action: () => unknown) => () => {
     const result = action();
-    toast.info(label, result === null || result === false || result === 0 ? 'Nothing to change right now.' : undefined);
+    toast.info(label, result === null || result === false || result === 0 ? t('mock.nothingToChange') : undefined);
   };
 
   return (
@@ -55,24 +57,24 @@ export function MockModeTools() {
         aria-haspopup="dialog"
       >
         <span aria-hidden="true" className="size-1.5 rounded-full bg-[#f0b64a]" />
-        Sample data
+        {t('mock.badge')}
       </button>
 
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
         variant="sheet"
-        title="Development backend"
-        description="Everything you see — trips, people, providers, prices, safety and crowd information — is sample data served in your browser. No real messages, alerts or bookings are sent."
+        title={t('mock.title')}
+        description={t('mock.description')}
       >
         {!loaded ? (
-          <p className="py-6 text-[var(--text-muted)]">Loading tools…</p>
+          <p className="py-6 text-[var(--text-muted)]">{t('mock.loading')}</p>
         ) : (
           <div className="grid gap-7 pb-4">
             <section className="grid gap-2">
-              <h3 className="label text-[var(--text-subtle)]">Sign in as</h3>
+              <h3 className="label text-[var(--text-subtle)]">{t('mock.signInAs')}</h3>
               <p className="text-[0.8125rem] text-[var(--text-muted)]">
-                {status === 'authenticated' ? `Signed in as ${user?.displayName}.` : 'Not signed in.'}
+                {status === 'authenticated' ? t('mock.signedInAs', { name: user?.displayName }) : t('mock.notSignedIn')}
               </p>
               <div className="grid gap-2">
                 {loaded.accounts.map((account) => (
@@ -84,10 +86,10 @@ export function MockModeTools() {
                     onClick={async () => {
                       try {
                         await login({ email: account.email, password: loaded.password });
-                        toast.success(`Signed in: ${account.label}`);
+                        toast.success(t('mock.signedIn', { name: account.label }));
                         setOpen(false);
                       } catch {
-                        toast.error('Could not sign in');
+                        toast.error(t('mock.signInFailed'));
                       }
                     }}
                   >
@@ -98,36 +100,36 @@ export function MockModeTools() {
             </section>
 
             <section className="grid gap-4">
-              <h3 className="label text-[var(--text-subtle)]">Conditions</h3>
+              <h3 className="label text-[var(--text-subtle)]">{t('mock.conditions.title')}</h3>
               <Switch
-                label="Simulate offline"
-                description="Requests fail as they would without a network; live updates disconnect."
+                label={t('mock.conditions.offline')}
+                description={t('mock.conditions.offlineDetail')}
                 checked={loaded.network.simulatingOffline}
                 onChange={(event) => {
                   loaded.backend.scenarios.setOffline(event.target.checked);
                   force((n) => n + 1);
                 }}
               />
-              <Switch label="Operations desk acknowledges SOS" checked={flags!.autoAcknowledgeSos} onChange={toggle('autoAcknowledgeSos')} />
-              <Switch label="Trip members reply to messages" checked={flags!.chatAutoReply} onChange={toggle('chatAutoReply')} />
-              <Switch label="Travel update arrives on the active trip" checked={flags!.autoplayAdaptation} onChange={toggle('autoplayAdaptation')} />
-              <Switch label="Next itinerary generation fails" checked={flags!.failNextGeneration} onChange={toggle('failNextGeneration')} />
-              <Switch label="Next change approval fails" checked={flags!.failNextAccept} onChange={toggle('failNextAccept')} />
+              <Switch label={t('mock.conditions.acknowledgeSos')} checked={flags!.autoAcknowledgeSos} onChange={toggle('autoAcknowledgeSos')} />
+              <Switch label={t('mock.conditions.chatAutoReply')} checked={flags!.chatAutoReply} onChange={toggle('chatAutoReply')} />
+              <Switch label={t('mock.conditions.autoplayAdaptation')} checked={flags!.autoplayAdaptation} onChange={toggle('autoplayAdaptation')} />
+              <Switch label={t('mock.conditions.failNextGeneration')} checked={flags!.failNextGeneration} onChange={toggle('failNextGeneration')} />
+              <Switch label={t('mock.conditions.failNextAccept')} checked={flags!.failNextAccept} onChange={toggle('failNextAccept')} />
             </section>
 
             <section className="grid gap-2">
-              <h3 className="label text-[var(--text-subtle)]">Trigger</h3>
-              <Button variant="secondary" size="sm" onClick={run('Travel update sent', () => loaded.backend.scenarios.triggerAdaptation())}>
-                Send a travel update to the active trip
+              <h3 className="label text-[var(--text-subtle)]">{t('mock.trigger.title')}</h3>
+              <Button variant="secondary" size="sm" onClick={run(t('mock.trigger.adaptationDone'), () => loaded.backend.scenarios.triggerAdaptation())}>
+                {t('mock.trigger.adaptation')}
               </Button>
-              <Button variant="secondary" size="sm" onClick={run('Incoming message on its way', () => loaded.backend.scenarios.incomingMessage())}>
-                Receive a trip message
+              <Button variant="secondary" size="sm" onClick={run(t('mock.trigger.messageDone'), () => loaded.backend.scenarios.incomingMessage())}>
+                {t('mock.trigger.message')}
               </Button>
-              <Button variant="secondary" size="sm" onClick={run('Pending suggestions expired', () => loaded.backend.scenarios.expirePendingProposals())}>
-                Expire pending suggestions
+              <Button variant="secondary" size="sm" onClick={run(t('mock.trigger.expireDone'), () => loaded.backend.scenarios.expirePendingProposals())}>
+                {t('mock.trigger.expire')}
               </Button>
-              <Button variant="secondary" size="sm" onClick={run('Session expired on the server', () => loaded.backend.scenarios.expireSession())}>
-                Expire my session
+              <Button variant="secondary" size="sm" onClick={run(t('mock.trigger.sessionDone'), () => loaded.backend.scenarios.expireSession())}>
+                {t('mock.trigger.session')}
               </Button>
               <Button
                 variant="danger"
@@ -139,7 +141,7 @@ export function MockModeTools() {
                   window.location.assign(new URL('/', window.location.origin).href);
                 }}
               >
-                Reset all sample data
+                {t('mock.trigger.reset')}
               </Button>
             </section>
           </div>

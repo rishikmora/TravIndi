@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} ని.",
+    "hours": "{hours} గం.",
+    "hoursMinutes": "{hours} గం. {minutes} ని."
+  },
+  "distance": {
+    "meters": "{value} మీ.",
+    "kilometers": "{value} కి.మీ."
+  },
+  "relative": {
+    "justNow": "ఇప్పుడే",
+    "minutesAgo": "{count} ని. క్రితం",
+    "hoursAgo": "{count} గం. క్రితం",
+    "daysAgo": "{count} రోజుల క్రితం",
+    "inMinutes": "{count} ని.లో",
+    "inHours": "{count} గం.లో"
+  },
+  "freshness": {
+    "live": "లైవ్",
+    "application": "యాప్ డేటా",
+    "estimate": "అంచనా",
+    "snapshot": "ఆఫ్‌లైన్ కాపీ",
+    "unavailable": "అందుబాటులో లేదు",
+    "stale": "పాతది",
+    "updated": "{when} అప్‌డేట్ అయింది"
+  },
+  "locationFreshness": {
+    "live": "లైవ్",
+    "recent": "ఇటీవలిది",
+    "stale": "పాతది",
+    "last_known": "చివరిగా తెలిసినది",
+    "none": "ఇంకా లొకేషన్ రాలేదు"
+  },
+  "cost": {
+    "unavailable": "ఖర్చు అందుబాటులో లేదు",
+    "about": "సుమారు {amount}",
+    "range": "{min}–{max}",
+    "estimate": "అంచనా"
+  }
+}

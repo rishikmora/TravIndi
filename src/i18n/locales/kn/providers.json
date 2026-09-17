@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "ಗುರುತು",
+      "business_registration": "ಉದ್ಯಮ ನೋಂದಣಿ",
+      "credential": "ಮಾರ್ಗದರ್ಶಿ ಪರವಾನಗಿ",
+      "review_authenticity": "ವಿಮರ್ಶೆಗಳ ಅಧಿಕೃತತೆ",
+      "availability": "ಲಭ್ಯತೆ"
+    },
+    "evidenceStatus": {
+      "verified": "ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
+      "pending": "ಬಾಕಿ ಇದೆ",
+      "expired": "ಅವಧಿ ಮುಗಿದಿದೆ",
+      "unverified": "ಪರಿಶೀಲಿಸಲಾಗಿಲ್ಲ",
+      "rejected": "ತಿರಸ್ಕರಿಸಲಾಗಿದೆ"
+    },
+    "summary": {
+      "verified": "ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
+      "identity": "ಗುರುತು ಪರಿಶೀಲಿಸಲಾಗಿದೆ",
+      "pending": "ಪರಿಶೀಲನೆ ಬಾಕಿ ಇದೆ",
+      "unverified": "ಪರಿಶೀಲಿಸಲಾಗಿಲ್ಲ"
+    },
+    "reputation": {
+      "underReview": "ವಿಮರ್ಶೆಗಳನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ",
+      "notEnough": "ರೇಟಿಂಗ್ ನೀಡಲು ಇನ್ನೂ ಸಾಕಷ್ಟು ವಿಮರ್ಶೆಗಳಿಲ್ಲ ({count})",
+      "none": "ಇನ್ನೂ ವಿಮರ್ಶೆಗಳಿಲ್ಲ",
+      "rating_one": "{count} ವಿಮರ್ಶೆಯ ಆಧಾರದಲ್ಲಿ {rating}",
+      "rating_other": "{count} ವಿಮರ್ಶೆಗಳ ಆಧಾರದಲ್ಲಿ {rating}",
+      "limited": "{base} · ಸೀಮಿತ ಡೇಟಾ"
+    }
+  }
+}

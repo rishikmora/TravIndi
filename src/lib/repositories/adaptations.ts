@@ -1,4 +1,5 @@
 import { endpoints } from '@/lib/api/endpoints';
+import { journeyContext } from '@/lib/api/language';
 import type { AcceptAdaptationResponseDto, AdaptationProposalDto, AdaptationStatus } from '@/types/api';
 import type { AdaptationProposal, Itinerary, ReplanRequest } from '@/types/domain';
 import type { RepositoryClient, RequestOptions } from './client';
@@ -34,6 +35,7 @@ export function createAdaptationRepository(client: RepositoryClient): Adaptation
       }),
     reject: (proposalId, reason = 'keep_current') =>
       client.post<AdaptationProposalDto>(endpoints.adaptations.reject(proposalId), { reason }),
-    replan: (tripId, input) => client.post<AdaptationProposalDto>(endpoints.adaptations.replan(tripId), input),
+    replan: (tripId, input) =>
+      client.post<AdaptationProposalDto>(endpoints.adaptations.replan(tripId), { ...input, ...journeyContext() }),
   };
 }

@@ -42,6 +42,7 @@ export function defaultProfile(user: UserDto): ProfileDto {
     phone_masked: null,
     home_city: null,
     languages: ['English'],
+    preferred_language: null,
     travel_preferences: { pace: null, interests: [], food: null, transport: [], accommodation: null },
     accessibility: {
       low_walking: false,

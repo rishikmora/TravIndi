@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageShell } from '@/components/app/PageShell';
 import { EmergencyNumbers } from '@/components/safety/EmergencyNumbers';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'You’re offline',
+  title: en.meta.titles.offline,
   robots: { index: false, follow: false },
 };
 

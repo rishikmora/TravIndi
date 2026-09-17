@@ -7,6 +7,7 @@ import { PageShell } from '@/components/app/PageShell';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { ArrowLeftIcon } from '@/components/ui/icons';
 import { ErrorState, InlineNotice } from '@/components/ui/States';
+import { useTranslation } from '@/i18n/react';
 import { useAuth } from '@/lib/auth/provider';
 import { relativeTime } from '@/lib/format/freshness';
 import { deleteDraft, readDraft, saveDraft } from '@/lib/offline/db';
@@ -33,14 +34,11 @@ interface Draft {
 }
 
 const DRAFT_KEY = 'plan-journey';
-const STEPS: Array<{ id: Step; label: string }> = [
-  { id: 'describe', label: 'Describe' },
-  { id: 'review', label: 'Review' },
-  { id: 'generating', label: 'Plan' },
-];
+const STEPS = ['describe', 'review', 'generating'] as const;
 
 export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { status } = useAuth();
   const signedIn = status === 'authenticated';
 
@@ -179,22 +177,16 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
 
   const visibleStep = step === 'details' ? 'review' : step;
   const destinationList = destinations.data?.items ?? [];
-  const headings: Record<Step, string> = {
-    describe: 'Plan a journey',
-    review: 'Review your trip',
-    details: 'Trip details',
-    generating: 'Building your itinerary',
-  };
 
   return (
     <PageShell width="narrow">
-      <nav aria-label="Planning progress" className="mb-6">
+      <nav aria-label={t('planner.screen.progressLabel')} className="mb-6">
         <ol className="flex items-center gap-2 text-[0.8125rem]">
           {STEPS.map((s, index) => {
-            const current = s.id === visibleStep;
-            const position = STEPS.findIndex((x) => x.id === visibleStep);
+            const current = s === visibleStep;
+            const position = STEPS.findIndex((x) => x === visibleStep);
             return (
-              <li key={s.id} className="flex items-center gap-2">
+              <li key={s} className="flex items-center gap-2">
                 <span
                   aria-current={current ? 'step' : undefined}
                   className={cn(
@@ -202,7 +194,7 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
                     current ? 'bg-navy text-ivory' : index < position ? 'text-[var(--text)]' : 'text-[var(--text-subtle)]',
                   )}
                 >
-                  <span className="tabular-nums">{index + 1}</span> {s.label}
+                  <span className="tabular-nums">{index + 1}</span> {t(`planner.screen.steps.${s}`)}
                 </span>
                 {index < STEPS.length - 1 && <span aria-hidden="true" className="h-px w-5 bg-[var(--hairline-strong)]" />}
               </li>
@@ -212,12 +204,21 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
       </nav>
 
       <h1 ref={headingRef} tabIndex={-1} className="sr-only">
-        {headings[step]}
+        {t(`planner.screen.headings.${step}`)}
       </h1>
 
       {restoredAt && step !== 'generating' && (
-        <InlineNotice tone="neutral" className="mb-6" title="Restored your draft" action={<Button variant="ghost" size="sm" onClick={startOver}>Discard draft</Button>}>
-          Saved on this device {relativeTime(restoredAt) ?? 'earlier'}.
+        <InlineNotice
+          tone="neutral"
+          className="mb-6"
+          title={t('planner.screen.restoredTitle')}
+          action={
+            <Button variant="ghost" size="sm" onClick={startOver}>
+              {t('planner.screen.discardDraft')}
+            </Button>
+          }
+        >
+          {relativeTime(restoredAt) ? t('planner.screen.restoredWhen', { when: relativeTime(restoredAt)! }) : t('planner.screen.restoredEarlier')}
         </InlineNotice>
       )}
 
@@ -234,9 +235,9 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
             onUseProfileChange={setUseProfile}
           />
           <p className="text-[0.9375rem] text-[var(--text-muted)]">
-            Prefer a form?{' '}
+            {t('planner.screen.preferForm')}{' '}
             <button type="button" onClick={() => setStep('details')} className="font-semibold text-[var(--link)] underline underline-offset-4">
-              Fill in the details yourself
+              {t('planner.screen.fillDetails')}
             </button>
           </p>
         </div>
@@ -263,13 +264,13 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
           <div className="flex items-center justify-between gap-3">
             <Button variant="ghost" size="sm" onClick={() => setStep(extraction ? 'review' : 'describe')}>
               <ArrowLeftIcon size={16} />
-              Back
+              {t('common.actions.back')}
             </Button>
           </div>
           <IntentForm intent={intent} onChange={setIntent} destinations={destinationList} />
           <div className="flex flex-wrap gap-3 border-t border-[var(--hairline)] pt-6">
             <Button variant="accent" size="lg" onClick={() => setStep('review')}>
-              Review trip
+              {t('planner.screen.reviewTrip')}
             </Button>
           </div>
         </div>
@@ -284,24 +285,24 @@ export function PlanJourneyScreen({ initialText }: { initialText?: string }) {
           {generation === 'ready' && tripId && (
             <div className="flex flex-wrap items-center gap-3">
               <ButtonLink href={`/trips/${tripId}`} variant="navy">
-                Open itinerary
+                {t('planner.screen.openItinerary')}
               </ButtonLink>
-              <span className="text-[0.875rem] text-[var(--text-muted)]">Opening automatically…</span>
+              <span className="text-[0.875rem] text-[var(--text-muted)]">{t('planner.screen.openingAutomatically')}</span>
             </div>
           )}
           {(generation === 'failed' || Boolean(submitError)) && (
             <div className="flex flex-wrap gap-3">
               {generation === 'failed' && (
                 <Button variant="accent" onClick={() => void build()}>
-                  Try again
+                  {t('common.actions.tryAgain')}
                 </Button>
               )}
               <Button variant="secondary" onClick={() => setStep('details')}>
-                Edit details
+                {t('planner.screen.editDetails')}
               </Button>
               {tripId && (
                 <Link href={`/trips/${tripId}`} className="self-center text-[0.9375rem] font-semibold text-[var(--link)] underline underline-offset-4">
-                  Go to the saved trip
+                  {t('planner.screen.goToSavedTrip')}
                 </Link>
               )}
             </div>

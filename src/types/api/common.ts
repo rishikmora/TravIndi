@@ -40,6 +40,20 @@ export interface MoneyDto {
  */
 export type CostStatus = 'authoritative' | 'estimate' | 'unavailable';
 
+/** Interface languages (codes match `src/i18n/config.ts`). */
+export type LanguageCode = 'en' | 'hi' | 'te' | 'ta' | 'kn' | 'ml' | 'bn' | 'mr';
+
+/**
+ * Traveller context sent with AI requests (intent extraction, itinerary
+ * generation, re-planning). `language` is the language the traveller reads the
+ * app in: the backend writes explanations, recommendations, adaptation reasons
+ * and guidance in it. Place names, business names, people's names, addresses,
+ * IDs, codes and structured values are never translated.
+ */
+export interface JourneyContextDto {
+  language: LanguageCode;
+}
+
 export interface CostDto {
   status: CostStatus;
   value: MoneyDto | null;

@@ -15,7 +15,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { useNow } from '@/hooks/useNow';
 import { isApiError } from '@/lib/api/errors';
 import { useAuth } from '@/lib/auth/provider';
-import { LOCATION_FRESHNESS_LABEL, locationFreshness, relativeTime } from '@/lib/format/freshness';
+import { locationFreshness, locationFreshnessLabel, relativeTime } from '@/lib/format/freshness';
 import { broadcastingIds, markBroadcasting, unmarkBroadcasting, useBroadcastingIds, useBroadcastStatus } from '@/lib/location/broadcast';
 import { getCurrentPosition, GeolocationError } from '@/lib/location/geolocation';
 import { api } from '@/lib/api';
@@ -68,7 +68,7 @@ function MyShareCard({ share, sendingHere }: { share: LocationShare; sendingHere
             {share.status === 'paused' ? (
               <StatusPill tone="warning">Paused</StatusPill>
             ) : sendingHere ? (
-              <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{freshness === 'none' ? 'Starting' : LOCATION_FRESHNESS_LABEL[freshness]}</StatusPill>
+              <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{freshness === 'none' ? 'Starting' : locationFreshnessLabel(freshness)}</StatusPill>
             ) : (
               <StatusPill tone="neutral">Not sending from this device</StatusPill>
             )}
@@ -394,7 +394,7 @@ function SharingManager({ initialTripId }: { initialTripId: string | null }) {
                     {share.status === 'paused' ? (
                       <StatusPill tone="warning">Paused</StatusPill>
                     ) : (
-                      <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{LOCATION_FRESHNESS_LABEL[freshness]}</StatusPill>
+                      <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{locationFreshnessLabel(freshness)}</StatusPill>
                     )}
                   </Link>
                 </li>

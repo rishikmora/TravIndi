@@ -1,0 +1,28 @@
+{
+  "status": {
+    "draft": {
+      "label": "मसुदा",
+      "description": "तपशील जतन केले; अजून प्रवास आराखडा नाही."
+    },
+    "planning": {
+      "label": "नियोजन सुरू",
+      "description": "तुमचा प्रवास आराखडा तयार होत आहे."
+    },
+    "ready": {
+      "label": "तयार",
+      "description": "प्रवास आराखडा तयार आहे."
+    },
+    "active": {
+      "label": "प्रवासात",
+      "description": "तुम्ही आत्ता प्रवास करत आहात."
+    },
+    "completed": {
+      "label": "पूर्ण झाला",
+      "description": "प्रवास संपला."
+    },
+    "cancelled": {
+      "label": "रद्द",
+      "description": "प्रवास रद्द झाला."
+    }
+  }
+}

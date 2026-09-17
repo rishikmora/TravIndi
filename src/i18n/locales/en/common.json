@@ -1,0 +1,64 @@
+{
+  "appName": "TravIndi",
+  "meta": {
+    "title": "TravIndi — Smart, safe travel across India",
+    "tagline": "Travel India, your way — safely",
+    "description": "Plan journeys across India that adapt when plans change, with verified local guides, honest information and safety tools built in."
+  },
+  "actions": {
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "close": "Close",
+    "continue": "Continue",
+    "back": "Back",
+    "goBack": "Go back",
+    "retry": "Retry",
+    "tryAgain": "Try again",
+    "edit": "Edit",
+    "remove": "Remove",
+    "delete": "Delete",
+    "done": "Done",
+    "next": "Next",
+    "confirm": "Confirm",
+    "apply": "Apply",
+    "clear": "Clear",
+    "reset": "Reset",
+    "seeAll": "See all",
+    "viewAll": "View all",
+    "explore": "Explore",
+    "signIn": "Sign in",
+    "signOut": "Sign out",
+    "dismiss": "Dismiss",
+    "reconnect": "Reconnect",
+    "send": "Send",
+    "share": "Share",
+    "copy": "Copy",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "loadMore": "Load more",
+    "discard": "Discard"
+  },
+  "labels": {
+    "optional": "(optional)",
+    "loading": "Loading…",
+    "online": "Online",
+    "away": "Away",
+    "notifications": "Notifications",
+    "yes": "Yes",
+    "no": "No",
+    "none": "None",
+    "unknown": "Unknown",
+    "new": "New",
+    "or": "or"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "dismissNotification": "Dismiss notification",
+    "editValue": "Edit {label}",
+    "removeValue": "Remove {label}"
+  },
+  "list": {
+    "separator": ", "
+  }
+}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { getTranslator } from '@/i18n/runtime';
 import { announce } from '@/lib/ui/toast';
 import type { AdaptationProposal } from '@/types/domain';
 
@@ -25,7 +26,7 @@ export function usePendingProposal(proposals: AdaptationProposal[] | undefined):
       return;
     }
     if (pending && pending.proposalId !== lastId.current) {
-      announce(`Travel update: ${pending.event?.summary ?? pending.summary}`, 'assertive');
+      announce(getTranslator()('adaptation.banner.announce', { summary: pending.event?.summary ?? pending.summary }), 'assertive');
     }
     lastId.current = pending?.proposalId ?? null;
   }, [proposals, pending]);

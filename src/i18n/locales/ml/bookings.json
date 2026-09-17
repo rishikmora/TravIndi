@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "പുരോഗമിക്കുന്നു",
+      "description": "സേവനദാതാവിന്റെ സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു."
+    },
+    "confirmed": {
+      "label": "സ്ഥിരീകരിച്ചു",
+      "description": "സേവനദാതാവ് ഈ ബുക്കിംഗ് സ്ഥിരീകരിച്ചു."
+    },
+    "payment_pending": {
+      "label": "പണമടയ്ക്കാനുണ്ട്",
+      "description": "സേവനദാതാവിന് നേരിട്ട് പണമടയ്ക്കുക. TravIndi-യിൽ ഓൺലൈൻ പേയ്‌മെന്റ് ഇതുവരെ ലഭ്യമല്ല."
+    },
+    "failed": {
+      "label": "പരാജയപ്പെട്ടു",
+      "description": "ഈ ബുക്കിംഗ് പൂർത്തിയാക്കാനായില്ല. പണമൊന്നും ഈടാക്കിയിട്ടില്ല."
+    },
+    "cancelled": {
+      "label": "റദ്ദാക്കി",
+      "description": "ഈ ബുക്കിംഗ് റദ്ദാക്കി."
+    }
+  },
+  "unitPrice": {
+    "person": "ഒരാൾക്ക്",
+    "room_night": "ഒരു മുറിക്ക്, ഒരു രാത്രിക്ക്",
+    "vehicle": "ഒരു വാഹനത്തിന്",
+    "group": "ഒരു ബുക്കിംഗിന്"
+  },
+  "unitQuantity": {
+    "person": "യാത്രക്കാർ",
+    "room_night": "മുറികൾ",
+    "vehicle": "വാഹനങ്ങൾ",
+    "group": "സംഘത്തിന്റെ വലിപ്പം"
+  },
+  "quantity": {
+    "rooms_one": "{count} മുറി",
+    "rooms_other": "{count} മുറികൾ",
+    "nights_one": "{count} രാത്രി",
+    "nights_other": "{count} രാത്രികൾ",
+    "vehicles_one": "{count} വാഹനം",
+    "vehicles_other": "{count} വാഹനങ്ങൾ",
+    "people_one": "{count} ആൾ",
+    "people_other": "{count} പേർ",
+    "group": "{count} പേരുള്ള സംഘം"
+  }
+}

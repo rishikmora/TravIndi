@@ -1,35 +1,36 @@
 import type { Tone } from '@/components/ui/StatusPill';
+import { translatedLabels, withTranslations } from '@/i18n/vocabulary';
 import type { AdaptationChange, AdaptationProposal, AdaptationStatus, Freshness } from '@/types/domain';
 import type { AdaptationTrigger } from '@/types/api';
 
 /** Every status keeps its own name in the UI — never collapsed into a generic "updated". */
-export const ADAPTATION_STATUS: Record<AdaptationStatus, { label: string; tone: Tone; description: string }> = {
-  proposed: { label: 'Proposed', tone: 'warning', description: 'Waiting for your review.' },
-  approved: { label: 'Approved', tone: 'info', description: 'Approved and being applied.' },
-  applied: { label: 'Applied', tone: 'success', description: 'Your itinerary was updated.' },
-  rejected: { label: 'Rejected', tone: 'neutral', description: 'You kept your current plan.' },
-  expired: { label: 'Expired', tone: 'neutral', description: 'No longer valid. Nothing was changed.' },
-  failed: { label: 'Failed', tone: 'danger', description: 'Couldn’t be applied. Nothing was changed.' },
-  stale: { label: 'Stale', tone: 'neutral', description: 'Your itinerary changed after this was suggested.' },
-};
+export const ADAPTATION_STATUS = withTranslations<AdaptationStatus, { tone: Tone }>(
+  {
+    proposed: { tone: 'warning' },
+    approved: { tone: 'info' },
+    applied: { tone: 'success' },
+    rejected: { tone: 'neutral' },
+    expired: { tone: 'neutral' },
+    failed: { tone: 'danger' },
+    stale: { tone: 'neutral' },
+  },
+  (status) => ({ label: `adaptation.status.${status}.label`, description: `adaptation.status.${status}.description` }),
+);
 
-export const CHANGE_TYPE: Record<AdaptationChange['changeType'], { label: string; tone: Tone }> = {
-  unchanged: { label: 'Unchanged', tone: 'neutral' },
-  moved: { label: 'Moved', tone: 'info' },
-  removed: { label: 'Removed', tone: 'danger' },
-  added: { label: 'Added', tone: 'success' },
-};
+export const CHANGE_TYPE = withTranslations<AdaptationChange['changeType'], { tone: Tone }>(
+  {
+    unchanged: { tone: 'neutral' },
+    moved: { tone: 'info' },
+    removed: { tone: 'danger' },
+    added: { tone: 'success' },
+  },
+  (type) => ({ label: `adaptation.changeType.${type}` }),
+);
 
-export const TRIGGER_LABEL: Record<AdaptationTrigger, string> = {
-  crowd: 'Crowds',
-  weather: 'Weather',
-  closure: 'Closure',
-  transport: 'Transport',
-  safety: 'Safety',
-  schedule: 'Schedule',
-  user_request: 'Your request',
-  other: 'Update',
-};
+export const TRIGGER_LABEL: Record<AdaptationTrigger, string> = translatedLabels(
+  ['crowd', 'weather', 'closure', 'transport', 'safety', 'schedule', 'user_request', 'other'] as const,
+  (trigger) => `adaptation.trigger.${trigger}`,
+);
 
 export function eventFreshness(proposal: AdaptationProposal): Freshness | null {
   if (!proposal.event) return null;

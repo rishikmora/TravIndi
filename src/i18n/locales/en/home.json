@@ -1,0 +1,87 @@
+{
+  "composer": {
+    "formLabel": "Plan a journey",
+    "inputLabel": "Tell us about your trip.",
+    "placeholder": "Tell us about your trip — e.g. 4 days in Hyderabad with my parents",
+    "submit": "Plan my journey",
+    "reassurance": "You’ll review what we understood before anything is planned."
+  },
+  "story": {
+    "eyebrow": "How TravIndi works",
+    "title": "One journey, planned with you and kept safe along the way",
+    "steps": {
+      "you": {
+        "label": "You",
+        "title": "It starts with who’s travelling",
+        "body": "Parents who can’t walk far, a first solo trip, children who need breaks. The plan begins with people, not places."
+      },
+      "intent": {
+        "label": "Intent",
+        "title": "Say it your way",
+        "body": "Describe the trip in a sentence. We show exactly what we understood, and ask when something isn’t clear."
+      },
+      "planning": {
+        "label": "Planning",
+        "title": "Planned for you, checked by you",
+        "body": "TravIndi’s planning service builds the itinerary and checks timings and opening days. Nothing is booked or changed without you."
+      },
+      "journey": {
+        "label": "Journey",
+        "title": "A day-by-day plan with reasons",
+        "body": "Every stop says why it’s there. Costs we don’t know are marked “Cost unavailable”, never guessed."
+      },
+      "liveChange": {
+        "label": "Live change",
+        "title": "When something changes, you hear first",
+        "body": "Crowds, closures or delays reported on your route arrive as a travel update, with where the information came from and how recent it is."
+      },
+      "adaptation": {
+        "label": "Adaptation",
+        "title": "Compare, then choose",
+        "body": "See your current plan beside the suggestion and its impact on time and cost. Keep what you have if you prefer — every version is saved."
+      },
+      "safety": {
+        "label": "Safety",
+        "title": "Safety that tells the truth",
+        "body": "Share your location for as long as you choose. SOS shows exactly who received your alert, and reminds you to call 112."
+      }
+    },
+    "plan": "Plan my journey",
+    "safety": "Visit the safety centre"
+  },
+  "popular": {
+    "eyebrow": "Popular destinations",
+    "title": "Where most journeys begin",
+    "description": "The places travellers return to again and again — each one a doorway to its region.",
+    "action": "All destinations"
+  },
+  "hidden": {
+    "eyebrow": "Hidden gems",
+    "title": "The India most itineraries miss",
+    "description": "Root bridges, crater lakes and canyon forts — worth the extra miles.",
+    "action": "Explore all destinations"
+  },
+  "returning": {
+    "eyebrow": "Welcome back",
+    "title": "Pick up where you left off, {name}",
+    "allTrips": "All trips",
+    "travelUpdate": "Travel update",
+    "continuePlanning": "Continue planning",
+    "unreadMessages": "Unread trip messages",
+    "savedPlaces": "Saved places"
+  },
+  "trust": {
+    "title": "Honest by design",
+    "facts": {
+      "destinations": "destinations with practical guidance",
+      "providers": "verified local providers",
+      "trips": "journeys planned"
+    },
+    "principles": {
+      "sources": "Changing information shows where it came from and how recent it is.",
+      "approval": "Nothing in your plan changes until you approve it — and every version is kept.",
+      "costs": "A cost we don’t know is shown as unknown, never guessed.",
+      "sos": "SOS shows exactly who received your alert. It never claims help is on the way unless that’s confirmed."
+    }
+  }
+}

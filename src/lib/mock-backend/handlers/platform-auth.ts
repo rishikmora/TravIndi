@@ -4,6 +4,7 @@ import type {
   ConsentDto,
   DataRequestDto,
   HomeSummaryDto,
+  LanguageCode,
   NotificationPreferencesDto,
   PlatformMetricsDto,
   ProfileDto,
@@ -46,6 +47,7 @@ const sessionFor = (store: MockStore, user: UserRecord): SessionDto => ({
 const failedLogins = new Map<string, number[]>();
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUPPORTED_CHANNELS: Array<NotificationPreferencesDto['channels'][number]> = ['in_app', 'email'];
+const LANGUAGE_CODES: LanguageCode[] = ['en', 'hi', 'te', 'ta', 'kn', 'ml', 'bn', 'mr'];
 
 export const platformAuthRoutes: RouteDefinition[] = [
   route('GET', '/v1/capabilities', () => ok(MOCK_CAPABILITIES)),
@@ -149,6 +151,13 @@ export const platformAuthRoutes: RouteDefinition[] = [
         validationFailed([{ field: 'languages', issue: 'Choose up to 10 languages.' }]);
       }
       next.languages = languages as string[];
+    }
+    if ('preferred_language' in body) {
+      const language = body.preferred_language;
+      if (language !== null && !LANGUAGE_CODES.includes(language as LanguageCode)) {
+        validationFailed([{ field: 'preferred_language', issue: 'Choose a supported language.' }]);
+      }
+      next.preferred_language = language as LanguageCode | null;
     }
     if (body.travel_preferences && typeof body.travel_preferences === 'object') {
       next.travel_preferences = { ...current.travel_preferences, ...(body.travel_preferences as object) };

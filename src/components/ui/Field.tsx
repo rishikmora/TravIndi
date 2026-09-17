@@ -1,6 +1,7 @@
 'use client';
 
 import { type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes, useId } from 'react';
+import { useTranslation } from '@/i18n/react';
 import { cn } from '@/utils/cn';
 
 interface ControlProps {
@@ -24,6 +25,7 @@ interface FieldProps {
 /** Label, hint and error wired to a single control through ids. */
 export function Field({ label, hint, error, required, optional, className, children }: FieldProps) {
   const id = useId();
+  const { t } = useTranslation();
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(' ') || undefined;
@@ -32,7 +34,7 @@ export function Field({ label, hint, error, required, optional, className, child
     <div className={cn('grid gap-1.5', className)}>
       <label htmlFor={id} className="text-[0.9375rem] font-medium text-[var(--text)]">
         {label}
-        {optional && <span className="ml-1.5 font-normal text-[var(--text-subtle)]">(optional)</span>}
+        {optional && <span className="ml-1.5 font-normal text-[var(--text-subtle)]">{t('common.labels.optional')}</span>}
         {required && <span aria-hidden="true" className="ml-1 text-[var(--color-danger)]">*</span>}
       </label>
       {hint && (

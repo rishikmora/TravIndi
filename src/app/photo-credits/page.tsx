@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { PageHeader, PageShell } from '@/components/app/PageShell';
 import { destinations } from '@/data/destinations';
 import { getDestinationPhotos, type Photo } from '@/data/media/photos';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Photo credits',
+  title: en.meta.titles.photoCredits,
   description: 'The photographers and licences behind the destination photographs on TravIndi.',
   alternates: { canonical: '/photo-credits' },
 };

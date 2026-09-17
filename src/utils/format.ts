@@ -1,30 +1,42 @@
 import type { Month } from '@/data/types';
+import { LOCALE_INFO, type Locale } from '@/i18n/config';
+import { getLocale, getTranslator } from '@/i18n/runtime';
 
-export const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-] as const;
+const shortMonths = new Map<Locale, string[]>();
 
-export const MONTH_SHORT = MONTH_NAMES.map((m) => m.slice(0, 3));
+/** Abbreviated month names in the selected language: "Jan", "जन॰", "జన". */
+export function monthShortNames(locale: Locale = getLocale()): string[] {
+  let names = shortMonths.get(locale);
+  if (!names) {
+    const format = new Intl.DateTimeFormat(LOCALE_INFO[locale].intl, { month: 'short', timeZone: 'UTC' });
+    names = Array.from({ length: 12 }, (_, i) => format.format(new Date(Date.UTC(2000, i, 1))));
+    shortMonths.set(locale, names);
+  }
+  return names;
+}
+
+/** 1-based (or 0-based) months as a list: "Oct, Nov, Dec"; none → "Year-round". */
+export function formatMonthList(months: readonly number[], locale: Locale = getLocale()): string {
+  const t = getTranslator(locale);
+  if (months.length === 0) return t('destinations.months.yearRound');
+  const zeroBased = months.includes(0);
+  const names = monthShortNames(locale);
+  return months
+    .map((m) => names[zeroBased ? m : m - 1])
+    .filter(Boolean)
+    .join(t('common.list.separator'));
+}
 
 /**
  * Collapses a set of months into readable ranges, wrapping over the new year:
  * [10, 11, 12, 1, 2, 3] → "Oct–Mar"; all twelve → "Year-round".
  */
-export function formatMonthRange(months: readonly Month[] | readonly number[]): string {
+export function formatMonthRange(months: readonly Month[] | readonly number[], locale: Locale = getLocale()): string {
   const set = new Set(months);
   if (set.size === 0) return '';
-  if (set.size === 12) return 'Year-round';
+  const t = getTranslator(locale);
+  if (set.size === 12) return t('destinations.months.yearRound');
+  const names = monthShortNames(locale);
 
   // Start a run at a month whose predecessor is not included.
   const runs: Array<[number, number]> = [];
@@ -36,15 +48,6 @@ export function formatMonthRange(months: readonly Month[] | readonly number[]): 
     runs.push([m, end]);
   }
   return runs
-    .map(([start, end]) => (start === end ? MONTH_SHORT[start - 1] : `${MONTH_SHORT[start - 1]}–${MONTH_SHORT[end - 1]}`))
-    .join(', ');
-}
-
-export function formatDuration(minDays: number, maxDays: number): string {
-  if (minDays === maxDays) return `${minDays} ${minDays === 1 ? 'day' : 'days'}`;
-  return `${minDays}–${maxDays} days`;
-}
-
-export function formatDistance(km: number): string {
-  return km >= 100 ? `${Math.round(km / 10) * 10} km` : `${Math.round(km)} km`;
+    .map(([start, end]) => (start === end ? names[start - 1] : `${names[start - 1]}–${names[end - 1]}`))
+    .join(t('common.list.separator'));
 }

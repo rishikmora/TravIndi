@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} মিনিট",
+    "hours": "{hours} ঘণ্টা",
+    "hoursMinutes": "{hours} ঘণ্টা {minutes} মিনিট"
+  },
+  "distance": {
+    "meters": "{value} মি",
+    "kilometers": "{value} কিমি"
+  },
+  "relative": {
+    "justNow": "এইমাত্র",
+    "minutesAgo": "{count} মিনিট আগে",
+    "hoursAgo": "{count} ঘণ্টা আগে",
+    "daysAgo": "{count} দিন আগে",
+    "inMinutes": "{count} মিনিটের মধ্যে",
+    "inHours": "{count} ঘণ্টার মধ্যে"
+  },
+  "freshness": {
+    "live": "লাইভ",
+    "application": "অ্যাপের ডেটা",
+    "estimate": "আনুমানিক",
+    "snapshot": "অফলাইন কপি",
+    "unavailable": "পাওয়া যাচ্ছে না",
+    "stale": "পুরোনো",
+    "updated": "{when} হালনাগাদ হয়েছে"
+  },
+  "locationFreshness": {
+    "live": "লাইভ",
+    "recent": "সাম্প্রতিক",
+    "stale": "পুরোনো",
+    "last_known": "সর্বশেষ জানা",
+    "none": "এখনও লোকেশন পাওয়া যায়নি"
+  },
+  "cost": {
+    "unavailable": "খরচের তথ্য নেই",
+    "about": "প্রায় {amount}",
+    "range": "{min}–{max}",
+    "estimate": "আনুমানিক"
+  }
+}

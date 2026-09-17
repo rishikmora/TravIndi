@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { VerifyScreen } from '@/components/providers/VerifyScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Verify a guide, business or ticket',
+  title: en.meta.titles.verify,
   description: 'Check the verification evidence TravIndi holds for a guide or business, or confirm a ticket code.',
   alternates: { canonical: '/verify' },
 };

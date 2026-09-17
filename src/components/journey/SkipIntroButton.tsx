@@ -1,12 +1,14 @@
 'use client';
 
 import { runtime } from '@/3d/core/runtime';
+import { useTranslation } from '@/i18n/react';
 import { useJourneyStore } from '@/store/journey';
 import { cn } from '@/utils/cn';
 
 /** Lets returning visitors fast-forward the opening sequence. */
 export function SkipIntroButton() {
   const playing = useJourneyStore((s) => s.introPlaying);
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -21,7 +23,7 @@ export function SkipIntroButton() {
         playing ? 'opacity-100' : 'pointer-events-none opacity-0',
       )}
     >
-      Skip intro
+      {t('journey.skipIntro')}
     </button>
   );
 }

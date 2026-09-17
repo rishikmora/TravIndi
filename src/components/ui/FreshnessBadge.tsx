@@ -1,6 +1,7 @@
 'use client';
 
 import { useNow } from '@/hooks/useNow';
+import { useLocale } from '@/i18n/react';
 import { describeFreshness, type FreshnessTone } from '@/lib/format/freshness';
 import type { Freshness } from '@/types/domain';
 import { cn } from '@/utils/cn';
@@ -18,7 +19,8 @@ const TONE: Record<FreshnessTone, Tone> = {
 /** "LIVE · Updated just now · Visitor reports" — where a value came from and how current it is. */
 export function FreshnessBadge({ freshness, className, hideDetail }: { freshness: Freshness | null | undefined; className?: string; hideDetail?: boolean }) {
   const now = useNow();
-  const described = describeFreshness(freshness, now || undefined);
+  const locale = useLocale();
+  const described = describeFreshness(freshness, now || undefined, locale);
   return (
     <span className={cn('inline-flex flex-wrap items-center gap-x-2 gap-y-1', className)}>
       <StatusPill tone={TONE[described.tone]}>{described.label}</StatusPill>

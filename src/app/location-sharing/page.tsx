@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { LocationSharingScreen } from '@/components/location/LocationSharingScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Location sharing',
+  title: en.meta.titles.locationSharing,
   robots: { index: false, follow: false },
 };
 

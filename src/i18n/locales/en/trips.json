@@ -1,0 +1,127 @@
+{
+  "status": {
+    "draft": {
+      "label": "Draft",
+      "description": "Details saved; no itinerary yet."
+    },
+    "planning": {
+      "label": "Planning",
+      "description": "Your itinerary is being built."
+    },
+    "ready": {
+      "label": "Ready",
+      "description": "Itinerary ready to travel."
+    },
+    "active": {
+      "label": "On the road",
+      "description": "You’re travelling now."
+    },
+    "completed": {
+      "label": "Completed",
+      "description": "Trip finished."
+    },
+    "cancelled": {
+      "label": "Cancelled",
+      "description": "Trip cancelled."
+    }
+  },
+  "list": {
+    "eyebrow": "Trips",
+    "title": "Your journeys",
+    "planJourney": "Plan a journey",
+    "signIn": "Sign in to see your trips, itineraries and travel updates.",
+    "loading": "Loading your trips",
+    "emptyTitle": "No trips yet",
+    "emptyDescription": "Tell us where you’d like to go and who’s coming. We’ll build a plan you can change at any time.",
+    "planMyJourney": "Plan my journey",
+    "upcoming": "Current and upcoming",
+    "drafts": "Drafts",
+    "draftsDescription": "Finish the details and we’ll build the itinerary.",
+    "past": "Past trips"
+  },
+  "card": {
+    "datesNotSet": "Dates not set",
+    "updatesToReview_one": "{count} travel update to review",
+    "updatesToReview_other": "{count} travel updates to review",
+    "unread": "{count} unread",
+    "travellers_one": "{count} traveller",
+    "travellers_other": "{count} travellers"
+  },
+  "frame": {
+    "signIn": "Trips are private to the people travelling on them.",
+    "loading": "Loading trip",
+    "notFoundTitle": "We couldn’t find this trip",
+    "notFoundDescription": "It may have been deleted, or you may not be a member of it.",
+    "backToTrips": "Back to your trips",
+    "allTrips": "All trips",
+    "version": "Version {version}",
+    "destinationNotSet": "Destination not set",
+    "place": "{name}, {state}",
+    "sectionsLabel": "Trip sections",
+    "tabs": {
+      "overview": "Overview",
+      "itinerary": "Itinerary",
+      "map": "Map",
+      "chat": "Chat",
+      "people": "People",
+      "bookings": "Bookings",
+      "safety": "Safety"
+    },
+    "badgeUnread": "unread",
+    "badgeToReview": "to review"
+  },
+  "overview": {
+    "loading": "Loading trip overview",
+    "nextUp": "Next up",
+    "dayTime": "Day {day} · {time}",
+    "fromPrevious": "{leg} from your previous stop",
+    "openToday": "Open today’s plan",
+    "complete": "This trip is complete.",
+    "startsOn": "Your trip starts {date}.",
+    "nothingToday": "Nothing else is planned for today.",
+    "noItinerary": "There’s no itinerary for this trip yet.",
+    "buildItinerary": "Build itinerary",
+    "toolsLabel": "Trip tools",
+    "tools": {
+      "itinerary": "Itinerary",
+      "notBuilt": "Not built yet",
+      "chat": "Trip chat",
+      "upToDate": "Up to date",
+      "share": "Share location",
+      "shareDetail": "Choose who and for how long",
+      "safety": "Safety",
+      "safetyDetail": "Help nearby and advisories",
+      "bookings": "Bookings",
+      "bookingsDetail": "Tickets and confirmations"
+    },
+    "travellers": "Travellers",
+    "manage": "Manage",
+    "details": "Trip details"
+  },
+  "people": {
+    "roles": {
+      "owner": {
+        "label": "Owner",
+        "description": "Can change the plan, review travel updates, book and manage the trip."
+      },
+      "editor": {
+        "label": "Editor",
+        "description": "Can change the plan, review travel updates and book."
+      },
+      "viewer": {
+        "label": "Viewer",
+        "description": "Can see the plan and take part in the trip chat."
+      }
+    },
+    "travellersLabel": "Travellers",
+    "you": "(you)",
+    "online": "Online",
+    "away": "Away",
+    "sharingLocation": "Sharing location",
+    "shareMyLocation": "Share my location",
+    "rolesTitle": "What each role can do",
+    "invitingTitle": "Inviting people",
+    "invitingBody": "Adding travellers from the app isn’t available yet.",
+    "privacyNote": "Online status appears only for people who allow it. Locations are visible only while someone chooses to share."
+  }
+}

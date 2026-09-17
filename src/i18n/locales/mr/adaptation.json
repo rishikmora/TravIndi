@@ -1,0 +1,48 @@
+{
+  "status": {
+    "proposed": {
+      "label": "प्रस्तावित",
+      "description": "तुमच्या पुनरावलोकनाची प्रतीक्षा आहे."
+    },
+    "approved": {
+      "label": "मंजूर",
+      "description": "मंजूर झाले आणि लागू केले जात आहे."
+    },
+    "applied": {
+      "label": "लागू केले",
+      "description": "तुमचा प्रवास आराखडा अपडेट झाला."
+    },
+    "rejected": {
+      "label": "नाकारले",
+      "description": "तुम्ही तुमची सध्याची योजनाच ठेवली."
+    },
+    "expired": {
+      "label": "मुदत संपली",
+      "description": "आता वैध नाही. काहीही बदललेले नाही."
+    },
+    "failed": {
+      "label": "अयशस्वी",
+      "description": "लागू करता आले नाही. काहीही बदललेले नाही."
+    },
+    "stale": {
+      "label": "जुने",
+      "description": "ही सूचना आल्यानंतर तुमचा प्रवास आराखडा बदलला."
+    }
+  },
+  "changeType": {
+    "unchanged": "बदल नाही",
+    "moved": "हलवले",
+    "removed": "काढले",
+    "added": "जोडले"
+  },
+  "trigger": {
+    "crowd": "गर्दी",
+    "weather": "हवामान",
+    "closure": "बंद",
+    "transport": "वाहतूक",
+    "safety": "सुरक्षा",
+    "schedule": "वेळापत्रक",
+    "user_request": "तुमची विनंती",
+    "other": "अपडेट"
+  }
+}

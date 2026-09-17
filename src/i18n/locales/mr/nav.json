@@ -1,0 +1,20 @@
+{
+  "primary": "मुख्य",
+  "items": {
+    "home": "मुख्यपृष्ठ",
+    "discover": "शोधा",
+    "trips": "प्रवास",
+    "map": "नकाशा",
+    "messages": "संदेश",
+    "safety": "सुरक्षा",
+    "profile": "प्रोफाइल"
+  },
+  "homeLink": "TravIndi मुख्यपृष्ठ",
+  "search": "पर्यटन स्थळे, गाइड आणि ठिकाणे शोधा",
+  "notifications": "सूचना",
+  "unreadMessages_one": ", {count} न वाचलेला संदेश",
+  "unreadMessages_other": ", {count} न वाचलेले संदेश",
+  "unreadNotifications_one": ", {count} न वाचलेली सूचना",
+  "unreadNotifications_other": ", {count} न वाचलेल्या सूचना",
+  "profile": "तुमची प्रोफाइल, {name}"
+}

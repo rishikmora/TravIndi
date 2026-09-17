@@ -1,0 +1,53 @@
+{
+  "kinds": {
+    "bad_request": { "title": "That didn’t go through", "message": "Some of the information could not be used. Please check it and try again." },
+    "unauthorized": { "title": "Please sign in again", "message": "Your session has ended. Sign in to continue where you left off." },
+    "forbidden": { "title": "You don’t have access to this", "message": "Ask the owner for access, or return to your trips." },
+    "not_found": { "title": "We couldn’t find that", "message": "It may have been removed or the link may be out of date." },
+    "conflict": { "title": "This changed in the meantime", "message": "Someone — or something — updated this after you opened it." },
+    "validation": { "title": "A few details need attention", "message": "Please review the highlighted fields." },
+    "rate_limited": { "title": "Too many requests", "message": "Please wait a moment before trying again." },
+    "server": { "title": "Something went wrong on our side", "message": "This is not your fault. Please try again shortly." },
+    "bad_gateway": { "title": "A service didn’t respond correctly", "message": "Please try again in a moment." },
+    "unavailable": { "title": "TravIndi is briefly unavailable", "message": "We are working on it. Your saved information is still here." },
+    "gateway_timeout": { "title": "That took too long", "message": "The service did not answer in time. Please try again." },
+    "network": { "title": "You seem to be offline", "message": "Check your connection. Anything saved on this device is still available." },
+    "timeout": { "title": "That took too long", "message": "Your connection may be slow. Please try again." },
+    "aborted": { "title": "Cancelled", "message": "The request was cancelled." },
+    "unknown": { "title": "Something unexpected happened", "message": "Please try again." }
+  },
+  "contexts": {
+    "auth_login": {
+      "unauthorized": { "title": "Email or password is incorrect", "message": "Check your details and try again." }
+    },
+    "trip_generate": {
+      "validation": { "title": "We couldn’t build this journey yet", "message": "A few trip details are missing or conflict with each other. Review them and try again." },
+      "unavailable": { "title": "The journey planner is busy", "message": "Your trip details are saved. Try generating again in a moment.", "stillAvailable": "Your trip draft is saved." }
+    },
+    "itinerary_update": {
+      "conflict": { "title": "Your itinerary changed while you were away", "message": "Review the latest version before applying your change." },
+      "not_found": { "title": "This stop is no longer available", "message": "We couldn’t update your itinerary because this place is no longer available." }
+    },
+    "adaptation_accept": {
+      "conflict": { "title": "This update is out of date", "message": "Your itinerary changed after this suggestion was made. Nothing was applied.", "stillAvailable": "Your current itinerary is unchanged." },
+      "not_found": { "title": "This suggestion has expired", "message": "Nothing was changed. Your current plan still stands." }
+    },
+    "sos_send": {
+      "network": { "title": "Saved on this device", "message": "Your alert will be sent as soon as you reconnect. If you are in immediate danger, call 112." }
+    },
+    "chat_send": {
+      "network": { "title": "Not sent", "message": "You appear to be offline. Try sending again when connected." },
+      "forbidden": { "title": "You can’t post here", "message": "You may no longer be a member of this conversation." }
+    },
+    "booking_create": {
+      "conflict": { "title": "Availability changed", "message": "This option was taken while you were reviewing it. Nothing was charged." },
+      "validation": { "title": "Booking details need attention", "message": "Please review the highlighted fields." }
+    },
+    "location_share": {
+      "forbidden": { "title": "Sharing isn’t allowed here", "message": "You can’t share location with this group." }
+    },
+    "search": {
+      "network": { "title": "Search needs a connection", "message": "Saved trips and places are still available offline." }
+    }
+  }
+}

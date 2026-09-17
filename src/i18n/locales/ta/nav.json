@@ -1,0 +1,20 @@
+{
+  "primary": "முதன்மை",
+  "items": {
+    "home": "முகப்பு",
+    "discover": "கண்டறிக",
+    "trips": "பயணங்கள்",
+    "map": "வரைபடம்",
+    "messages": "செய்திகள்",
+    "safety": "பாதுகாப்பு",
+    "profile": "சுயவிவரம்"
+  },
+  "homeLink": "TravIndi முகப்பு",
+  "search": "சுற்றுலாத் தலங்கள், வழிகாட்டிகள், இடங்களைத் தேடுக",
+  "notifications": "அறிவிப்புகள்",
+  "unreadMessages_one": ", படிக்காத {count} செய்தி",
+  "unreadMessages_other": ", படிக்காத {count} செய்திகள்",
+  "unreadNotifications_one": ", படிக்காத {count} அறிவிப்பு",
+  "unreadNotifications_other": ", படிக்காத {count} அறிவிப்புகள்",
+  "profile": "உங்கள் சுயவிவரம், {name}"
+}

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { DisplayPreferences } from '@/components/account/DisplayPreferences';
 import { PageHeader, PageShell, Section } from '@/components/app/PageShell';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Accessibility',
+  title: en.meta.titles.accessibility,
   description: 'How TravIndi supports travellers who use screen readers, keyboards, larger text, reduced motion and more.',
   alternates: { canonical: '/accessibility' },
 };

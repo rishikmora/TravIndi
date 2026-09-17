@@ -1,24 +1,16 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
 import { isRemoteImage, isTrustedImageUrl } from '@/lib/media/trusted';
 import type { DestinationSummary } from '@/types/domain';
 import { cn } from '@/utils/cn';
-
-export const CATEGORY_LABEL: Record<DestinationSummary['category'], string> = {
-  heritage: 'Heritage',
-  mountains: 'Mountains',
-  beaches: 'Beaches',
-  backwaters: 'Backwaters',
-  wildlife: 'Wildlife',
-  spiritual: 'Spiritual',
-  city: 'City',
-  desert: 'Desert',
-  nature: 'Nature',
-  islands: 'Islands',
-};
+import { categoryLabel, regionLabel } from './labels';
 
 export function DestinationCard({ destination, className, priority }: { destination: DestinationSummary; className?: string; priority?: boolean }) {
+  const { t } = useTranslation();
   const image = destination.heroImage;
   return (
     <article className={cn('surface-card group relative flex flex-col overflow-hidden', className)}>
@@ -37,7 +29,7 @@ export function DestinationCard({ destination, className, priority }: { destinat
           <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(90%_70%_at_30%_20%,rgb(212_166_73/0.35),transparent_60%),linear-gradient(135deg,#1c2b4a,#a84a2a)]" />
         )}
         <div className="absolute left-3 top-3">
-          <StatusPill className="bg-ivory/95 text-navy shadow-sm">{CATEGORY_LABEL[destination.category]}</StatusPill>
+          <StatusPill className="bg-ivory/95 text-navy shadow-sm">{categoryLabel(t, destination.category)}</StatusPill>
         </div>
       </div>
       <div className="grid flex-1 content-start gap-1 p-4">
@@ -47,7 +39,7 @@ export function DestinationCard({ destination, className, priority }: { destinat
           </Link>
         </h3>
         <p className="text-[0.875rem] text-[var(--text-muted)]">
-          {destination.state} · {destination.region}
+          {destination.state} · {regionLabel(t, destination.region)}
         </p>
         <p className="mt-1 text-[0.9375rem] leading-snug">{destination.tagline}</p>
       </div>

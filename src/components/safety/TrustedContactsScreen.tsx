@@ -10,20 +10,19 @@ import { EditIcon, PlusIcon, TrashIcon, UsersIcon } from '@/components/ui/icons'
 import { LoadingBlock, Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState, InlineNotice } from '@/components/ui/States';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
+import { getTranslator } from '@/i18n/runtime';
 import { isApiError } from '@/lib/api/errors';
 import { useAddTrustedContact, useRemoveTrustedContact, useTrustedContacts, useUpdateTrustedContact } from '@/lib/query/hooks/safety';
 import { toast } from '@/lib/ui/toast';
 import type { TrustedContact, TrustedContactInput } from '@/types/domain';
 
-const NOTIFY_OPTIONS: Array<{ value: TrustedContact['notifyOn'][number]; label: string; description: string }> = [
-  { value: 'sos', label: 'SOS alerts', description: 'When you send an SOS.' },
-  { value: 'missed_check_in', label: 'Missed check-ins', description: 'When you don’t check in on time.' },
-  { value: 'location_share', label: 'Location sharing', description: 'Lets you share your live location with them.' },
-];
+const NOTIFY_OPTIONS: Array<TrustedContact['notifyOn'][number]> = ['sos', 'missed_check_in', 'location_share'];
 
 const MAX_CONTACTS = 5;
 
 function ContactDialog({ contact, open, onClose }: { contact: TrustedContact | null; open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const add = useAddTrustedContact();
   const update = useUpdateTrustedContact();
   const [form, setForm] = useState({ name: '', relationship: '', phone: '', email: '', notifyOn: ['sos'] as TrustedContact['notifyOn'] });
@@ -47,7 +46,7 @@ function ContactDialog({ contact, open, onClose }: { contact: TrustedContact | n
 
   const save = () => {
     const done = () => {
-      toast.success(contact ? 'Contact updated' : 'Contact added');
+      toast.success(getTranslator()(contact ? 'contacts.updated' : 'contacts.added'));
       onClose();
     };
     if (contact) {
@@ -65,45 +64,53 @@ function ContactDialog({ contact, open, onClose }: { contact: TrustedContact | n
       open={open}
       onClose={onClose}
       variant="sheet"
-      title={contact ? `Edit ${contact.name}` : 'Add a trusted contact'}
-      description="Choose someone who would want to know if you need help."
+      title={contact ? t('contacts.editTitle', { name: contact.name }) : t('contacts.addTitle')}
+      description={t('contacts.dialogDescription')}
       dismissible={!mutation.isPending}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={mutation.isPending}>
-            Cancel
+            {t('common.actions.cancel')}
           </Button>
           <Button variant="navy" onClick={save} loading={mutation.isPending} disabled={form.name.trim().length < 2 || !form.relationship.trim()}>
-            {contact ? 'Save changes' : 'Add contact'}
+            {contact ? t('common.actions.saveChanges') : t('contacts.add')}
           </Button>
         </>
       }
     >
       <div className="grid gap-4 pb-2">
         {mutation.error && !Object.keys(fieldErrors).length ? <ErrorState error={mutation.error} compact politeness="assertive" /> : null}
-        <Field label="Name" error={fieldErrors.name}>
+        <Field label={t('contacts.name')} error={fieldErrors.name}>
           {(control) => <TextInput {...control} autoComplete="off" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />}
         </Field>
-        <Field label="Relationship" hint="e.g. Brother, Friend, Colleague" error={fieldErrors.relationship}>
+        <Field label={t('contacts.relationship')} hint={t('contacts.relationshipHint')} error={fieldErrors.relationship}>
           {(control) => <TextInput {...control} value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} />}
         </Field>
-        <Field label="Phone" optional={Boolean(contact)} hint={contact?.phoneMasked ? `Current: ${contact.phoneMasked}. Leave empty to keep it.` : 'Add a phone number or an email.'} error={fieldErrors.phone}>
+        <Field
+          label={t('contacts.phone')}
+          optional={Boolean(contact)}
+          hint={contact?.phoneMasked ? t('contacts.phoneCurrent', { value: contact.phoneMasked }) : t('contacts.phoneHint')}
+          error={fieldErrors.phone}
+        >
           {(control) => <TextInput {...control} type="tel" inputMode="tel" autoComplete="off" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />}
         </Field>
-        <Field label="Email" optional hint={contact?.emailMasked ? `Current: ${contact.emailMasked}. Leave empty to keep it.` : 'If they use TravIndi with this email, alerts reach them in the app.'} error={fieldErrors.email}>
+        <Field
+          label={t('contacts.email')}
+          optional
+          hint={contact?.emailMasked ? t('contacts.emailCurrent', { value: contact.emailMasked }) : t('contacts.emailHint')}
+          error={fieldErrors.email}
+        >
           {(control) => <TextInput {...control} type="email" inputMode="email" autoComplete="off" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />}
         </Field>
         <fieldset className="grid gap-3">
-          <legend className="mb-1 font-medium">Tell them about</legend>
+          <legend className="mb-1 font-medium">{t('contacts.tellThem')}</legend>
           {NOTIFY_OPTIONS.map((option) => (
             <Checkbox
-              key={option.value}
-              label={option.label}
-              description={option.description}
-              checked={form.notifyOn.includes(option.value)}
-              onChange={(e) =>
-                setForm({ ...form, notifyOn: e.target.checked ? [...form.notifyOn, option.value] : form.notifyOn.filter((v) => v !== option.value) })
-              }
+              key={option}
+              label={t(`contacts.notify.${option}.label`)}
+              description={t(`contacts.notify.${option}.description`)}
+              checked={form.notifyOn.includes(option)}
+              onChange={(e) => setForm({ ...form, notifyOn: e.target.checked ? [...form.notifyOn, option] : form.notifyOn.filter((v) => v !== option) })}
             />
           ))}
         </fieldset>
@@ -113,6 +120,7 @@ function ContactDialog({ contact, open, onClose }: { contact: TrustedContact | n
 }
 
 function ContactsManager() {
+  const { t } = useTranslation();
   const contacts = useTrustedContacts();
   const remove = useRemoveTrustedContact();
   const [editing, setEditing] = useState<TrustedContact | null>(null);
@@ -121,7 +129,7 @@ function ContactsManager() {
 
   if (contacts.isPending) {
     return (
-      <LoadingBlock label="Loading trusted contacts" className="grid gap-3">
+      <LoadingBlock label={t('contacts.loading')} className="grid gap-3">
         <Skeleton className="h-24 w-full rounded-2xl" />
         <Skeleton className="h-24 w-full rounded-2xl" />
       </LoadingBlock>
@@ -133,19 +141,19 @@ function ContactsManager() {
 
   return (
     <div className="grid gap-6">
-      <InlineNotice tone="info" title="How contacts are reached">
-        In-app alerts reach contacts who use TravIndi with the email you add. SMS and phone calls aren’t connected yet, so in an emergency also contact them directly.
+      <InlineNotice tone="info" title={t('contacts.howReachedTitle')}>
+        {t('contacts.howReached')}
       </InlineNotice>
 
       {contacts.data.length === 0 ? (
         <EmptyState
           icon={<UsersIcon />}
-          title="No trusted contacts yet"
-          description="Add up to five people who should hear from you if you send an SOS."
+          title={t('contacts.emptyTitle')}
+          description={t('contacts.emptyDescription')}
           action={
             <Button variant="navy" onClick={() => setAdding(true)}>
               <PlusIcon size={18} />
-              Add a contact
+              {t('contacts.addContact')}
             </Button>
           }
           className="surface-card"
@@ -159,25 +167,25 @@ function ContactsManager() {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[1.0625rem] font-semibold">{contact.name}</span>
                     <span className="text-[var(--text-muted)]">{contact.relationship}</span>
-                    <StatusPill tone={contact.verified ? 'success' : 'neutral'}>{contact.verified ? 'Confirmed' : 'Not yet confirmed'}</StatusPill>
+                    <StatusPill tone={contact.verified ? 'success' : 'neutral'}>{contact.verified ? t('contacts.confirmed') : t('contacts.notYetConfirmed')}</StatusPill>
                   </div>
                   <p className="text-[0.875rem] text-[var(--text-muted)]">{[contact.phoneMasked, contact.emailMasked].filter(Boolean).join(' · ')}</p>
-                  <ul className="flex flex-wrap gap-1.5" aria-label="Alerts they receive">
+                  <ul className="flex flex-wrap gap-1.5" aria-label={t('contacts.alertsTheyReceive')}>
                     {contact.notifyOn.map((value) => (
                       <li key={value}>
-                        <StatusPill>{NOTIFY_OPTIONS.find((o) => o.value === value)?.label ?? value}</StatusPill>
+                        <StatusPill>{NOTIFY_OPTIONS.includes(value) ? t(`contacts.notify.${value}.label`) : value}</StatusPill>
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={() => setEditing(contact)} aria-label={`Edit ${contact.name}`}>
+                  <Button variant="secondary" size="sm" onClick={() => setEditing(contact)} aria-label={t('contacts.editLabel', { name: contact.name })}>
                     <EditIcon size={16} />
-                    Edit
+                    {t('common.actions.edit')}
                   </Button>
-                  <Button variant="subtle" size="sm" onClick={() => setRemoving(contact)} aria-label={`Remove ${contact.name}`}>
+                  <Button variant="subtle" size="sm" onClick={() => setRemoving(contact)} aria-label={t('contacts.removeLabel', { name: contact.name })}>
                     <TrashIcon size={16} />
-                    Remove
+                    {t('common.actions.remove')}
                   </Button>
                 </div>
               </li>
@@ -186,25 +194,32 @@ function ContactsManager() {
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="navy" onClick={() => setAdding(true)} disabled={atLimit}>
               <PlusIcon size={18} />
-              Add a contact
+              {t('contacts.addContact')}
             </Button>
-            {atLimit && <span className="text-[0.875rem] text-[var(--text-muted)]">You’ve added the maximum of {MAX_CONTACTS} contacts.</span>}
+            {atLimit && <span className="text-[0.875rem] text-[var(--text-muted)]">{t('contacts.maxReached', { count: MAX_CONTACTS })}</span>}
           </div>
         </>
       )}
 
-      <ContactDialog open={adding || Boolean(editing)} contact={editing} onClose={() => { setAdding(false); setEditing(null); }} />
+      <ContactDialog
+        open={adding || Boolean(editing)}
+        contact={editing}
+        onClose={() => {
+          setAdding(false);
+          setEditing(null);
+        }}
+      />
 
       <Dialog
         open={Boolean(removing)}
         onClose={() => setRemoving(null)}
-        title={`Remove ${removing?.name ?? 'contact'}?`}
-        description="They won’t receive SOS alerts or location shares from you any more."
+        title={t('contacts.removeTitle', { name: removing?.name ?? '' })}
+        description={t('contacts.removeDescription')}
         dismissible={!remove.isPending}
         footer={
           <>
             <Button variant="secondary" onClick={() => setRemoving(null)} disabled={remove.isPending}>
-              Keep
+              {t('contacts.keep')}
             </Button>
             <Button
               variant="danger"
@@ -213,13 +228,13 @@ function ContactsManager() {
                 removing &&
                 remove.mutate(removing.contactId, {
                   onSuccess: () => {
-                    toast.success(`${removing.name} removed`);
+                    toast.success(getTranslator()('contacts.removed', { name: removing.name }));
                     setRemoving(null);
                   },
                 })
               }
             >
-              Remove
+              {t('common.actions.remove')}
             </Button>
           </>
         }
@@ -231,10 +246,11 @@ function ContactsManager() {
 }
 
 export function TrustedContactsScreen() {
+  const { t } = useTranslation();
   return (
     <PageShell width="narrow">
-      <PageHeader eyebrow="Safety" title="Trusted contacts" description="People who should hear from you in an emergency." />
-      <RequireAuth description="Trusted contacts are private to your account.">
+      <PageHeader eyebrow={t('contacts.eyebrow')} title={t('contacts.title')} description={t('contacts.description')} />
+      <RequireAuth description={t('contacts.signIn')}>
         <ContactsManager />
       </RequireAuth>
     </PageShell>

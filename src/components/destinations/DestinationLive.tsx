@@ -16,6 +16,7 @@ import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 import { ErrorState, InlineNotice } from '@/components/ui/States';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useNow } from '@/hooks/useNow';
+import { useTranslation } from '@/i18n/react';
 import { api } from '@/lib/api';
 import { isApiError } from '@/lib/api/errors';
 import { useAuth } from '@/lib/auth/provider';
@@ -32,6 +33,7 @@ import { ADVISORY_SEVERITY } from '../safety/vocabulary';
 /** Advisories change; the server-rendered copy is refreshed from the API on arrival. */
 export function DestinationSafety({ initial }: { initial: Destination }) {
   const now = useNow();
+  const { t } = useTranslation();
   const destination = useQuery({
     queryKey: queryKeys.destinations.detail(initial.slug),
     queryFn: ({ signal }) => api.destinations.get(initial.slug, { signal }),
@@ -63,7 +65,7 @@ export function DestinationSafety({ initial }: { initial: Destination }) {
           ))}
         </ul>
       )}
-      <ul className="flex flex-wrap gap-2" aria-label="Emergency numbers">
+      <ul className="flex flex-wrap gap-2" aria-label={t('destinations.live.emergencyNumbers')}>
         {safety.emergencyNumbers.map((entry) => (
           <li key={entry.number}>
             <a href={`tel:${entry.number}`} className="tap-target inline-flex items-center gap-2 rounded-full bg-[var(--surface-raised)] px-4 font-medium ring-1 ring-inset ring-[var(--hairline-strong)] hover:bg-[var(--surface-sunken)]">
@@ -76,15 +78,16 @@ export function DestinationSafety({ initial }: { initial: Destination }) {
   );
 }
 
-const OFFER_GROUPS: Array<{ category: BusinessCategory; title: string; Icon: ComponentType<{ size?: number }> }> = [
-  { category: 'stay', title: 'Stays', Icon: BedIcon },
-  { category: 'tour_operator', title: 'Packages & tours', Icon: SuitcaseIcon },
-  { category: 'transport', title: 'Cabs', Icon: CarIcon },
+const OFFER_GROUPS: Array<{ category: 'stay' | 'tour_operator' | 'transport'; Icon: ComponentType<{ size?: number }> }> = [
+  { category: 'stay', Icon: BedIcon },
+  { category: 'tour_operator', Icon: SuitcaseIcon },
+  { category: 'transport', Icon: CarIcon },
 ];
 
 /** Bookable stays, packages and cabs at a destination. */
 export function DestinationOffers({ destinationId, name }: { destinationId: string; name: string }) {
   const businesses = useBusinesses({ destinationId });
+  const { t } = useTranslation();
   const [booking, setBooking] = useState<{ service: Service; providerName: string } | null>(null);
 
   if (businesses.isPending) return <Skeleton className="h-40 w-full rounded-2xl" />;
@@ -97,17 +100,17 @@ export function DestinationOffers({ destinationId, name }: { destinationId: stri
       .flatMap((business) => business.services.filter((service) => service.bookable).map((service) => ({ service, business }))),
   })).filter((group) => group.offers.length > 0);
 
-  if (groups.length === 0) return <p className="text-[var(--text-muted)]">Nothing in {name} can be booked through TravIndi yet.</p>;
+  if (groups.length === 0) return <p className="text-[var(--text-muted)]">{t('destinations.live.nothingBookable', { name })}</p>;
 
   return (
     <div className="grid gap-6">
-      {groups.map(({ category, title, Icon, offers }) => (
+      {groups.map(({ category, Icon, offers }) => (
         <div key={category} className="grid gap-3">
           <h3 className="flex items-center gap-2 text-[1.125rem] font-semibold">
             <span aria-hidden="true" className="text-terracotta">
               <Icon size={20} />
             </span>
-            {title}
+            {t(`destinations.live.offerGroups.${category}`)}
           </h3>
           <ul className="grid gap-3 md:grid-cols-2">
             {offers.map(({ service, business }) => {
@@ -127,7 +130,7 @@ export function DestinationOffers({ destinationId, name }: { destinationId: stri
                     </div>
                     {service.packageDetails ? (
                       <p className="text-[0.875rem] text-[var(--text-muted)]">
-                        {service.packageDetails.days} days · {service.packageDetails.includes.slice(0, 2).join(' · ')}
+                        {t('destinations.live.packageDays', { count: service.packageDetails.days })} · {service.packageDetails.includes.slice(0, 2).join(' · ')}
                       </p>
                     ) : (
                       service.highlights.length > 0 && <p className="text-[0.875rem] text-[var(--text-muted)]">{service.highlights.slice(0, 2).join(' · ')}</p>
@@ -139,7 +142,7 @@ export function DestinationOffers({ destinationId, name }: { destinationId: stri
                       {price.status !== 'unavailable' && <span className="text-[0.8125rem] text-[var(--text-muted)]">{UNIT_PRICE_LABEL[service.unit]}</span>}
                     </p>
                     <Button variant="accent" size="sm" onClick={() => setBooking({ service, providerName: business.name })}>
-                      Book
+                      {t('destinations.live.book')}
                     </Button>
                   </div>
                 </li>
@@ -156,6 +159,7 @@ export function DestinationOffers({ destinationId, name }: { destinationId: stri
 export function DestinationProviders({ destinationId, name }: { destinationId: string; name: string }) {
   const guides = useGuides({ destinationId });
   const businesses = useBusinesses({ destinationId });
+  const { t } = useTranslation();
 
   const block = (title: string, loading: boolean, error: unknown, retry: () => void, rows: Array<{ id: string; href: string; name: string; detail: string; evidence: ReturnType<typeof verificationSummary>; reputation: string }>) => (
     <div className="grid content-start gap-3">
@@ -165,7 +169,7 @@ export function DestinationProviders({ destinationId, name }: { destinationId: s
       ) : error ? (
         <ErrorState error={error} compact onRetry={retry} />
       ) : rows.length === 0 ? (
-        <p className="text-[var(--text-muted)]">None listed for {name} yet.</p>
+        <p className="text-[var(--text-muted)]">{t('destinations.live.noneListed', { name })}</p>
       ) : (
         <ul className="surface-card divide-y divide-[var(--hairline)] overflow-hidden">
           {rows.map((row) => (
@@ -188,14 +192,14 @@ export function DestinationProviders({ destinationId, name }: { destinationId: s
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {block(
-        'Local guides',
+        t('destinations.live.localGuides'),
         guides.isPending,
         guides.error,
         () => void guides.refetch(),
         (guides.data?.items ?? []).map((g) => ({ id: g.guideId, href: `/guides/${g.guideId}`, name: g.name, detail: g.specializations.slice(0, 2).join(' · '), evidence: verificationSummary(g.verification), reputation: reputationLabel(g.reputation) })),
       )}
       {block(
-        'Local businesses',
+        t('destinations.live.localBusinesses'),
         businesses.isPending,
         businesses.error,
         () => void businesses.refetch(),
@@ -207,6 +211,7 @@ export function DestinationProviders({ destinationId, name }: { destinationId: s
 
 export function DestinationCommunity({ destinationId, name }: { destinationId: string; name: string }) {
   const now = useNow();
+  const { t } = useTranslation();
   const { status } = useAuth();
   const channels = useCommunityChannels(destinationId);
   const [channelId, setChannelId] = useState<string | null>(null);
@@ -226,7 +231,7 @@ export function DestinationCommunity({ destinationId, name }: { destinationId: s
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl
-          label="Community channel"
+          label={t('destinations.live.channel')}
           size="sm"
           value={activeChannel ?? ''}
           onChange={setChannelId}
@@ -234,11 +239,11 @@ export function DestinationCommunity({ destinationId, name }: { destinationId: s
         />
         {status === 'authenticated' ? (
           <Button variant="secondary" size="sm" onClick={() => setAsking(true)}>
-            Post in this channel
+            {t('destinations.live.postInChannel')}
           </Button>
         ) : (
           <ButtonLink href={`/login?next=${encodeURIComponent(`/destinations/${destinationId.replace(/^dst_/, '')}#community`)}`} variant="secondary" size="sm">
-            Sign in to post
+            {t('destinations.live.signInToPost')}
           </ButtonLink>
         )}
       </div>
@@ -248,16 +253,16 @@ export function DestinationCommunity({ destinationId, name }: { destinationId: s
       ) : posts.isError ? (
         <ErrorState error={posts.error} compact onRetry={() => void posts.refetch()} />
       ) : posts.data.items.length === 0 ? (
-        <p className="text-[var(--text-muted)]">No posts in this channel yet. Be the first to share something about {name}.</p>
+        <p className="text-[var(--text-muted)]">{t('destinations.live.noPosts', { name })}</p>
       ) : (
         <ul className="grid gap-3">
           {posts.data.items.map((post) => (
             <li key={post.postId} className="surface-card grid gap-2 p-4">
               <div className="flex flex-wrap items-center gap-2 text-[0.875rem]">
                 <span className="font-medium">{post.authorName}</span>
-                {post.authorBadge === 'verified_guide' && <StatusPill tone="success">Verified guide</StatusPill>}
-                {post.authorBadge === 'verified_business' && <StatusPill tone="success">Verified business</StatusPill>}
-                {post.authorBadge === 'local' && <StatusPill>Local</StatusPill>}
+                {post.authorBadge === 'verified_guide' && <StatusPill tone="success">{t('destinations.live.verifiedGuide')}</StatusPill>}
+                {post.authorBadge === 'verified_business' && <StatusPill tone="success">{t('destinations.live.verifiedBusiness')}</StatusPill>}
+                {post.authorBadge === 'local' && <StatusPill>{t('destinations.live.local')}</StatusPill>}
                 {now > 0 && <span className="text-[var(--text-subtle)]">{relativeTime(post.createdAt, now)}</span>}
               </div>
               <h4 className="font-semibold">{post.title}</h4>
@@ -269,12 +274,12 @@ export function DestinationCommunity({ destinationId, name }: { destinationId: s
                   disabled={status !== 'authenticated' || helpful.isPending}
                   onClick={() => helpful.mutate(post.postId)}
                   className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 ring-1 ring-inset ring-[var(--hairline-strong)] disabled:opacity-60 aria-pressed:bg-[var(--tone-accent-bg)]"
-                  title={status !== 'authenticated' ? 'Sign in to mark posts as helpful' : undefined}
+                  title={status !== 'authenticated' ? t('destinations.live.signInForHelpful') : undefined}
                 >
-                  Helpful · {post.helpfulCount}
+                  {t('destinations.live.helpful', { count: post.helpfulCount })}
                 </button>
                 <span className="text-[var(--text-muted)]">
-                  {post.replyCount} {post.replyCount === 1 ? 'reply' : 'replies'}
+                  {t('destinations.live.replies', { count: post.replyCount })}
                 </span>
               </div>
             </li>
@@ -286,13 +291,13 @@ export function DestinationCommunity({ destinationId, name }: { destinationId: s
         open={asking}
         onClose={() => setAsking(false)}
         variant="sheet"
-        title="Post to the community"
-        description="Be specific and kind. Don’t share personal details like phone numbers or where you’re staying."
+        title={t('destinations.live.postTitle')}
+        description={t('destinations.live.postDescription')}
         dismissible={!create.isPending}
         footer={
           <>
             <Button variant="secondary" onClick={() => setAsking(false)} disabled={create.isPending}>
-              Cancel
+              {t('common.actions.cancel')}
             </Button>
             <Button
               variant="navy"
@@ -306,22 +311,22 @@ export function DestinationCommunity({ destinationId, name }: { destinationId: s
                     onSuccess: () => {
                       setDraft({ title: '', body: '' });
                       setAsking(false);
-                      toast.success('Posted');
+                      toast.success(t('destinations.live.posted'));
                     },
                   },
                 )
               }
             >
-              Post
+              {t('destinations.live.post')}
             </Button>
           </>
         }
       >
         <div className="grid gap-4 pb-2">
-          <Field label="Title" error={fieldErrors.title}>
+          <Field label={t('destinations.live.titleLabel')} error={fieldErrors.title}>
             {(control) => <TextInput {...control} maxLength={120} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} />}
           </Field>
-          <Field label="Your post" error={fieldErrors.body}>
+          <Field label={t('destinations.live.bodyLabel')} error={fieldErrors.body}>
             {(control) => <TextArea {...control} maxLength={4000} value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} />}
           </Field>
           {create.error && !Object.keys(fieldErrors).length ? (

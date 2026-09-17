@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "Identity",
+      "business_registration": "Business registration",
+      "credential": "Guide licence",
+      "review_authenticity": "Review authenticity",
+      "availability": "Availability"
+    },
+    "evidenceStatus": {
+      "verified": "Verified",
+      "pending": "Pending",
+      "expired": "Expired",
+      "unverified": "Not verified",
+      "rejected": "Rejected"
+    },
+    "summary": {
+      "verified": "Verified",
+      "identity": "Identity verified",
+      "pending": "Verification pending",
+      "unverified": "Not verified"
+    },
+    "reputation": {
+      "underReview": "Reviews are being checked",
+      "notEnough": "Not enough reviews to rate yet ({count})",
+      "none": "No reviews yet",
+      "rating_one": "{rating} from {count} review",
+      "rating_other": "{rating} from {count} reviews",
+      "limited": "{base} · limited data"
+    }
+  }
+}

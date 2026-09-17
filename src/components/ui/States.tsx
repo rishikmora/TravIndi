@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { describeError, type ErrorContext } from '@/lib/api/error-messages';
+import { useTranslation } from '@/i18n/react';
 import { isApiError } from '@/lib/api/errors';
 import { cn } from '@/utils/cn';
 import { Button, ButtonLink } from './Button';
@@ -45,7 +46,8 @@ interface ErrorStateProps {
 /** Human error message with a recovery path, derived from the normalised API error. */
 export function ErrorState({ error, context = 'generic', onRetry, retrying, className, compact, politeness = 'polite' }: ErrorStateProps) {
   const pathname = usePathname();
-  const described = describeError(error, context);
+  const { t, locale } = useTranslation();
+  const described = describeError(error, context, locale);
   const offline = isApiError(error) && (error.kind === 'network' || error.kind === 'timeout');
   const Icon = offline ? WifiOffIcon : AlertIcon;
 
@@ -67,17 +69,17 @@ export function ErrorState({ error, context = 'generic', onRetry, retrying, clas
         <div className={cn('mt-2 flex flex-wrap gap-2', !compact && 'justify-center')}>
           {described.actions.includes('retry') && onRetry && (
             <Button variant="secondary" size="sm" onClick={onRetry} loading={retrying}>
-              Try again
+              {t('common.actions.tryAgain')}
             </Button>
           )}
           {described.actions.includes('sign_in') && (
             <ButtonLink href={`/login?next=${encodeURIComponent(pathname)}`} variant="navy" size="sm">
-              Sign in
+              {t('common.actions.signIn')}
             </ButtonLink>
           )}
           {described.actions.includes('go_back') && !compact && (
             <Button variant="subtle" size="sm" onClick={() => window.history.back()}>
-              Go back
+              {t('common.actions.goBack')}
             </Button>
           )}
         </div>

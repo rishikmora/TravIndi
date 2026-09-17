@@ -10,9 +10,13 @@ import { Field, TextArea } from '@/components/ui/Field';
 import { CheckIcon, WifiOffIcon } from '@/components/ui/icons';
 import { ErrorState, InlineNotice } from '@/components/ui/States';
 import { StatusPill, type Tone } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
+import { getTranslator } from '@/i18n/runtime';
+import type { Translator } from '@/i18n/translate';
 import { api } from '@/lib/api';
 import { isApiError } from '@/lib/api/errors';
 import { useAuth } from '@/lib/auth/provider';
+import { formatClock } from '@/lib/format/dates';
 import { getCurrentPosition } from '@/lib/location/geolocation';
 import { isBrowserOnline } from '@/lib/offline/connectivity';
 import { enqueue, flushOutbox, onOutboxResult, pendingItems, removeFromOutbox } from '@/lib/offline/outbox';
@@ -25,58 +29,52 @@ import type { SosAlert, SosInput } from '@/types/domain';
 import { cn } from '@/utils/cn';
 import { EmergencyNumbers } from './EmergencyNumbers';
 
-const clock = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : null);
-
-const CHANNEL_STATUS: Record<SosAlert['notifications'][number]['status'], { label: string; tone: Tone }> = {
-  queued: { label: 'Sending', tone: 'info' },
-  delivered: { label: 'Delivered', tone: 'success' },
-  failed: { label: 'Failed', tone: 'danger' },
-  not_supported: { label: 'Not connected', tone: 'neutral' },
+const CHANNEL_TONE: Record<SosAlert['notifications'][number]['status'], Tone> = {
+  queued: 'info',
+  delivered: 'success',
+  failed: 'danger',
+  not_supported: 'neutral',
 };
 
-function channelNote(channel: SosAlert['notifications'][number]) {
-  if (channel.channel === 'authority') return 'TravIndi can’t alert emergency services. Call 112 yourself.';
+function channelNote(t: Translator, channel: SosAlert['notifications'][number]) {
+  if (channel.channel === 'authority') return t('sos.channelNote.authority');
   if (channel.channel === 'trusted_contact') {
-    if (channel.status === 'not_supported') return 'Can’t be reached through TravIndi (SMS isn’t connected). Contact them directly if you can.';
-    if (channel.status === 'delivered') return 'Received as an in-app alert.';
-    if (channel.status === 'failed') return 'The alert didn’t reach them. Try contacting them directly.';
-    return 'Sending an in-app alert…';
+    if (channel.status === 'not_supported') return t('sos.channelNote.contactNotSupported');
+    if (channel.status === 'delivered') return t('sos.channelNote.contactDelivered');
+    if (channel.status === 'failed') return t('sos.channelNote.contactFailed');
+    return t('sos.channelNote.contactSending');
   }
-  return channel.status === 'delivered' ? 'Your alert is on the operations desk’s screen.' : null;
+  return channel.status === 'delivered' ? t('sos.channelNote.opsDelivered') : null;
 }
 
-const STEPS: Array<{ status: SosAlert['status']; label: string }> = [
-  { status: 'received', label: 'Received by TravIndi' },
-  { status: 'acknowledged', label: 'Acknowledged by the operations desk' },
-  { status: 'responding', label: 'Response being coordinated' },
-  { status: 'resolved', label: 'Resolved' },
-];
+const STEPS = ['received', 'acknowledged', 'responding', 'resolved'] as const satisfies ReadonlyArray<SosAlert['status']>;
 
 function AlertProgress({ alert }: { alert: SosAlert }) {
-  const reached = STEPS.findIndex((s) => s.status === alert.status);
+  const { t } = useTranslation();
+  const reached = STEPS.findIndex((status) => status === alert.status);
   const times: Partial<Record<SosAlert['status'], string | null>> = {
     received: alert.receivedAt,
     acknowledged: alert.acknowledgedAt,
     resolved: alert.resolvedAt,
   };
   return (
-    <ol aria-label="Alert progress" className="grid gap-3">
-      {STEPS.map((step, index) => {
+    <ol aria-label={t('sos.progress.label')} className="grid gap-3">
+      {STEPS.map((status, index) => {
         const done = alert.status !== 'cancelled' && index <= reached;
         const current = index === reached;
         return (
-          <li key={step.status} aria-current={current ? 'step' : undefined} className="flex items-start gap-3">
+          <li key={status} aria-current={current ? 'step' : undefined} className="flex items-start gap-3">
             <span aria-hidden="true" className={cn('mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full ring-1 ring-inset', done ? 'bg-[var(--color-gold)] text-navy ring-transparent' : 'ring-[var(--hairline-strong)]')}>
               {done && <CheckIcon size={15} strokeWidth={2.4} />}
             </span>
             <div className="grid">
               <span className={cn('font-medium', !done && 'text-[var(--text-muted)]')}>
-                {step.label}
-                <span className="sr-only">{done ? ' — done' : ' — not yet'}</span>
+                {t(`sos.progress.${status}`)}
+                <span className="sr-only"> {done ? t('sos.progress.done') : t('sos.progress.notYet')}</span>
               </span>
-              {done && (times[step.status] || (step.status === 'acknowledged' && alert.acknowledgedByLabel)) && (
+              {done && (times[status] || (status === 'acknowledged' && alert.acknowledgedByLabel)) && (
                 <span className="text-[0.8125rem] text-[var(--text-muted)]">
-                  {[clock(times[step.status] ?? null), step.status === 'acknowledged' ? alert.acknowledgedByLabel : null].filter(Boolean).join(' · ')}
+                  {[formatClock(times[status] ?? null), status === 'acknowledged' ? alert.acknowledgedByLabel : null].filter(Boolean).join(' · ')}
                 </span>
               )}
             </div>
@@ -89,6 +87,7 @@ function AlertProgress({ alert }: { alert: SosAlert }) {
 
 function SosPanel() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const active = useActiveSos();
   const contacts = useTrustedContacts();
@@ -128,7 +127,8 @@ function SosPanel() {
       queryClient.setQueryData(queryKeys.sos.detail(received.alertId), received);
       setAlertId(received.alertId);
       send('SERVER_RECEIVED');
-      announce('TravIndi has received your SOS alert.', 'assertive');
+      // Read the language at the moment of the announcement, not when the callback was created.
+      announce(getTranslator()('sos.announce.received'), 'assertive');
     },
     [queryClient, send],
   );
@@ -149,7 +149,7 @@ function SosPanel() {
   const deliver = async (payload: SosInput) => {
     if (!isBrowserOnline()) {
       send('WENT_OFFLINE');
-      announce('Saved on this device. Your alert will send when you reconnect. If you are in danger, call 112.', 'assertive');
+      announce(t('sos.announce.savedOffline'), 'assertive');
       return;
     }
     try {
@@ -168,14 +168,14 @@ function SosPanel() {
     if (!user) return;
     send('CONFIRM');
     setError(null);
-    announce('Sending your SOS alert.', 'assertive');
+    announce(t('sos.announce.sending'), 'assertive');
     // Never wait on a permission prompt: a location is added only if it arrives quickly.
     const position = await Promise.race([
       getCurrentPosition({ highAccuracy: true, timeoutMs: 5000 }).catch(() => null),
       new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
     ]);
     setLocationMissing(!position);
-    const activeTrip = trips.data?.find((t) => t.status === 'active');
+    const activeTrip = trips.data?.find((trip) => trip.status === 'active');
     const payload: SosInput = {
       clientAlertId: crypto.randomUUID(),
       tripId: activeTrip?.tripId ?? null,
@@ -205,19 +205,20 @@ function SosPanel() {
     return (
       <div className="grid justify-items-center gap-6 py-4 text-center">
         <div className="grid gap-2">
-          <p className="label text-[var(--text-subtle)]">Emergency alert</p>
-          <h1 className="text-[clamp(2rem,6vw,2.75rem)] font-semibold tracking-[-0.03em]">Need help now?</h1>
+          <p className="label text-[var(--text-subtle)]">{t('sos.eyebrow')}</p>
+          <h1 className="text-[clamp(2rem,6vw,2.75rem)] font-semibold tracking-[-0.03em]">{t('sos.heading')}</h1>
         </div>
         <button
           type="button"
           onClick={() => send('PRESS')}
           aria-describedby="sos-explainer"
+          lang="en"
           className="flex size-52 items-center justify-center rounded-full bg-danger text-[3rem] font-bold tracking-[0.04em] text-white shadow-[0_30px_60px_-24px_rgb(179_38_30/0.9)] ring-[12px] ring-danger/25 transition-transform hover:scale-[1.02] active:scale-[0.98] md:size-60"
         >
-          SOS
+          {t('sos.button')}
         </button>
         <p id="sos-explainer" className="max-w-md text-[var(--text-muted)]">
-          Sends an alert to the TravIndi operations desk and your trusted contacts, with your location if your device can share it. You’ll confirm first.
+          {t('sos.explainer')}
         </p>
         {active.isError && <ErrorState error={active.error} context="safety.load" compact onRetry={() => void active.refetch()} />}
 
@@ -225,32 +226,27 @@ function SosPanel() {
           open={state === 'confirming'}
           onClose={() => send('CANCEL_CONFIRM')}
           tone="danger"
-          title="Send an SOS alert?"
-          description="Only send this if you need help."
+          title={t('sos.confirm.title')}
+          description={t('sos.confirm.description')}
           footer={
             <>
               <Button variant="secondary" onClick={() => send('CANCEL_CONFIRM')}>
-                Cancel
+                {t('common.actions.cancel')}
               </Button>
               <Button variant="danger" onClick={() => void confirmSend()}>
-                Send SOS alert
+                {t('sos.confirm.send')}
               </Button>
             </>
           }
         >
           <div className="grid gap-4 pb-2 text-left">
             <ul className="grid gap-2 text-[0.9375rem]">
-              <li>• The TravIndi operations desk will see your alert.</li>
-              <li>
-                •{' '}
-                {sosContacts.length > 0
-                  ? `${sosContacts.length} trusted contact${sosContacts.length === 1 ? '' : 's'} will be alerted where TravIndi can reach them. You’ll see each result.`
-                  : 'You haven’t chosen any trusted contacts for SOS alerts.'}
-              </li>
-              <li>• Your current location is included if your device shares it within a few seconds.</li>
-              <li className="font-semibold">• Emergency services are not contacted. Call 112 for police, fire or ambulance.</li>
+              <li>• {t('sos.confirm.opsDesk')}</li>
+              <li>• {sosContacts.length > 0 ? t('sos.confirm.contacts', { count: sosContacts.length }) : t('sos.confirm.noContacts')}</li>
+              <li>• {t('sos.confirm.location')}</li>
+              <li className="font-semibold">• {t('sos.confirm.noEmergencyServices')}</li>
             </ul>
-            <Field label="Message" optional hint="e.g. what’s happening, or where exactly you are">
+            <Field label={t('sos.confirm.message')} optional hint={t('sos.confirm.messageHint')}>
               {(control) => <TextArea {...control} maxLength={500} value={message} onChange={(e) => setMessage(e.target.value)} />}
             </Field>
           </div>
@@ -263,9 +259,9 @@ function SosPanel() {
     return (
       <div role="status" aria-busy="true" className="surface-card grid justify-items-center gap-3 p-8 text-center">
         <span aria-hidden="true" className="size-10 animate-spin rounded-full border-4 border-[var(--color-gold)] border-t-transparent" />
-        <StatusPill tone="info">Sending</StatusPill>
-        <p className="text-[1.125rem] font-semibold">Sending your alert…</p>
-        <p className="text-[var(--text-muted)]">It’s already saved on this device, so it won’t be lost if the connection drops.</p>
+        <StatusPill tone="info">{t('sos.sending.pill')}</StatusPill>
+        <p className="text-[1.125rem] font-semibold">{t('sos.sending.title')}</p>
+        <p className="text-[var(--text-muted)]">{t('sos.sending.detail')}</p>
       </div>
     );
   }
@@ -275,28 +271,26 @@ function SosPanel() {
     return (
       <div role="alert" className="surface-card grid gap-4 p-6">
         <div className="flex flex-wrap gap-2">
-          <StatusPill tone="warning">Saved on this device</StatusPill>
-          <StatusPill tone={offline ? 'warning' : 'danger'}>{offline ? 'Waiting for connection' : 'Not sent yet'}</StatusPill>
+          <StatusPill tone="warning">{t('sos.pending.saved')}</StatusPill>
+          <StatusPill tone={offline ? 'warning' : 'danger'}>{offline ? t('sos.pending.waiting') : t('sos.pending.notSent')}</StatusPill>
         </div>
         <div className="flex items-start gap-3">
           {offline && <WifiOffIcon size={24} className="mt-1 shrink-0 text-[var(--tone-warning-fg)]" />}
           <div className="grid gap-1">
-            <p className="text-[1.25rem] font-semibold">Your alert hasn’t reached TravIndi yet</p>
+            <p className="text-[1.25rem] font-semibold">{t('sos.pending.title')}</p>
             <p className="text-[var(--text-muted)]">
-              {offline
-                ? 'It will send automatically as soon as you’re back online.'
-                : 'We couldn’t send it. It stays saved on this device while you try again.'}{' '}
-              <strong className="text-[var(--text)]">If you’re in danger, call 112 now.</strong>
+              {offline ? t('sos.pending.offline') : t('sos.pending.failed')}{' '}
+              <strong className="text-[var(--text)]">{t('sos.pending.callNow')}</strong>
             </p>
           </div>
         </div>
         {!offline && Boolean(error) && <ErrorState error={error} context="sos.send" compact />}
         <div className="flex flex-wrap gap-2">
           <Button variant="accent" onClick={retry}>
-            Try sending now
+            {t('sos.pending.retry')}
           </Button>
           <Button variant="glass" onClick={() => void flushOutbox()}>
-            Check connection
+            {t('sos.pending.check')}
           </Button>
         </div>
       </div>
@@ -308,9 +302,9 @@ function SosPanel() {
   if (state === 'resolved' || state === 'cancelled') {
     return (
       <div className="surface-card grid gap-4 p-6">
-        <StatusPill tone={state === 'resolved' ? 'success' : 'neutral'}>{state === 'resolved' ? 'Resolved' : 'Cancelled'}</StatusPill>
-        <p className="text-[1.25rem] font-semibold">{state === 'resolved' ? 'Your alert was marked resolved' : 'You cancelled your alert'}</p>
-        <p className="text-[var(--text-muted)]">If you still need help, send a new alert or call 112.</p>
+        <StatusPill tone={state === 'resolved' ? 'success' : 'neutral'}>{state === 'resolved' ? t('sos.closed.resolved') : t('sos.closed.cancelled')}</StatusPill>
+        <p className="text-[1.25rem] font-semibold">{state === 'resolved' ? t('sos.closed.resolvedTitle') : t('sos.closed.cancelledTitle')}</p>
+        <p className="text-[var(--text-muted)]">{t('sos.closed.detail')}</p>
         <Button
           variant="secondary"
           className="justify-self-start"
@@ -321,7 +315,7 @@ function SosPanel() {
             queryClient.setQueryData(queryKeys.sos.active, null);
           }}
         >
-          Done
+          {t('common.actions.done')}
         </Button>
       </div>
     );
@@ -332,36 +326,38 @@ function SosPanel() {
       <div role="status" className="surface-card grid gap-5 p-6 ring-2 ring-[var(--color-gold)]">
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill tone="success" dot>
-            Server confirmed
+            {t('sos.active.confirmed')}
           </StatusPill>
-          <StatusPill tone={state === 'received' ? 'warning' : 'info'}>{state === 'received' ? 'Waiting for acknowledgement' : state === 'acknowledged' ? 'Acknowledged' : 'Responding'}</StatusPill>
+          <StatusPill tone={state === 'received' ? 'warning' : 'info'}>
+            {state === 'received' ? t('sos.active.waitingAck') : state === 'acknowledged' ? t('sos.active.acknowledged') : t('sos.active.responding')}
+          </StatusPill>
         </div>
         <div className="grid gap-1">
-          <h1 className="text-[1.75rem] font-semibold tracking-[-0.02em]">Your SOS alert was received</h1>
-          <p className="text-[var(--text-muted)]">Received at {clock(alert.receivedAt)}. Keep your phone with you.</p>
+          <h1 className="text-[1.75rem] font-semibold tracking-[-0.02em]">{t('sos.active.title')}</h1>
+          <p className="text-[var(--text-muted)]">{t('sos.active.receivedAt', { time: formatClock(alert.receivedAt) })}</p>
         </div>
         <AlertProgress alert={alert} />
         {locationMissing && (
-          <InlineNotice tone="warning" title="Sent without your location">
-            Your device didn’t share a location in time. If you can, send your location in a message or tell someone where you are.
+          <InlineNotice tone="warning" title={t('sos.active.noLocationTitle')}>
+            {t('sos.active.noLocation')}
           </InlineNotice>
         )}
       </div>
 
       <section aria-labelledby="delivery-title" className="grid gap-3">
         <h2 id="delivery-title" className="text-[1.125rem] font-semibold">
-          Who has been alerted
+          {t('sos.active.whoAlerted')}
         </h2>
         <ul className="surface-card divide-y divide-[var(--hairline)]">
           {alert.notifications.map((channel) => {
-            const status = CHANNEL_STATUS[channel.status];
+            const note = channelNote(t, channel);
             return (
               <li key={`${channel.channel}-${channel.recipientLabel}`} className="grid gap-1 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">{channel.recipientLabel}</span>
-                  <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                  <StatusPill tone={CHANNEL_TONE[channel.status]}>{t(`sos.channelStatus.${channel.status}`)}</StatusPill>
                 </div>
-                {channelNote(channel) && <p className="text-[0.875rem] text-[var(--text-muted)]">{channelNote(channel)}</p>}
+                {note && <p className="text-[0.875rem] text-[var(--text-muted)]">{note}</p>}
               </li>
             );
           })}
@@ -371,7 +367,7 @@ function SosPanel() {
       {alert.guidance.length > 0 && (
         <section aria-labelledby="guidance-title" className="grid gap-2">
           <h2 id="guidance-title" className="text-[1.125rem] font-semibold">
-            While you wait
+            {t('sos.active.whileYouWait')}
           </h2>
           <ul className="grid gap-1.5 text-[var(--text-muted)]">
             {alert.guidance.map((line) => (
@@ -382,18 +378,18 @@ function SosPanel() {
       )}
 
       <Button variant="glass" className="justify-self-start" onClick={() => setCancelOpen(true)}>
-        I’m safe — cancel alert
+        {t('sos.active.imSafe')}
       </Button>
       <Dialog
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
-        title="Cancel your SOS alert?"
-        description="The operations desk will see that you’re safe. Trusted contacts who were alerted won’t be messaged automatically."
+        title={t('sos.active.cancelTitle')}
+        description={t('sos.active.cancelDescription')}
         dismissible={!cancel.isPending}
         footer={
           <>
             <Button variant="secondary" onClick={() => setCancelOpen(false)} disabled={cancel.isPending}>
-              Keep alert open
+              {t('sos.active.keepOpen')}
             </Button>
             <Button
               variant="navy"
@@ -403,12 +399,12 @@ function SosPanel() {
                   onSuccess: (updated) => {
                     queryClient.setQueryData(queryKeys.sos.detail(updated.alertId), updated);
                     setCancelOpen(false);
-                    announce('Your SOS alert was cancelled.');
+                    announce(getTranslator()('sos.announce.cancelled'));
                   },
                 })
               }
             >
-              Yes, I’m safe
+              {t('sos.active.yesSafe')}
             </Button>
           </>
         }
@@ -420,11 +416,12 @@ function SosPanel() {
 }
 
 export function SosScreen() {
+  const { t } = useTranslation();
   return (
     <PageShell width="narrow" tone="dark">
       <div className="grid gap-8">
         <EmergencyNumbers />
-        <RequireAuth title="Sign in to send an SOS alert" description="Calling 112 works without an account. An SOS alert needs your account so we know who needs help.">
+        <RequireAuth title={t('sos.signIn.title')} description={t('sos.signIn.description')}>
           <SosPanel />
         </RequireAuth>
       </div>

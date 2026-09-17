@@ -1,0 +1,28 @@
+{
+  "status": {
+    "draft": {
+      "label": "খসড়া",
+      "description": "তথ্য সংরক্ষিত; এখনও ভ্রমণসূচি তৈরি হয়নি।"
+    },
+    "planning": {
+      "label": "পরিকল্পনা চলছে",
+      "description": "আপনার ভ্রমণসূচি তৈরি হচ্ছে।"
+    },
+    "ready": {
+      "label": "প্রস্তুত",
+      "description": "ভ্রমণসূচি তৈরি।"
+    },
+    "active": {
+      "label": "পথে আছেন",
+      "description": "আপনি এখন ভ্রমণে আছেন।"
+    },
+    "completed": {
+      "label": "সম্পূর্ণ",
+      "description": "ভ্রমণ শেষ হয়েছে।"
+    },
+    "cancelled": {
+      "label": "বাতিল",
+      "description": "ভ্রমণ বাতিল হয়েছে।"
+    }
+  }
+}

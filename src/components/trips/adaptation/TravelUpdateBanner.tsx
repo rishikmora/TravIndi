@@ -5,6 +5,7 @@ import { FreshnessBadge } from '@/components/ui/FreshnessBadge';
 import { ArrowRightIcon } from '@/components/ui/icons';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { useNow } from '@/hooks/useNow';
+import { useTranslation } from '@/i18n/react';
 import type { AdaptationProposal } from '@/types/domain';
 import { cn } from '@/utils/cn';
 import { eventFreshness, headlineSwap, TRIGGER_LABEL } from './vocabulary';
@@ -21,6 +22,7 @@ interface TravelUpdateBannerProps {
 /** The moment a live change reaches the traveller: what happened, what we suggest, and a clear choice. */
 export function TravelUpdateBanner({ proposal, onReview, onKeepCurrent, keeping, canReview, className }: TravelUpdateBannerProps) {
   const now = useNow();
+  const { t } = useTranslation();
   const { current, recommended } = headlineSwap(proposal);
   const minutesLeft = proposal.expiresAt && now ? Math.max(0, Math.round((Date.parse(proposal.expiresAt) - now) / 60_000)) : null;
 
@@ -33,7 +35,7 @@ export function TravelUpdateBanner({ proposal, onReview, onKeepCurrent, keeping,
       <div className="grid gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <StatusPill tone="warning" dot>
-            Travel update
+            {t('adaptation.banner.travelUpdate')}
           </StatusPill>
           <StatusPill>{TRIGGER_LABEL[proposal.triggerType]}</StatusPill>
           {proposal.event && <FreshnessBadge freshness={eventFreshness(proposal)} />}
@@ -46,12 +48,12 @@ export function TravelUpdateBanner({ proposal, onReview, onKeepCurrent, keeping,
           {current && recommended && (
             <p className="flex flex-wrap items-center gap-x-2 text-[var(--text-muted)]">
               <span>
-                <span className="label mr-1.5 text-[var(--text-subtle)]">Current</span>
+                <span className="label mr-1.5 text-[var(--text-subtle)]">{t('adaptation.review.current')}</span>
                 {current.title}
               </span>
               <ArrowRightIcon size={16} aria-hidden="true" />
               <span>
-                <span className="label mr-1.5 text-[var(--text-subtle)]">Recommended</span>
+                <span className="label mr-1.5 text-[var(--text-subtle)]">{t('adaptation.review.recommended')}</span>
                 <span className="font-semibold text-[var(--text)]">{recommended.title}</span>
               </span>
             </p>
@@ -61,19 +63,19 @@ export function TravelUpdateBanner({ proposal, onReview, onKeepCurrent, keeping,
         {canReview ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button variant="accent" onClick={onReview}>
-              Review change
+              {t('adaptation.banner.reviewChange')}
             </Button>
             <Button variant="glass" onClick={onKeepCurrent} loading={keeping}>
-              Keep current plan
+              {t('adaptation.review.keepCurrent')}
             </Button>
             {minutesLeft !== null && (
               <span className="text-[0.875rem] text-[var(--text-muted)]">
-                {minutesLeft > 0 ? `Valid for about ${minutesLeft} more min` : 'About to expire'}
+                {minutesLeft > 0 ? t('adaptation.banner.validFor', { minutes: minutesLeft }) : t('adaptation.banner.aboutToExpire')}
               </span>
             )}
           </div>
         ) : (
-          <p className="text-[0.9375rem] text-[var(--text-muted)]">The trip owner or an editor can review this change.</p>
+          <p className="text-[0.9375rem] text-[var(--text-muted)]">{t('adaptation.banner.cannotReview')}</p>
         )}
       </div>
     </section>

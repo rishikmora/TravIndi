@@ -1,9 +1,12 @@
+import type { Locale } from '@/i18n/config';
+import { getLocale, getTranslator } from '@/i18n/runtime';
 import type { Freshness } from '@/types/domain';
+import { formatDateTime } from './dates';
 
 export type FreshnessTone = 'live' | 'application' | 'estimate' | 'snapshot' | 'unavailable' | 'stale';
 
 export interface FreshnessDescription {
-  /** Short uppercase label, e.g. "LIVE", "ESTIMATE". */
+  /** Short label, e.g. "LIVE", "ESTIMATE". */
   label: string;
   tone: FreshnessTone;
   stale: boolean;
@@ -11,48 +14,46 @@ export interface FreshnessDescription {
   detail: string | null;
 }
 
-const LABELS: Record<Freshness['sourceKind'], string> = {
-  live: 'LIVE',
-  application: 'APPLICATION DATA',
-  estimate: 'ESTIMATE',
-  snapshot: 'OFFLINE SNAPSHOT',
-  unavailable: 'UNAVAILABLE',
-};
-
-export function relativeTime(iso: string | null | undefined, now = Date.now()): string | null {
+export function relativeTime(iso: string | null | undefined, now = Date.now(), locale: Locale = getLocale()): string | null {
   if (!iso) return null;
   const then = Date.parse(iso);
   if (!Number.isFinite(then)) return null;
+  const t = getTranslator(locale);
   const seconds = Math.round((now - then) / 1000);
   if (seconds < -60) {
     const ahead = Math.round(-seconds / 60);
-    return ahead < 60 ? `in ${ahead} min` : `in ${Math.round(ahead / 60)} h`;
+    return ahead < 60 ? t('format.relative.inMinutes', { count: ahead }) : t('format.relative.inHours', { count: Math.round(ahead / 60) });
   }
-  if (seconds < 45) return 'just now';
+  if (seconds < 45) return t('format.relative.justNow');
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60) return t('format.relative.minutesAgo', { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
+  if (hours < 24) return t('format.relative.hoursAgo', { count: hours });
   const days = Math.round(hours / 24);
-  if (days < 7) return `${days} d ago`;
-  return new Date(then).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  if (days < 7) return t('format.relative.daysAgo', { count: days });
+  return formatDateTime(then, { day: 'numeric', month: 'short' }, locale);
 }
 
 /**
  * Describes where a changing value came from and whether it is still current.
  * Live data past its stale window is never presented as live.
  */
-export function describeFreshness(freshness: Freshness | null | undefined, now = Date.now()): FreshnessDescription {
+export function describeFreshness(
+  freshness: Freshness | null | undefined,
+  now = Date.now(),
+  locale: Locale = getLocale(),
+): FreshnessDescription {
+  const t = getTranslator(locale);
   if (!freshness || freshness.sourceKind === 'unavailable') {
-    return { label: LABELS.unavailable, tone: 'unavailable', stale: false, detail: null };
+    return { label: t('format.freshness.unavailable'), tone: 'unavailable', stale: false, detail: null };
   }
   const updated = freshness.updatedAt ? Date.parse(freshness.updatedAt) : NaN;
   const staleAfter = freshness.staleAfterSeconds ?? null;
   const stale = Boolean(staleAfter && Number.isFinite(updated) && now - updated > staleAfter * 1000);
-  const when = relativeTime(freshness.updatedAt, now);
-  const detail = [when ? `Updated ${when}` : null, freshness.sourceLabel ?? null].filter(Boolean).join(' · ') || null;
-  if (stale) return { label: 'STALE', tone: 'stale', stale: true, detail };
-  return { label: LABELS[freshness.sourceKind], tone: freshness.sourceKind, stale: false, detail };
+  const when = relativeTime(freshness.updatedAt, now, locale);
+  const detail = [when ? t('format.freshness.updated', { when }) : null, freshness.sourceLabel ?? null].filter(Boolean).join(' · ') || null;
+  if (stale) return { label: t('format.freshness.stale'), tone: 'stale', stale: true, detail };
+  return { label: t(`format.freshness.${freshness.sourceKind}`), tone: freshness.sourceKind, stale: false, detail };
 }
 
 export type LocationFreshness = 'live' | 'recent' | 'stale' | 'last_known' | 'none';
@@ -68,10 +69,6 @@ export function locationFreshness(recordedAt: string | null | undefined, now = D
   return 'last_known';
 }
 
-export const LOCATION_FRESHNESS_LABEL: Record<LocationFreshness, string> = {
-  live: 'LIVE',
-  recent: 'RECENT',
-  stale: 'STALE',
-  last_known: 'LAST KNOWN',
-  none: 'NO LOCATION YET',
-};
+export function locationFreshnessLabel(value: LocationFreshness, locale: Locale = getLocale()): string {
+  return getTranslator(locale)(`format.locationFreshness.${value}`);
+}

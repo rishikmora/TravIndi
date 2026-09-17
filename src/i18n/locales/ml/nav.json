@@ -1,0 +1,20 @@
+{
+  "primary": "പ്രധാനം",
+  "items": {
+    "home": "ഹോം",
+    "discover": "കണ്ടെത്തുക",
+    "trips": "യാത്രകൾ",
+    "map": "മാപ്പ്",
+    "messages": "സന്ദേശങ്ങൾ",
+    "safety": "സുരക്ഷ",
+    "profile": "പ്രൊഫൈൽ"
+  },
+  "homeLink": "TravIndi ഹോം",
+  "search": "ലക്ഷ്യസ്ഥാനങ്ങൾ, ഗൈഡുകൾ, സ്ഥലങ്ങൾ എന്നിവ തിരയുക",
+  "notifications": "അറിയിപ്പുകൾ",
+  "unreadMessages_one": ", വായിക്കാത്ത {count} സന്ദേശം",
+  "unreadMessages_other": ", വായിക്കാത്ത {count} സന്ദേശങ്ങൾ",
+  "unreadNotifications_one": ", വായിക്കാത്ത {count} അറിയിപ്പ്",
+  "unreadNotifications_other": ", വായിക്കാത്ത {count} അറിയിപ്പുകൾ",
+  "profile": "നിങ്ങളുടെ പ്രൊഫൈൽ, {name}"
+}

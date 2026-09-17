@@ -2,14 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { IndiaOutline } from '@/components/map/IndiaOutline';
+import { useTranslation } from '@/i18n/react';
 import { type LoadSteps, useJourneyStore } from '@/store/journey';
 import { cn } from '@/utils/cn';
 
-const ROWS: Array<{ key: keyof LoadSteps; label: string }> = [
-  { key: 'models', label: '3D Models' },
-  { key: 'environment', label: 'Environment' },
-  { key: 'stories', label: 'Stories' },
-];
+const ROWS: Array<{ key: keyof LoadSteps }> = [{ key: 'models' }, { key: 'environment' }, { key: 'stories' }];
 
 const MINIMUM_MS = 2600;
 const WELCOME_MS = 1800;
@@ -23,6 +20,7 @@ export function LoadingScreen() {
   const setLoadStep = useJourneyStore((s) => s.setLoadStep);
   const [minimumElapsed, setMinimumElapsed] = useState(false);
   const [removed, setRemoved] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const skip = new URLSearchParams(window.location.search).get('intro') === 'skip';
@@ -97,7 +95,7 @@ export function LoadingScreen() {
             phase === 'loading' ? 'translate-y-0 opacity-100' : '-translate-y-6 opacity-0',
           )}
         >
-          Preparing your journey…
+          {t('journey.loading.preparing')}
         </p>
         <p
           className={cn(
@@ -105,7 +103,7 @@ export function LoadingScreen() {
             phase === 'loading' ? 'translate-y-6 opacity-0' : 'translate-y-0 opacity-100',
           )}
         >
-          Welcome to India.
+          {t('journey.loading.welcome')}
         </p>
       </div>
 
@@ -119,9 +117,9 @@ export function LoadingScreen() {
           const done = steps[row.key] >= 1;
           return (
             <li key={row.key} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5">
-              <span className="label text-paper/55">{row.label}</span>
+              <span className="label text-paper/55">{t(`journey.loading.${row.key}`)}</span>
               <span className={cn('label transition-colors duration-500', done ? 'text-paper/85' : 'text-paper/30')}>
-                {done ? 'Ready' : 'Loading'}
+                {done ? t('journey.loading.ready') : t('journey.loading.loading')}
               </span>
               <span className="col-span-2 block h-px overflow-hidden bg-paper/10">
                 <span

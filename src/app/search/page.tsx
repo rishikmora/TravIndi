@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { SearchScreen } from '@/components/search/SearchScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Search',
+  title: en.meta.titles.search,
   robots: { index: false, follow: true },
 };
 

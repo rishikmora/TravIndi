@@ -1,6 +1,7 @@
 'use client';
 
 import { type ReactNode, useEffect, useId, useRef } from 'react';
+import { useTranslation } from '@/i18n/react';
 import { cn } from '@/utils/cn';
 import { CloseIcon } from './icons';
 
@@ -38,6 +39,7 @@ export function Dialog({
   tone = 'default',
   className,
 }: DialogProps) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDialogElement>(null);
   const returnFocus = useRef<HTMLElement | null>(null);
   const titleId = useId();
@@ -122,7 +124,7 @@ export function Dialog({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close"
+                aria-label={t('common.actions.close')}
                 className="tap-target -mr-2 inline-flex items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--tone-neutral-bg)] hover:text-[var(--text)]"
               >
                 <CloseIcon size={20} />

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { AlertIcon, RouteIcon, WalkIcon } from '@/components/ui/icons';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
 import { formatLocalTime } from '@/lib/format/dates';
 import { describeCost } from '@/lib/format/money';
 import type { ItineraryItem } from '@/types/domain';
@@ -18,6 +19,7 @@ export interface ItemBookingAction {
 }
 
 export function ItineraryItemCard({ item, onOpen, isLast, booking }: { item: ItineraryItem; onOpen: () => void; isLast: boolean; booking?: ItemBookingAction }) {
+  const { t } = useTranslation();
   const status = ITEM_STATUS[item.status];
   const cost = describeCost(item.cost);
   const leg = travelLegLabel(item.travelFromPrevious);
@@ -65,7 +67,7 @@ export function ItineraryItemCard({ item, onOpen, isLast, booking }: { item: Iti
             {item.accessibility && item.kind !== 'meal' && <li>{stepFreeLabel(item.accessibility.stepFree)}</li>}
             <li className={cn(cost.status === 'unavailable' && 'italic')}>
               {cost.label}
-              {cost.status === 'estimate' && <span className="not-italic"> (estimate)</span>}
+              {cost.status === 'estimate' && <span className="not-italic"> {t('itinerary.item.estimate')}</span>}
             </li>
           </ul>
 
@@ -77,16 +79,16 @@ export function ItineraryItemCard({ item, onOpen, isLast, booking }: { item: Iti
           )}
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <button type="button" onClick={onOpen} className="rounded-full text-[0.875rem] font-semibold text-[var(--link)] underline-offset-4 hover:underline" aria-label={`Why is ${item.title} in your plan?`}>
-              Why this?
+            <button type="button" onClick={onOpen} className="rounded-full text-[0.875rem] font-semibold text-[var(--link)] underline-offset-4 hover:underline" aria-label={t('itinerary.item.whyLabel', { title: item.title })}>
+              {t('itinerary.item.whyThis')}
             </button>
             {booking?.booked ? (
-              <Link href={booking.bookingId ? `/bookings?booking=${booking.bookingId}` : '/bookings'} className="rounded-full" aria-label={`${item.title}: booked. View booking`}>
-                <StatusPill tone="success">Booked</StatusPill>
+              <Link href={booking.bookingId ? `/bookings?booking=${booking.bookingId}` : '/bookings'} className="rounded-full" aria-label={t('itinerary.item.bookedLabel', { title: item.title })}>
+                <StatusPill tone="success">{t('itinerary.item.booked')}</StatusPill>
               </Link>
             ) : booking?.onBook ? (
               <Button variant="secondary" size="sm" onClick={booking.onBook}>
-                {item.kind === 'stay' ? 'Book a stay' : 'Book a cab'}
+                {item.kind === 'stay' ? t('itinerary.item.bookStay') : t('itinerary.item.bookCab')}
               </Button>
             ) : null}
           </div>

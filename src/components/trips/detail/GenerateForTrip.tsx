@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { SparkleIcon } from '@/components/ui/icons';
 import { EmptyState, ErrorState, InlineNotice } from '@/components/ui/States';
+import { useTranslation } from '@/i18n/react';
 import { isApiError } from '@/lib/api/errors';
 import { useGenerationJob, useStartGeneration } from '@/lib/query/hooks/trips';
 import { GenerationProgress } from '../plan/GenerationProgress';
 
 /** Shown when a trip has no itinerary yet: build one in place, with semantic progress. */
 export function GenerateForTrip({ tripId, canEdit, destinationName }: { tripId: string; canEdit: boolean; destinationName?: string | null }) {
+  const { t } = useTranslation();
   const start = useStartGeneration(tripId);
   const [jobId, setJobId] = useState<string | null>(null);
   const job = useGenerationJob(jobId);
@@ -23,7 +25,7 @@ export function GenerateForTrip({ tripId, canEdit, destinationName }: { tripId: 
         <GenerationProgress job={job.data} destinationName={destinationName} />
         {job.data?.status === 'failed' && (
           <Button variant="accent" onClick={() => { setJobId(null); run(); }} className="justify-self-start">
-            Try again
+            {t('common.actions.tryAgain')}
           </Button>
         )}
       </div>
@@ -34,18 +36,18 @@ export function GenerateForTrip({ tripId, canEdit, destinationName }: { tripId: 
     <div className="surface-card grid gap-4 p-2">
       <EmptyState
         icon={<SparkleIcon />}
-        title="No itinerary yet"
-        description={canEdit ? 'Your trip details are saved. Build a day-by-day plan when you’re ready.' : 'The trip owner hasn’t built an itinerary yet.'}
+        title={t('itinerary.generate.emptyTitle')}
+        description={canEdit ? t('itinerary.generate.canEdit') : t('itinerary.generate.cannotEdit')}
         action={
           canEdit ? (
             <Button variant="accent" onClick={run} loading={start.isPending}>
-              Build itinerary
+              {t('itinerary.generate.build')}
             </Button>
           ) : undefined
         }
       />
       {refusal ? (
-        <InlineNotice tone="warning" title="We need a little more first" className="mx-4 mb-4">
+        <InlineNotice tone="warning" title={t('itinerary.generate.needMore')} className="mx-4 mb-4">
           {refusal}
         </InlineNotice>
       ) : start.error ? (

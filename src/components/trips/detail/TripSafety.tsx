@@ -3,10 +3,12 @@
 import { EmergencyNumbers } from '@/components/safety/EmergencyNumbers';
 import { IncidentsPanel, SafetyContextPanel } from '@/components/safety/SafetyScreen';
 import { ButtonLink } from '@/components/ui/Button';
+import { useTranslation } from '@/i18n/react';
 import { useTrip } from '@/lib/query/hooks/trips';
 
 export function TripSafety({ tripId }: { tripId: string }) {
   const trip = useTrip(tripId);
+  const { t } = useTranslation();
   const name = trip.data?.destination?.name ?? null;
 
   return (
@@ -18,13 +20,13 @@ export function TripSafety({ tripId }: { tripId: string }) {
       <aside className="grid content-start gap-4">
         <EmergencyNumbers compact />
         <ButtonLink href="/sos" variant="danger" size="lg">
-          SOS
+          {t('sos.button')}
         </ButtonLink>
         <ButtonLink href={`/location-sharing?trip=${tripId}`} variant="secondary">
-          Share my location with this trip
+          {t('safety.trip.shareWithTrip')}
         </ButtonLink>
         <ButtonLink href="/trusted-contacts" variant="subtle">
-          Trusted contacts
+          {t('safety.trip.trustedContacts')}
         </ButtonLink>
       </aside>
     </div>

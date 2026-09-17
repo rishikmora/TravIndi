@@ -557,3 +557,96 @@ html[data-cursor='custom'] input,
 html[data-cursor='custom'] textarea {
   cursor: text;
 }
+
+/* ------------------------------------------------------------------------ */
+/* Languages                                                                 */
+/* ------------------------------------------------------------------------ */
+
+/* A saved language is applied right after load; hold the first paint so English doesn't flash (1.5 s at most). */
+html[data-locale-pending] body {
+  opacity: 0;
+}
+html[data-locale] body {
+  transition: opacity 180ms ease-out;
+}
+
+/*
+ * Indian scripts. Latin text (brand names, numbers) keeps Geist; each script
+ * falls through to its Noto face. Negative tracking, very tight leading and
+ * faux italics all damage these scripts, so they are relaxed here — English
+ * typography is untouched.
+ */
+html:lang(hi),
+html:lang(mr) {
+  --font-script: var(--font-deva);
+}
+html:lang(te) {
+  --font-script: var(--font-telu);
+}
+html:lang(ta) {
+  --font-script: var(--font-taml);
+}
+html:lang(kn) {
+  --font-script: var(--font-knda);
+}
+html:lang(ml) {
+  --font-script: var(--font-mlym);
+}
+html:lang(bn) {
+  --font-script: var(--font-beng);
+}
+
+html:is(:lang(hi), :lang(mr), :lang(te), :lang(ta), :lang(kn), :lang(ml), :lang(bn)) {
+  --font-sans: var(--font-geist), var(--font-script), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-script), var(--font-instrument-serif), ui-serif, serif;
+  --font-mono: var(--font-geist-mono), var(--font-script), ui-monospace, monospace;
+  --tracking-display: 0em;
+  --tracking-tightish: 0em;
+  --tracking-label: 0.02em;
+
+  & :where(*:not(:lang(en))) {
+    letter-spacing: normal;
+  }
+
+  & :is(.display-hero, .display-xl, .display-lg, .display-md):not(:lang(en)) {
+    line-height: 1.22;
+    overflow-wrap: anywhere;
+  }
+  & .display-hero:not(:lang(en)) {
+    font-size: clamp(2.4rem, 8.5vw, 7.5rem);
+  }
+  & .display-xl:not(:lang(en)) {
+    font-size: clamp(2.1rem, 5.6vw, 5.5rem);
+  }
+  & .display-lg:not(:lang(en)) {
+    font-size: clamp(1.9rem, 4.2vw, 4rem);
+  }
+
+  & .editorial:not(:lang(en)) {
+    font-style: normal;
+    line-height: 1.4;
+  }
+  & .italic:not(:lang(en)) {
+    font-style: normal;
+  }
+
+  & .label:not(:lang(en)) {
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+
+  & :is(
+      [class*='leading-none'],
+      [class*='leading-tight'],
+      [class*='leading-snug'],
+      [class*='leading-[0.'],
+      [class*='leading-[1.0'],
+      [class*='leading-[1.1']
+    ):not(:lang(en)) {
+    line-height: 1.35;
+  }
+
+  & :is(h1, h2, h3, h4, button, a, dd, dt, label, th):not(:lang(en)) {
+    overflow-wrap: anywhere;
+  }
+}

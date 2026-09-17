@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "ओळख",
+      "business_registration": "व्यवसाय नोंदणी",
+      "credential": "गाइड परवाना",
+      "review_authenticity": "पुनरावलोकनांची सत्यता",
+      "availability": "उपलब्धता"
+    },
+    "evidenceStatus": {
+      "verified": "पडताळलेले",
+      "pending": "प्रलंबित",
+      "expired": "मुदत संपली",
+      "unverified": "पडताळलेले नाही",
+      "rejected": "नाकारले"
+    },
+    "summary": {
+      "verified": "पडताळलेले",
+      "identity": "ओळख पडताळलेली",
+      "pending": "पडताळणी प्रलंबित",
+      "unverified": "पडताळलेले नाही"
+    },
+    "reputation": {
+      "underReview": "पुनरावलोकने तपासली जात आहेत",
+      "notEnough": "रेटिंग देण्याइतकी पुनरावलोकने अजून नाहीत ({count})",
+      "none": "अजून पुनरावलोकने नाहीत",
+      "rating_one": "{count} पुनरावलोकनावर आधारित {rating}",
+      "rating_other": "{count} पुनरावलोकनांवर आधारित {rating}",
+      "limited": "{base} · मर्यादित डेटा"
+    }
+  }
+}

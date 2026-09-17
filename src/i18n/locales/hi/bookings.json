@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "प्रक्रिया में",
+      "description": "सेवा प्रदाता की पुष्टि का इंतज़ार है।"
+    },
+    "confirmed": {
+      "label": "पुष्टि हो गई",
+      "description": "सेवा प्रदाता ने इस बुकिंग की पुष्टि कर दी है।"
+    },
+    "payment_pending": {
+      "label": "भुगतान बाकी",
+      "description": "भुगतान सीधे सेवा प्रदाता को करें। TravIndi में अभी ऑनलाइन भुगतान उपलब्ध नहीं है।"
+    },
+    "failed": {
+      "label": "विफल",
+      "description": "यह बुकिंग पूरी नहीं हो सकी। कोई भुगतान नहीं लिया गया।"
+    },
+    "cancelled": {
+      "label": "रद्द",
+      "description": "यह बुकिंग रद्द कर दी गई।"
+    }
+  },
+  "unitPrice": {
+    "person": "प्रति व्यक्ति",
+    "room_night": "प्रति कमरा, प्रति रात",
+    "vehicle": "प्रति वाहन",
+    "group": "प्रति बुकिंग"
+  },
+  "unitQuantity": {
+    "person": "यात्री",
+    "room_night": "कमरे",
+    "vehicle": "वाहन",
+    "group": "समूह का आकार"
+  },
+  "quantity": {
+    "rooms_one": "{count} कमरा",
+    "rooms_other": "{count} कमरे",
+    "nights_one": "{count} रात",
+    "nights_other": "{count} रातें",
+    "vehicles_one": "{count} वाहन",
+    "vehicles_other": "{count} वाहन",
+    "people_one": "{count} व्यक्ति",
+    "people_other": "{count} लोग",
+    "group": "{count} लोगों का समूह"
+  }
+}

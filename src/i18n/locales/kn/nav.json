@@ -1,0 +1,20 @@
+{
+  "primary": "ಮುಖ್ಯ",
+  "items": {
+    "home": "ಮುಖಪುಟ",
+    "discover": "ಅನ್ವೇಷಿಸಿ",
+    "trips": "ಪ್ರವಾಸಗಳು",
+    "map": "ನಕ್ಷೆ",
+    "messages": "ಸಂದೇಶಗಳು",
+    "safety": "ಸುರಕ್ಷತೆ",
+    "profile": "ಪ್ರೊಫೈಲ್"
+  },
+  "homeLink": "TravIndi ಮುಖಪುಟ",
+  "search": "ಪ್ರವಾಸಿ ತಾಣಗಳು, ಮಾರ್ಗದರ್ಶಿಗಳು ಮತ್ತು ಸ್ಥಳಗಳನ್ನು ಹುಡುಕಿ",
+  "notifications": "ಅಧಿಸೂಚನೆಗಳು",
+  "unreadMessages_one": ", ಓದದ {count} ಸಂದೇಶ",
+  "unreadMessages_other": ", ಓದದ {count} ಸಂದೇಶಗಳು",
+  "unreadNotifications_one": ", ಓದದ {count} ಅಧಿಸೂಚನೆ",
+  "unreadNotifications_other": ", ಓದದ {count} ಅಧಿಸೂಚನೆಗಳು",
+  "profile": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್, {name}"
+}

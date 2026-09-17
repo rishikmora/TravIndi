@@ -11,7 +11,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { useNow } from '@/hooks/useNow';
 import { isApiError } from '@/lib/api/errors';
 import { useAuth } from '@/lib/auth/provider';
-import { LOCATION_FRESHNESS_LABEL, locationFreshness, relativeTime } from '@/lib/format/freshness';
+import { locationFreshness, locationFreshnessLabel, relativeTime } from '@/lib/format/freshness';
 import { useShare } from '@/lib/query/hooks/location';
 import { useChannel } from '@/lib/realtime/provider';
 
@@ -71,7 +71,7 @@ function Viewer({ shareId }: { shareId: string }) {
           ) : s.status === 'paused' ? (
             <StatusPill tone="warning">Paused</StatusPill>
           ) : (
-            <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{LOCATION_FRESHNESS_LABEL[freshness]}</StatusPill>
+            <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{locationFreshnessLabel(freshness)}</StatusPill>
           )}
           <StatusPill>{s.precisionMode === 'approximate' ? 'Approximate location' : 'Precise location'}</StatusPill>
         </div>

@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { safeNextPath } from '@/lib/navigation/safe-next';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Create an account',
+  title: en.meta.titles.register,
   robots: { index: false, follow: false },
 };
 

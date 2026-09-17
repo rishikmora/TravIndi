@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} मि.",
+    "hours": "{hours} तास",
+    "hoursMinutes": "{hours} तास {minutes} मि."
+  },
+  "distance": {
+    "meters": "{value} मी",
+    "kilometers": "{value} किमी"
+  },
+  "relative": {
+    "justNow": "आत्ताच",
+    "minutesAgo": "{count} मिनिटांपूर्वी",
+    "hoursAgo": "{count} तासांपूर्वी",
+    "daysAgo": "{count} दिवसांपूर्वी",
+    "inMinutes": "{count} मिनिटांत",
+    "inHours": "{count} तासांत"
+  },
+  "freshness": {
+    "live": "थेट",
+    "application": "ॲपचा डेटा",
+    "estimate": "अंदाज",
+    "snapshot": "ऑफलाइन प्रत",
+    "unavailable": "उपलब्ध नाही",
+    "stale": "जुनी",
+    "updated": "{when} अपडेट केले"
+  },
+  "locationFreshness": {
+    "live": "थेट",
+    "recent": "अलीकडील",
+    "stale": "जुने",
+    "last_known": "शेवटचे माहीत असलेले",
+    "none": "अजून लोकेशन मिळालेले नाही"
+  },
+  "cost": {
+    "unavailable": "खर्च उपलब्ध नाही",
+    "about": "सुमारे {amount}",
+    "range": "{min}–{max}",
+    "estimate": "अंदाज"
+  }
+}

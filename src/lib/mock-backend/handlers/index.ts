@@ -5,6 +5,7 @@ import { discoveryRoutes } from './discovery';
 import { operationsRoutes } from './operations';
 import { platformAuthRoutes } from './platform-auth';
 import { safetyRoutes } from './safety';
+import { transportRoutes } from './transport';
 import { tripRoutes } from './trips';
 
 /** First match wins: within each domain, literal segments are declared before `:param` routes. */
@@ -15,5 +16,6 @@ export const routes: RouteDefinition[] = [
   ...safetyRoutes,
   ...chatRoutes,
   ...commerceRoutes,
+  ...transportRoutes,
   ...operationsRoutes,
 ];

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { RefreshIcon, WifiOffIcon } from '@/components/ui/icons';
+import { useTranslation } from '@/i18n/react';
 import { useAuth } from '@/lib/auth/provider';
 import { useConnectivity } from '@/lib/offline/connectivity';
 import { flushOutbox } from '@/lib/offline/outbox';
@@ -15,7 +16,8 @@ type BannerTone = 'offline' | 'progress' | 'ok' | 'error';
  * Also reports when live updates have stopped, so stale data is never shown as live.
  */
 export function ConnectivityBanner() {
-  const { state, pendingCount, lastError } = useConnectivity();
+  const { state, pendingCount } = useConnectivity();
+  const { t } = useTranslation();
   const realtimeState = useRealtimeState();
   const realtime = useRealtimeClient();
   const { status } = useAuth();
@@ -26,29 +28,29 @@ export function ConnectivityBanner() {
   let detail = '';
   let action: { label: string; run: () => void } | null = null;
 
-  const pending = pendingCount > 0 ? `${pendingCount} saved action${pendingCount === 1 ? '' : 's'} waiting to send.` : '';
+  const pending = pendingCount > 0 ? t('connectivity.pending', { count: pendingCount }) : '';
 
   if (state === 'offline') {
     tone = 'offline';
-    label = 'You’re offline';
-    detail = ['Showing what’s saved on this device.', pending].filter(Boolean).join(' ');
+    label = t('connectivity.offline');
+    detail = [t('connectivity.offlineDetail'), pending].filter(Boolean).join(' ');
   } else if (state === 'reconnecting') {
     tone = 'progress';
-    label = 'Reconnecting…';
+    label = t('connectivity.reconnecting');
   } else if (state === 'syncing') {
     tone = 'progress';
-    label = 'Syncing…';
+    label = t('connectivity.syncing');
     detail = pending;
   } else if (state === 'synced') {
     tone = 'ok';
-    label = 'Back online';
-    detail = 'Everything is up to date.';
+    label = t('connectivity.synced');
+    detail = t('connectivity.syncedDetail');
   } else if (state === 'sync_error') {
     tone = 'error';
-    label = 'Some changes haven’t synced';
-    detail = lastError ?? pending;
+    label = t('connectivity.syncError');
+    detail = pending || t('connectivity.syncErrorDetail');
     action = {
-      label: 'Retry',
+      label: t('common.actions.retry'),
       run: () => {
         setRetrying(true);
         void flushOutbox().finally(() => setRetrying(false));
@@ -56,9 +58,9 @@ export function ConnectivityBanner() {
     };
   } else if (status === 'authenticated' && realtimeState === 'failed') {
     tone = 'error';
-    label = 'Live updates paused';
-    detail = 'Messages, locations and trip changes may be delayed.';
-    action = realtime ? { label: 'Reconnect', run: () => realtime.retryNow() } : null;
+    label = t('connectivity.liveUpdatesPaused');
+    detail = t('connectivity.liveUpdatesPausedDetail');
+    action = realtime ? { label: t('common.actions.reconnect'), run: () => realtime.retryNow() } : null;
   }
 
   return (

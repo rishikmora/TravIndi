@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { FraudReportScreen } from '@/components/providers/FraudReportScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Report fraud',
+  title: en.meta.titles.fraud,
   robots: { index: false, follow: true },
 };
 

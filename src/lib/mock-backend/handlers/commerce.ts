@@ -3,6 +3,7 @@ import { findService } from '../catalog/providers';
 import { scheduleBookingOutcome } from '../effects';
 import { created, fail, newId, noContent, nowIso, ok, paginate } from '../http';
 import { buildBookingRecommendations, priceFor } from '../logic/offers';
+import { findDeparture, istDate, seatsLeft } from '../logic/transport';
 import { route, type RouteDefinition } from '../router';
 import type { MockState, MockStore } from '../store';
 import { businessFor, guideFor } from './discovery';
@@ -136,6 +137,15 @@ export const commerceRoutes: RouteDefinition[] = [
       if (phone && !PHONE.test(phone)) validationFailed([{ field: 'contact_phone', issue: 'Enter a valid phone number.' }]);
       readString(body, 'notes', { max: 500, label: 'Notes' });
 
+      // Seats on a flight or bus can go while a quote is held: check again before booking.
+      const availabilityId = quote.transport?.availability_id;
+      if (availabilityId) {
+        const departure = findDeparture(quote.service.service_id, availabilityId, istDate(Date.now()));
+        if (!departure || quote.transport!.passengers > seatsLeft(departure, store.state.bookings)) {
+          fail(409, 'not_enough_seats', 'The seats on this departure were taken while your quote was held. Search again for current departures.');
+        }
+      }
+
       const slot = store.state.availability.find((s) => s.service_id === quote.service.service_id && s.date === quote.date && s.time_slot === quote.time_slot);
       if (slot) slot.booked += quote.service.unit === 'group' ? 1 : quote.quantity;
 
@@ -158,6 +168,7 @@ export const commerceRoutes: RouteDefinition[] = [
         failure_reason: null,
         created_at: nowIso(),
         updated_at: nowIso(),
+        transport: quote.transport ?? null,
         _owner_id: user.user_id,
         _contact_name: contactName,
       };

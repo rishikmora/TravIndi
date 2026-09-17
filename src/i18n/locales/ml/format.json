@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} മിനിറ്റ്",
+    "hours": "{hours} മണിക്കൂർ",
+    "hoursMinutes": "{hours} മണിക്കൂർ {minutes} മിനിറ്റ്"
+  },
+  "distance": {
+    "meters": "{value} മീ",
+    "kilometers": "{value} കി.മീ"
+  },
+  "relative": {
+    "justNow": "ഇപ്പോൾ",
+    "minutesAgo": "{count} മിനിറ്റ് മുമ്പ്",
+    "hoursAgo": "{count} മണിക്കൂർ മുമ്പ്",
+    "daysAgo": "{count} ദിവസം മുമ്പ്",
+    "inMinutes": "{count} മിനിറ്റിനുള്ളിൽ",
+    "inHours": "{count} മണിക്കൂറിനുള്ളിൽ"
+  },
+  "freshness": {
+    "live": "തത്സമയം",
+    "application": "ആപ്പ് ഡാറ്റ",
+    "estimate": "ഏകദേശ കണക്ക്",
+    "snapshot": "ഓഫ്‌ലൈൻ പകർപ്പ്",
+    "unavailable": "ലഭ്യമല്ല",
+    "stale": "പഴയത്",
+    "updated": "{when} പുതുക്കി"
+  },
+  "locationFreshness": {
+    "live": "തത്സമയം",
+    "recent": "അടുത്തിടെ",
+    "stale": "പഴയത്",
+    "last_known": "അവസാനം അറിഞ്ഞത്",
+    "none": "ലൊക്കേഷൻ ഇതുവരെ ലഭിച്ചിട്ടില്ല"
+  },
+  "cost": {
+    "unavailable": "ചെലവ് ലഭ്യമല്ല",
+    "about": "ഏകദേശം {amount}",
+    "range": "{min}–{max}",
+    "estimate": "ഏകദേശ കണക്ക്"
+  }
+}

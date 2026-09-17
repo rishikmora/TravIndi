@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { ConversationScreen } from '@/components/chat/MessagesScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Conversation',
+  title: en.meta.titles.conversation,
   robots: { index: false, follow: false },
 };
 

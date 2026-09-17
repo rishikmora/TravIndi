@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { MapScreen } from '@/components/map/MapScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Map',
+  title: en.meta.titles.map,
   description: 'Places, help points and safety information across India, with every map feature also listed as text.',
 };
 

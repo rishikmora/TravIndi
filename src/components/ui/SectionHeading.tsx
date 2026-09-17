@@ -5,10 +5,10 @@ import { Reveal } from '@/components/ui/Reveal';
 import { cn } from '@/utils/cn';
 
 interface SectionHeadingProps {
-  eyebrow: string;
+  eyebrow: ReactNode;
   title: ReactNode;
-  description?: string;
-  action?: { href: string; label: string };
+  description?: ReactNode;
+  action?: { href: string; label: ReactNode };
   id?: string;
   className?: string;
 }

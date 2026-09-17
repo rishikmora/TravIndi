@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from '@/i18n/react';
 import { cn } from '@/utils/cn';
 
 const PALETTE = ['#1d6b6b', '#a84a2a', '#2a3a5c', '#8a5300', '#276b43', '#6b3f73'];
@@ -27,6 +30,7 @@ interface AvatarProps {
 const SIZES = { xs: 'size-6 text-[0.625rem]', sm: 'size-8 text-[0.75rem]', md: 'size-10 text-[0.875rem]', lg: 'size-14 text-[1.125rem]' } as const;
 
 export function Avatar({ name, src, size = 'md', presence, className, decorative = false }: AvatarProps) {
+  const { t } = useTranslation();
   return (
     <span className={cn('relative inline-flex shrink-0', className)} aria-hidden={decorative || undefined}>
       {src ? (
@@ -48,7 +52,7 @@ export function Avatar({ name, src, size = 'md', presence, className, decorative
             'absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-[var(--surface-raised)]',
             presence === 'online' ? 'bg-[var(--color-success)]' : 'bg-[var(--color-saffron-muted)]',
           )}
-          aria-label={decorative ? undefined : presence === 'online' ? 'Online' : 'Away'}
+          aria-label={decorative ? undefined : presence === 'online' ? t('common.labels.online') : t('common.labels.away')}
           role={decorative ? undefined : 'img'}
         />
       )}

@@ -1,0 +1,20 @@
+{
+  "primary": "ప్రధాన",
+  "items": {
+    "home": "హోమ్",
+    "discover": "అన్వేషించండి",
+    "trips": "ప్రయాణాలు",
+    "map": "మ్యాప్",
+    "messages": "సందేశాలు",
+    "safety": "భద్రత",
+    "profile": "ప్రొఫైల్"
+  },
+  "homeLink": "TravIndi హోమ్",
+  "search": "గమ్యస్థానాలు, గైడ్‌లు, ప్రదేశాలను వెతకండి",
+  "notifications": "నోటిఫికేషన్‌లు",
+  "unreadMessages_one": ", {count} చదవని సందేశం",
+  "unreadMessages_other": ", {count} చదవని సందేశాలు",
+  "unreadNotifications_one": ", {count} చదవని నోటిఫికేషన్",
+  "unreadNotifications_other": ", {count} చదవని నోటిఫికేషన్‌లు",
+  "profile": "మీ ప్రొఫైల్, {name}"
+}

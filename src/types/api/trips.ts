@@ -6,7 +6,7 @@ import type {
   SafetyPreference,
   TransportMode,
 } from './auth';
-import type { ID, ImageDto, ISODate, ISODateTime, MoneyDto } from './common';
+import type { ID, ImageDto, ISODate, ISODateTime, JourneyContextDto, MoneyDto } from './common';
 import type { DestinationSummaryDto } from './destinations';
 
 export type TripType =
@@ -67,8 +67,11 @@ export interface TripIntentInputDto {
 export type TripIntentField = keyof TripIntentInputDto;
 
 export interface ExtractIntentRequestDto {
+  /** Written in any language the traveller chooses. */
   text: string;
+  /** BCP 47 tag of the interface language, e.g. "te-IN". */
   locale?: string;
+  journey_context?: JourneyContextDto;
   /** Merge with the traveller's saved profile preferences where the text is silent. */
   use_profile_defaults?: boolean;
   /** Intent already confirmed by the user, so extraction refines rather than replaces. */
@@ -145,6 +148,11 @@ export interface TripDto extends TripSummaryDto {
 export interface CreateTripRequestDto {
   intent: TripIntentInputDto;
   title?: string | null;
+  journey_context?: JourneyContextDto;
+}
+
+export interface GenerateItineraryRequestDto {
+  journey_context?: JourneyContextDto;
 }
 
 export interface UpdateTripRequestDto {

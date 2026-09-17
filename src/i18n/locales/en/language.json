@@ -1,0 +1,10 @@
+{
+  "label": "Language",
+  "button": "Language: {language}. Change language",
+  "listLabel": "Choose a language",
+  "changed": "Language changed to {language}",
+  "offlineTitle": "This language isn’t saved on this device yet",
+  "offlineDetail": "Connect to the internet once to download it. After that it works offline too.",
+  "settingsDescription": "Menus, messages, safety information and your travel plans appear in this language. Names of places, businesses and people stay as they are.",
+  "savedOnDevice": "Saved on this device. When you’re signed in, your trips use it too."
+}

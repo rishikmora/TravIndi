@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} min",
+    "hours": "{hours} h",
+    "hoursMinutes": "{hours} h {minutes} min"
+  },
+  "distance": {
+    "meters": "{value} m",
+    "kilometers": "{value} km"
+  },
+  "relative": {
+    "justNow": "just now",
+    "minutesAgo": "{count} min ago",
+    "hoursAgo": "{count} h ago",
+    "daysAgo": "{count} d ago",
+    "inMinutes": "in {count} min",
+    "inHours": "in {count} h"
+  },
+  "freshness": {
+    "live": "LIVE",
+    "application": "APPLICATION DATA",
+    "estimate": "ESTIMATE",
+    "snapshot": "OFFLINE SNAPSHOT",
+    "unavailable": "UNAVAILABLE",
+    "stale": "STALE",
+    "updated": "Updated {when}"
+  },
+  "locationFreshness": {
+    "live": "LIVE",
+    "recent": "RECENT",
+    "stale": "STALE",
+    "last_known": "LAST KNOWN",
+    "none": "NO LOCATION YET"
+  },
+  "cost": {
+    "unavailable": "Cost unavailable",
+    "about": "About {amount}",
+    "range": "{min}–{max}",
+    "estimate": "Estimate"
+  }
+}

@@ -1,65 +1,71 @@
+import en from '@/i18n/locales/en';
 import { env } from '@/lib/config/env';
 
 export type PrimaryNavId = 'home' | 'discover' | 'trips' | 'map' | 'messages' | 'safety' | 'profile';
 
+export type FooterColumnId = keyof typeof en.footer.columns;
+export type FooterLinkId = keyof typeof en.footer.links;
+
+/**
+ * Site structure. Visible labels live in the translation dictionaries
+ * (`nav.items.*`, `footer.*`); the English copies here serve server-rendered
+ * metadata only.
+ */
 export const site = {
-  name: 'TravIndi',
-  tagline: 'Travel India, your way — safely',
-  description:
-    'Plan journeys across India that adapt when plans change, with verified local guides, honest information and safety tools built in.',
+  name: en.common.appName,
+  tagline: en.common.meta.tagline,
+  description: en.common.meta.description,
   url: env.siteUrl,
   locale: 'en_IN',
   themeColor: '#14213d',
   nav: [
-    { id: 'home', label: 'Home', href: '/' },
-    { id: 'discover', label: 'Discover', href: '/destinations' },
-    { id: 'trips', label: 'Trips', href: '/trips' },
-    { id: 'map', label: 'Map', href: '/map' },
-    { id: 'messages', label: 'Messages', href: '/messages' },
-    { id: 'safety', label: 'Safety', href: '/safety' },
-    { id: 'profile', label: 'Profile', href: '/profile' },
-  ] satisfies Array<{ id: PrimaryNavId; label: string; href: string }>,
+    { id: 'home', href: '/' },
+    { id: 'discover', href: '/destinations' },
+    { id: 'trips', href: '/trips' },
+    { id: 'map', href: '/map' },
+    { id: 'messages', href: '/messages' },
+    { id: 'safety', href: '/safety' },
+    { id: 'profile', href: '/profile' },
+  ] satisfies Array<{ id: PrimaryNavId; href: string }>,
   footer: {
     columns: [
       {
-        heading: 'Explore',
+        id: 'explore',
         links: [
-          { label: 'Destinations', href: '/destinations' },
-          { label: 'Map of India', href: '/map' },
-          { label: 'Local guides', href: '/guides' },
-          { label: 'Local businesses', href: '/businesses' },
+          { id: 'destinations', href: '/destinations' },
+          { id: 'map', href: '/map' },
+          { id: 'guides', href: '/guides' },
+          { id: 'businesses', href: '/businesses' },
         ],
       },
       {
-        heading: 'Travel',
+        id: 'travel',
         links: [
-          { label: 'Plan a journey', href: '/trips/new' },
-          { label: 'My trips', href: '/trips' },
-          { label: 'Bookings', href: '/bookings' },
-          { label: 'Messages', href: '/messages' },
+          { id: 'plan', href: '/trips/new' },
+          { id: 'trips', href: '/trips' },
+          { id: 'bookings', href: '/bookings' },
+          { id: 'messages', href: '/messages' },
         ],
       },
       {
-        heading: 'Safety & trust',
+        id: 'safety',
         links: [
-          { label: 'Safety centre', href: '/safety' },
-          { label: 'Emergency SOS', href: '/sos' },
-          { label: 'Verify a provider', href: '/verify' },
-          { label: 'Report fraud', href: '/trust/fraud' },
+          { id: 'safetyCentre', href: '/safety' },
+          { id: 'sos', href: '/sos' },
+          { id: 'verify', href: '/verify' },
+          { id: 'fraud', href: '/trust/fraud' },
         ],
       },
       {
-        heading: 'You',
+        id: 'you',
         links: [
-          { label: 'Accessibility', href: '/accessibility' },
-          { label: 'Privacy & consents', href: '/consents' },
-          { label: 'Settings', href: '/settings' },
-          { label: 'For partners', href: '/partner' },
+          { id: 'accessibility', href: '/accessibility' },
+          { id: 'consents', href: '/consents' },
+          { id: 'settings', href: '/settings' },
+          { id: 'partners', href: '/partner' },
         ],
       },
-    ],
-    disclaimer: 'Travel information is indicative and labelled with its source. In an emergency, call 112.',
-    legal: 'Map outline adapted from svg-maps by Victor Cazanave (CC BY 4.0). Journey scenes are rendered live in your browser.',
+    ] satisfies Array<{ id: FooterColumnId; links: Array<{ id: FooterLinkId; href: string }> }>,
   },
 } as const;
 

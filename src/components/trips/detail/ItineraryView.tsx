@@ -7,8 +7,11 @@ import { EditIcon, HistoryIcon } from '@/components/ui/icons';
 import { LoadingBlock, Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState, InlineNotice } from '@/components/ui/States';
 import { useNow } from '@/hooks/useNow';
+import { useTranslation } from '@/i18n/react';
+import { getTranslator } from '@/i18n/runtime';
 import { isApiError } from '@/lib/api/errors';
 import { formatDayHeading } from '@/lib/format/dates';
+import { formatList } from '@/lib/format/list';
 import { relativeTime } from '@/lib/format/freshness';
 import { useTripBookingRecommendations } from '@/lib/query/hooks/bookings';
 import { useAdaptations, useItinerary, useRejectAdaptation, useTrip } from '@/lib/query/hooks/trips';
@@ -26,17 +29,13 @@ import { ItemDetailSheet } from './ItemDetailSheet';
 import { ItineraryItemCard } from './ItineraryItemCard';
 import { TripBookingPanel } from './TripBookingPanel';
 
-const OFFER_NOUN = { stay: ['stay', 'stays'], package: ['package', 'packages'], cab: ['cab', 'cabs'] } as const;
-
 function offerSummary(offers: RecommendedOffer[]) {
-  const parts = (['stay', 'package', 'cab'] as const)
-    .map((kind) => {
-      const count = offers.filter((offer) => offer.kind === kind).length;
-      return count ? `${count} ${OFFER_NOUN[kind][count === 1 ? 0 : 1]}` : null;
-    })
-    .filter(Boolean);
-  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
-  return `${list} matched to this plan.`;
+  const t = getTranslator();
+  const parts = (['stay', 'package', 'cab'] as const).flatMap((kind) => {
+    const count = offers.filter((offer) => offer.kind === kind).length;
+    return count ? [t(`itinerary.view.offers.${kind}`, { count })] : [];
+  });
+  return t('itinerary.view.offersMatched', { list: formatList(parts) });
 }
 
 const localIsoDate = (ms: number) => {
@@ -46,6 +45,7 @@ const localIsoDate = (ms: number) => {
 
 export function ItineraryView({ tripId }: { tripId: string }) {
   const now = useNow();
+  const { t } = useTranslation();
   const trip = useTrip(tripId);
   const itinerary = useItinerary(tripId);
   const adaptations = useAdaptations(tripId);
@@ -67,7 +67,7 @@ export function ItineraryView({ tripId }: { tripId: string }) {
 
   if (itinerary.isPending) {
     return (
-      <LoadingBlock label="Loading itinerary" className="grid gap-4">
+      <LoadingBlock label={t('itinerary.view.loading')} className="grid gap-4">
         <Skeleton className="h-11 w-full" />
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-28 w-full rounded-[1.25rem]" />
@@ -116,8 +116,8 @@ export function ItineraryView({ tripId }: { tripId: string }) {
             keeping={reject.isPending}
             onKeepCurrent={() =>
               reject.mutate(pending.proposalId, {
-                onSuccess: () => toast.success('Kept your current plan'),
-                onError: () => toast.error('Couldn’t save your choice', 'Your plan hasn’t changed. Please try again.'),
+                onSuccess: () => toast.success(getTranslator()('adaptation.toasts.kept')),
+                onError: () => toast.error(getTranslator()('adaptation.toasts.keepFailed'), getTranslator()('adaptation.toasts.keepFailedDetail')),
               })
             }
           />
@@ -125,25 +125,25 @@ export function ItineraryView({ tripId }: { tripId: string }) {
 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-[0.9375rem] text-[var(--text-muted)]">
-            <span className="font-semibold text-[var(--text)]">Version {plan.version}</span>
-            {now > 0 && ` · updated ${relativeTime(plan.createdAt, now)}`}
+            <span className="font-semibold text-[var(--text)]">{t('itinerary.view.version', { version: plan.version })}</span>
+            {now > 0 && ` · ${t('itinerary.view.updated', { when: relativeTime(plan.createdAt, now) ?? '' })}`}
           </p>
           <div className="flex flex-wrap gap-2">
             {canReview && (
               <Button variant="secondary" size="sm" onClick={() => setReplanOpen(true)}>
                 <EditIcon size={16} />
-                Change my plan
+                {t('itinerary.view.changePlan')}
               </Button>
             )}
             <Button variant="subtle" size="sm" onClick={() => setHistoryOpen(true)}>
               <HistoryIcon size={16} />
-              History
+              {t('itinerary.view.history')}
             </Button>
           </div>
         </div>
 
         {plan.validation.status === 'warnings' && (
-          <InlineNotice tone="warning" title="Worth checking">
+          <InlineNotice tone="warning" title={t('itinerary.view.worthChecking')}>
             <ul className="grid gap-1">
               {plan.validation.warnings.map((warning) => (
                 <li key={warning}>{warning}</li>
@@ -152,7 +152,7 @@ export function ItineraryView({ tripId }: { tripId: string }) {
           </InlineNotice>
         )}
 
-        <div role="tablist" aria-label="Days" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
+        <div role="tablist" aria-label={t('itinerary.view.daysLabel')} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:thin]">
           {plan.days.map((day, index) => {
             const selectedTab = day.dayNumber === activeDay?.dayNumber;
             return (
@@ -175,10 +175,10 @@ export function ItineraryView({ tripId }: { tripId: string }) {
                 )}
               >
                 <span className="text-[0.9375rem] font-semibold">
-                  Day {day.dayNumber}
-                  {day.date === today && <span className="ml-1.5 text-[0.75rem] font-medium opacity-80">· Today</span>}
+                  {t('itinerary.view.day', { day: day.dayNumber })}
+                  {day.date === today && <span className="ml-1.5 text-[0.75rem] font-medium opacity-80">· {t('itinerary.view.today')}</span>}
                 </span>
-                <span className={cn('text-[0.8125rem]', selectedTab ? 'text-ivory/75' : 'text-[var(--text-muted)]')}>{formatDayHeading(day.date) ?? `${day.items.length} stops`}</span>
+                <span className={cn('text-[0.8125rem]', selectedTab ? 'text-ivory/75' : 'text-[var(--text-muted)]')}>{formatDayHeading(day.date) ?? t('itinerary.view.stops', { count: day.items.length })}</span>
               </button>
             );
           })}
@@ -191,7 +191,7 @@ export function ItineraryView({ tripId }: { tripId: string }) {
               {activeDay.summary && <p className="text-[var(--text-muted)]">{activeDay.summary}</p>}
             </div>
             {activeDay.items.length === 0 ? (
-              <p className="text-[var(--text-muted)]">Nothing planned for this day — time to rest or explore at your own pace.</p>
+              <p className="text-[var(--text-muted)]">{t('itinerary.view.nothingPlanned')}</p>
             ) : (
               <ol className="grid">
                 {activeDay.items.map((item, index) => {
@@ -229,21 +229,21 @@ export function ItineraryView({ tripId }: { tripId: string }) {
         />
       </div>
 
-      <aside className="grid content-start gap-4" aria-label="Trip summary">
+      <aside className="grid content-start gap-4" aria-label={t('itinerary.view.summaryLabel')}>
         <BudgetSummary budget={plan.budget} />
         {offers.length > 0 && (
           <section className="surface-card grid gap-2 p-5">
-            <h3 className="text-[1.0625rem] font-semibold">Ready to book?</h3>
+            <h3 className="text-[1.0625rem] font-semibold">{t('itinerary.view.readyToBook')}</h3>
             <p className="text-[0.9375rem] leading-relaxed text-[var(--text-muted)]">{offerSummary(offers)}</p>
             <a href="#book-this-plan" className="justify-self-start rounded-full text-[0.9375rem] font-semibold text-[var(--link)] underline underline-offset-4">
-              See stays, packages and cabs
+              {t('itinerary.view.seeOffers')}
             </a>
           </section>
         )}
         <section className="surface-card grid gap-2 p-5">
-          <h3 className="text-[1.0625rem] font-semibold">About this plan</h3>
+          <h3 className="text-[1.0625rem] font-semibold">{t('itinerary.view.aboutPlan')}</h3>
           <p className="text-[0.9375rem] leading-relaxed text-[var(--text-muted)]">{plan.summary}</p>
-          <p className="text-[0.8125rem] text-[var(--text-subtle)]">Times are local. Travel times are estimates, not live traffic.</p>
+          <p className="text-[0.8125rem] text-[var(--text-subtle)]">{t('itinerary.view.timesNote')}</p>
         </section>
       </aside>
 

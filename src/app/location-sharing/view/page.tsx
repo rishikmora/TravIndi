@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { ShareViewer } from '@/components/location/ShareViewer';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Shared location',
+  title: en.meta.titles.sharedLocation,
   robots: { index: false, follow: false },
 };
 

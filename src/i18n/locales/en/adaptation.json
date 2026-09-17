@@ -1,0 +1,167 @@
+{
+  "status": {
+    "proposed": {
+      "label": "Proposed",
+      "description": "Waiting for your review."
+    },
+    "approved": {
+      "label": "Approved",
+      "description": "Approved and being applied."
+    },
+    "applied": {
+      "label": "Applied",
+      "description": "Your itinerary was updated."
+    },
+    "rejected": {
+      "label": "Rejected",
+      "description": "You kept your current plan."
+    },
+    "expired": {
+      "label": "Expired",
+      "description": "No longer valid. Nothing was changed."
+    },
+    "failed": {
+      "label": "Failed",
+      "description": "Couldn’t be applied. Nothing was changed."
+    },
+    "stale": {
+      "label": "Stale",
+      "description": "Your itinerary changed after this was suggested."
+    }
+  },
+  "changeType": {
+    "unchanged": "Unchanged",
+    "moved": "Moved",
+    "removed": "Removed",
+    "added": "Added"
+  },
+  "trigger": {
+    "crowd": "Crowds",
+    "weather": "Weather",
+    "closure": "Closure",
+    "transport": "Transport",
+    "safety": "Safety",
+    "schedule": "Schedule",
+    "user_request": "Your request",
+    "other": "Update"
+  },
+  "toasts": {
+    "kept": "Kept your current plan",
+    "keepFailed": "Couldn’t save your choice",
+    "keepFailedDetail": "Your plan hasn’t changed. Please try again."
+  },
+  "review": {
+    "confidence": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "announceApplied": "Version {version} created. Your itinerary was updated.",
+    "announceKept": "Kept your current plan.",
+    "titles": {
+      "reviewing": "Review this change",
+      "applying": "Applying the change…",
+      "rejecting": "Keeping your current plan…",
+      "applied": "Version {version} created",
+      "appliedGeneric": "Change applied",
+      "kept": "Current plan kept",
+      "conflict": "Your itinerary changed while you were away",
+      "expired": "This suggestion has expired",
+      "failed": "The change couldn’t be applied",
+      "fallback": "Travel update"
+    },
+    "keepCurrent": "Keep current plan",
+    "applyOption": "Apply this option",
+    "apply": "Apply change",
+    "viewUpdated": "View updated itinerary",
+    "whatChanged": "What changed",
+    "currentAndRecommended": "Current and recommended",
+    "current": "Current",
+    "recommended": "Recommended",
+    "why": "Why",
+    "howSure": "How sure we are: {level}",
+    "impact": "Impact",
+    "chooseAnother": "Choose another option",
+    "goTo": "Go to {title}",
+    "recommendedChange": "Recommended change",
+    "seeEveryChange": "See every change to your plan",
+    "nothingUntilChoose": "Nothing changes until you choose. Your current plan stays as it is if you keep it.",
+    "updatedTitle": "Your itinerary was updated",
+    "versionKept": "Version {version} is kept in your history.",
+    "appliedPill": "Applied",
+    "nothingChanged": "Nothing was changed",
+    "keptBody": "Your plan stays as it is. You can find this suggestion in the trip history.",
+    "nothingApplied": "Nothing was applied",
+    "conflictBody": "Your itinerary changed after this suggestion was made, so it no longer fits. Review the latest version of your plan.",
+    "expiredBody": "Suggestions are only valid for a short time because conditions change. Your current plan still stands."
+  },
+  "banner": {
+    "travelUpdate": "Travel update",
+    "reviewChange": "Review change",
+    "validFor": "Valid for about {minutes} more min",
+    "aboutToExpire": "About to expire",
+    "cannotReview": "The trip owner or an editor can review this change.",
+    "announce": "Travel update: {summary}"
+  },
+  "replan": {
+    "presets": {
+      "more_relaxed": "More relaxed",
+      "less_walking": "Less walking",
+      "avoid_crowds": "Avoid crowds",
+      "cheaper": "Cheaper",
+      "more_heritage": "More heritage",
+      "more_food": "More food",
+      "improve_safety": "Safer choices"
+    },
+    "title": "Change my plan",
+    "description": "Tell us what isn’t working. We’ll suggest a change for you to review first.",
+    "finding": "Finding a change…",
+    "suggest": "Suggest a change",
+    "quickChanges": "Quick changes",
+    "describe": "Or describe it",
+    "placeholder": "e.g. My parents are tired — make Day 2 lighter",
+    "whichPart": "Which part of the trip?",
+    "wholeTrip": "Whole trip",
+    "noChange": "No change suggested"
+  },
+  "history": {
+    "trigger": {
+      "generated": "Generated",
+      "adaptation": "Travel update",
+      "user_edit": "Edited",
+      "replan": "Your request"
+    },
+    "title": "Trip history",
+    "description": "Every version of your itinerary, and every change that was suggested.",
+    "versions": "Versions",
+    "loadingVersions": "Loading versions",
+    "currentVersion": "Current",
+    "changes_one": "{count} change",
+    "changes_other": "{count} changes",
+    "suggestions": "Suggestions",
+    "loadingSuggestions": "Loading suggestions",
+    "none": "No changes have been suggested for this trip.",
+    "createdVersion": "Created version {version}."
+  },
+  "impact": {
+    "notCalculated": "The impact of this change hasn’t been calculated.",
+    "noChange": "No change",
+    "noKnownChange": "No known change",
+    "unknown": "Unknown",
+    "mayIncrease": "May increase",
+    "mayDecrease": "May decrease",
+    "travelTime": "Travel time",
+    "distance": "Distance",
+    "cost": "Cost",
+    "safety": "Safety",
+    "safetyStatus": {
+      "improved": "Improved",
+      "unchanged": "No known change",
+      "reduced": "Reduced",
+      "unknown": "Unknown"
+    }
+  },
+  "diff": {
+    "dayChanges": "Day {day} changes"
+  }
+}

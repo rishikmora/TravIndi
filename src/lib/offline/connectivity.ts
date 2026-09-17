@@ -29,7 +29,8 @@ export const useConnectivity = create<ConnectivityStore>()((set) => ({
         state,
         online: event === 'WENT_OFFLINE' ? false : event === 'CAME_ONLINE' ? true : current.online,
         lastSyncedAt: event === 'SYNC_SUCCEEDED' ? new Date().toISOString() : current.lastSyncedAt,
-        lastError: event === 'SYNC_FAILED' ? (detail?.error ?? 'Some changes could not be synced.') : event === 'SYNC_SUCCEEDED' ? null : current.lastError,
+        // A diagnostic code; the banner shows translated text.
+        lastError: event === 'SYNC_FAILED' ? (detail?.error ?? 'sync_failed') : event === 'SYNC_SUCCEEDED' ? null : current.lastError,
       };
     }),
   setPending: (pendingCount) => set({ pendingCount }),

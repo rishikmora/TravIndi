@@ -1,0 +1,92 @@
+{
+  "eyebrow": "Emergency alert",
+  "heading": "Need help now?",
+  "button": "SOS",
+  "explainer": "Sends an alert to the TravIndi operations desk and your trusted contacts, with your location if your device can share it. You’ll confirm first.",
+  "confirm": {
+    "title": "Send an SOS alert?",
+    "description": "Only send this if you need help.",
+    "send": "Send SOS alert",
+    "opsDesk": "The TravIndi operations desk will see your alert.",
+    "contacts_one": "{count} trusted contact will be alerted where TravIndi can reach them. You’ll see each result.",
+    "contacts_other": "{count} trusted contacts will be alerted where TravIndi can reach them. You’ll see each result.",
+    "noContacts": "You haven’t chosen any trusted contacts for SOS alerts.",
+    "location": "Your current location is included if your device shares it within a few seconds.",
+    "noEmergencyServices": "Emergency services are not contacted. Call 112 for police, fire or ambulance.",
+    "message": "Message",
+    "messageHint": "e.g. what’s happening, or where exactly you are"
+  },
+  "announce": {
+    "received": "TravIndi has received your SOS alert.",
+    "savedOffline": "Saved on this device. Your alert will send when you reconnect. If you are in danger, call 112.",
+    "sending": "Sending your SOS alert.",
+    "cancelled": "Your SOS alert was cancelled."
+  },
+  "sending": {
+    "pill": "Sending",
+    "title": "Sending your alert…",
+    "detail": "It’s already saved on this device, so it won’t be lost if the connection drops."
+  },
+  "pending": {
+    "saved": "Saved on this device",
+    "waiting": "Waiting for connection",
+    "notSent": "Not sent yet",
+    "title": "Your alert hasn’t reached TravIndi yet",
+    "offline": "It will send automatically as soon as you’re back online.",
+    "failed": "We couldn’t send it. It stays saved on this device while you try again.",
+    "callNow": "If you’re in danger, call 112 now.",
+    "retry": "Try sending now",
+    "check": "Check connection"
+  },
+  "closed": {
+    "resolved": "Resolved",
+    "cancelled": "Cancelled",
+    "resolvedTitle": "Your alert was marked resolved",
+    "cancelledTitle": "You cancelled your alert",
+    "detail": "If you still need help, send a new alert or call 112."
+  },
+  "active": {
+    "confirmed": "Server confirmed",
+    "waitingAck": "Waiting for acknowledgement",
+    "acknowledged": "Acknowledged",
+    "responding": "Responding",
+    "title": "Your SOS alert was received",
+    "receivedAt": "Received at {time}. Keep your phone with you.",
+    "noLocationTitle": "Sent without your location",
+    "noLocation": "Your device didn’t share a location in time. If you can, send your location in a message or tell someone where you are.",
+    "whoAlerted": "Who has been alerted",
+    "whileYouWait": "While you wait",
+    "imSafe": "I’m safe — cancel alert",
+    "cancelTitle": "Cancel your SOS alert?",
+    "cancelDescription": "The operations desk will see that you’re safe. Trusted contacts who were alerted won’t be messaged automatically.",
+    "keepOpen": "Keep alert open",
+    "yesSafe": "Yes, I’m safe"
+  },
+  "progress": {
+    "label": "Alert progress",
+    "received": "Received by TravIndi",
+    "acknowledged": "Acknowledged by the operations desk",
+    "responding": "Response being coordinated",
+    "resolved": "Resolved",
+    "done": "— done",
+    "notYet": "— not yet"
+  },
+  "channelStatus": {
+    "queued": "Sending",
+    "delivered": "Delivered",
+    "failed": "Failed",
+    "not_supported": "Not connected"
+  },
+  "channelNote": {
+    "authority": "TravIndi can’t alert emergency services. Call 112 yourself.",
+    "contactNotSupported": "Can’t be reached through TravIndi (SMS isn’t connected). Contact them directly if you can.",
+    "contactDelivered": "Received as an in-app alert.",
+    "contactFailed": "The alert didn’t reach them. Try contacting them directly.",
+    "contactSending": "Sending an in-app alert…",
+    "opsDelivered": "Your alert is on the operations desk’s screen."
+  },
+  "signIn": {
+    "title": "Sign in to send an SOS alert",
+    "description": "Calling 112 works without an account. An SOS alert needs your account so we know who needs help."
+  }
+}

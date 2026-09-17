@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} मिनट",
+    "hours": "{hours} घंटे",
+    "hoursMinutes": "{hours} घंटे {minutes} मिनट"
+  },
+  "distance": {
+    "meters": "{value} मी",
+    "kilometers": "{value} कि.मी."
+  },
+  "relative": {
+    "justNow": "अभी-अभी",
+    "minutesAgo": "{count} मिनट पहले",
+    "hoursAgo": "{count} घंटे पहले",
+    "daysAgo": "{count} दिन पहले",
+    "inMinutes": "{count} मिनट में",
+    "inHours": "{count} घंटे में"
+  },
+  "freshness": {
+    "live": "लाइव",
+    "application": "ऐप का डेटा",
+    "estimate": "अनुमान",
+    "snapshot": "ऑफ़लाइन प्रति",
+    "unavailable": "उपलब्ध नहीं",
+    "stale": "पुराना",
+    "updated": "{when} अपडेट किया गया"
+  },
+  "locationFreshness": {
+    "live": "लाइव",
+    "recent": "हाल की",
+    "stale": "पुरानी",
+    "last_known": "आखिरी ज्ञात",
+    "none": "अभी लोकेशन नहीं मिली"
+  },
+  "cost": {
+    "unavailable": "खर्च उपलब्ध नहीं",
+    "about": "लगभग {amount}",
+    "range": "{min}–{max}",
+    "estimate": "अनुमान"
+  }
+}

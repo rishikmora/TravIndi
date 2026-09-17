@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "পরিচয়",
+      "business_registration": "ব্যবসার নিবন্ধন",
+      "credential": "গাইড লাইসেন্স",
+      "review_authenticity": "রিভিউয়ের সত্যতা",
+      "availability": "প্রাপ্যতা"
+    },
+    "evidenceStatus": {
+      "verified": "যাচাই করা হয়েছে",
+      "pending": "অমীমাংসিত",
+      "expired": "মেয়াদ শেষ",
+      "unverified": "যাচাই করা হয়নি",
+      "rejected": "প্রত্যাখ্যাত"
+    },
+    "summary": {
+      "verified": "যাচাই করা",
+      "identity": "পরিচয় যাচাই করা",
+      "pending": "যাচাই চলছে",
+      "unverified": "যাচাই করা হয়নি"
+    },
+    "reputation": {
+      "underReview": "রিভিউগুলি যাচাই করা হচ্ছে",
+      "notEnough": "রেটিং দেওয়ার মতো যথেষ্ট রিভিউ এখনও নেই ({count})",
+      "none": "এখনও কোনো রিভিউ নেই",
+      "rating_one": "{count}টি রিভিউয়ের ভিত্তিতে {rating}",
+      "rating_other": "{count}টি রিভিউয়ের ভিত্তিতে {rating}",
+      "limited": "{base} · সীমিত ডেটা"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "గుర్తింపు",
+      "business_registration": "వ్యాపార నమోదు",
+      "credential": "గైడ్ లైసెన్స్",
+      "review_authenticity": "సమీక్షల ప్రామాణికత",
+      "availability": "అందుబాటు"
+    },
+    "evidenceStatus": {
+      "verified": "ధృవీకరించబడింది",
+      "pending": "పెండింగ్‌లో ఉంది",
+      "expired": "గడువు ముగిసింది",
+      "unverified": "ధృవీకరించలేదు",
+      "rejected": "తిరస్కరించబడింది"
+    },
+    "summary": {
+      "verified": "ధృవీకరించబడింది",
+      "identity": "గుర్తింపు ధృవీకరించబడింది",
+      "pending": "ధృవీకరణ పెండింగ్‌లో ఉంది",
+      "unverified": "ధృవీకరించలేదు"
+    },
+    "reputation": {
+      "underReview": "సమీక్షలను పరిశీలిస్తున్నాం",
+      "notEnough": "రేటింగ్ ఇవ్వడానికి ఇంకా తగినన్ని సమీక్షలు లేవు ({count})",
+      "none": "ఇంకా సమీక్షలు లేవు",
+      "rating_one": "{count} సమీక్ష ఆధారంగా {rating}",
+      "rating_other": "{count} సమీక్షల ఆధారంగా {rating}",
+      "limited": "{base} · పరిమిత డేటా"
+    }
+  }
+}

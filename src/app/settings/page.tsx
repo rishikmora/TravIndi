@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { SettingsScreen } from '@/components/account/SettingsScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Settings',
+  title: en.meta.titles.settings,
   robots: { index: false, follow: false },
 };
 

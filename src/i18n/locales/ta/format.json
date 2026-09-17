@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} நிமி.",
+    "hours": "{hours} மணி.",
+    "hoursMinutes": "{hours} மணி. {minutes} நிமி."
+  },
+  "distance": {
+    "meters": "{value} மீ",
+    "kilometers": "{value} கி.மீ."
+  },
+  "relative": {
+    "justNow": "இப்போது",
+    "minutesAgo": "{count} நிமிடம் முன்",
+    "hoursAgo": "{count} மணிநேரம் முன்",
+    "daysAgo": "{count} நாள் முன்",
+    "inMinutes": "{count} நிமிடத்தில்",
+    "inHours": "{count} மணிநேரத்தில்"
+  },
+  "freshness": {
+    "live": "நேரலை",
+    "application": "செயலித் தரவு",
+    "estimate": "மதிப்பீடு",
+    "snapshot": "ஆஃப்லைன் நகல்",
+    "unavailable": "கிடைக்கவில்லை",
+    "stale": "பழையது",
+    "updated": "{when} புதுப்பிக்கப்பட்டது"
+  },
+  "locationFreshness": {
+    "live": "நேரலை",
+    "recent": "சமீபத்தியது",
+    "stale": "பழையது",
+    "last_known": "கடைசியாகத் தெரிந்தது",
+    "none": "இன்னும் இருப்பிடம் இல்லை"
+  },
+  "cost": {
+    "unavailable": "செலவு விவரம் இல்லை",
+    "about": "சுமார் {amount}",
+    "range": "{min}–{max}",
+    "estimate": "மதிப்பீடு"
+  }
+}

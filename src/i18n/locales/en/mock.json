@@ -1,0 +1,34 @@
+{
+  "badge": "Sample data",
+  "title": "Development backend",
+  "description": "Everything you see — trips, people, providers, prices, safety and crowd information — is sample data served in your browser. No real messages, alerts or bookings are sent.",
+  "loading": "Loading tools…",
+  "signInAs": "Sign in as",
+  "signedInAs": "Signed in as {name}.",
+  "notSignedIn": "Not signed in.",
+  "signedIn": "Signed in: {name}",
+  "signInFailed": "Could not sign in",
+  "nothingToChange": "Nothing to change right now.",
+  "conditions": {
+    "title": "Conditions",
+    "offline": "Simulate offline",
+    "offlineDetail": "Requests fail as they would without a network; live updates disconnect.",
+    "acknowledgeSos": "Operations desk acknowledges SOS",
+    "chatAutoReply": "Trip members reply to messages",
+    "autoplayAdaptation": "Travel update arrives on the active trip",
+    "failNextGeneration": "Next itinerary generation fails",
+    "failNextAccept": "Next change approval fails"
+  },
+  "trigger": {
+    "title": "Trigger",
+    "adaptation": "Send a travel update to the active trip",
+    "adaptationDone": "Travel update sent",
+    "message": "Receive a trip message",
+    "messageDone": "Incoming message on its way",
+    "expire": "Expire pending suggestions",
+    "expireDone": "Pending suggestions expired",
+    "session": "Expire my session",
+    "sessionDone": "Session expired on the server",
+    "reset": "Reset all sample data"
+  }
+}

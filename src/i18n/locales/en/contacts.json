@@ -1,0 +1,52 @@
+{
+  "eyebrow": "Safety",
+  "title": "Trusted contacts",
+  "description": "People who should hear from you in an emergency.",
+  "signIn": "Trusted contacts are private to your account.",
+  "notify": {
+    "sos": {
+      "label": "SOS alerts",
+      "description": "When you send an SOS."
+    },
+    "missed_check_in": {
+      "label": "Missed check-ins",
+      "description": "When you don’t check in on time."
+    },
+    "location_share": {
+      "label": "Location sharing",
+      "description": "Lets you share your live location with them."
+    }
+  },
+  "updated": "Contact updated",
+  "added": "Contact added",
+  "editTitle": "Edit {name}",
+  "addTitle": "Add a trusted contact",
+  "dialogDescription": "Choose someone who would want to know if you need help.",
+  "add": "Add contact",
+  "name": "Name",
+  "relationship": "Relationship",
+  "relationshipHint": "e.g. Brother, Friend, Colleague",
+  "phone": "Phone",
+  "phoneCurrent": "Current: {value}. Leave empty to keep it.",
+  "phoneHint": "Add a phone number or an email.",
+  "email": "Email",
+  "emailCurrent": "Current: {value}. Leave empty to keep it.",
+  "emailHint": "If they use TravIndi with this email, alerts reach them in the app.",
+  "tellThem": "Tell them about",
+  "loading": "Loading trusted contacts",
+  "howReachedTitle": "How contacts are reached",
+  "howReached": "In-app alerts reach contacts who use TravIndi with the email you add. SMS and phone calls aren’t connected yet, so in an emergency also contact them directly.",
+  "emptyTitle": "No trusted contacts yet",
+  "emptyDescription": "Add up to five people who should hear from you if you send an SOS.",
+  "addContact": "Add a contact",
+  "confirmed": "Confirmed",
+  "notYetConfirmed": "Not yet confirmed",
+  "alertsTheyReceive": "Alerts they receive",
+  "editLabel": "Edit {name}",
+  "removeLabel": "Remove {name}",
+  "maxReached": "You’ve added the maximum of {count} contacts.",
+  "removeTitle": "Remove {name}?",
+  "removeDescription": "They won’t receive SOS alerts or location shares from you any more.",
+  "keep": "Keep",
+  "removed": "{name} removed"
+}

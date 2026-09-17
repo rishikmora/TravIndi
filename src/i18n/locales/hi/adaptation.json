@@ -1,0 +1,167 @@
+{
+  "status": {
+    "proposed": {
+      "label": "प्रस्तावित",
+      "description": "आपकी समीक्षा का इंतज़ार है।"
+    },
+    "approved": {
+      "label": "स्वीकृत",
+      "description": "स्वीकार किया गया और लागू किया जा रहा है।"
+    },
+    "applied": {
+      "label": "लागू",
+      "description": "आपका यात्रा-कार्यक्रम अपडेट कर दिया गया।"
+    },
+    "rejected": {
+      "label": "अस्वीकृत",
+      "description": "आपने अपनी मौजूदा योजना रखी।"
+    },
+    "expired": {
+      "label": "समाप्त",
+      "description": "अब मान्य नहीं। कुछ भी नहीं बदला गया।"
+    },
+    "failed": {
+      "label": "विफल",
+      "description": "लागू नहीं किया जा सका। कुछ भी नहीं बदला गया।"
+    },
+    "stale": {
+      "label": "पुराना",
+      "description": "यह सुझाव दिए जाने के बाद आपका यात्रा-कार्यक्रम बदल गया।"
+    }
+  },
+  "changeType": {
+    "unchanged": "कोई बदलाव नहीं",
+    "moved": "समय/जगह बदली",
+    "removed": "हटाया गया",
+    "added": "जोड़ा गया"
+  },
+  "trigger": {
+    "crowd": "भीड़",
+    "weather": "मौसम",
+    "closure": "बंद",
+    "transport": "परिवहन",
+    "safety": "सुरक्षा",
+    "schedule": "समय-सारणी",
+    "user_request": "आपका अनुरोध",
+    "other": "अपडेट"
+  },
+  "toasts": {
+    "kept": "आपकी मौजूदा योजना बनी रही",
+    "keepFailed": "आपका चुनाव सहेजा नहीं जा सका",
+    "keepFailedDetail": "आपकी योजना नहीं बदली है। कृपया फिर से कोशिश करें।"
+  },
+  "review": {
+    "confidence": {
+      "high": "ज़्यादा",
+      "medium": "मध्यम",
+      "low": "कम"
+    },
+    "announceApplied": "संस्करण {version} बना। आपका यात्रा कार्यक्रम अपडेट हो गया।",
+    "announceKept": "आपकी मौजूदा योजना बनी रही।",
+    "titles": {
+      "reviewing": "यह बदलाव जाँचें",
+      "applying": "बदलाव लागू हो रहा है…",
+      "rejecting": "आपकी मौजूदा योजना रखी जा रही है…",
+      "applied": "संस्करण {version} बना",
+      "appliedGeneric": "बदलाव लागू हुआ",
+      "kept": "मौजूदा योजना बनी रही",
+      "conflict": "आपकी गैरमौजूदगी में आपका यात्रा कार्यक्रम बदल गया",
+      "expired": "इस सुझाव की समय-सीमा खत्म हो गई",
+      "failed": "बदलाव लागू नहीं हो सका",
+      "fallback": "यात्रा अपडेट"
+    },
+    "keepCurrent": "मौजूदा योजना रखें",
+    "applyOption": "यह विकल्प लागू करें",
+    "apply": "बदलाव लागू करें",
+    "viewUpdated": "अपडेट हुआ यात्रा कार्यक्रम देखें",
+    "whatChanged": "क्या बदला",
+    "currentAndRecommended": "मौजूदा और सुझाया गया",
+    "current": "मौजूदा",
+    "recommended": "सुझाया गया",
+    "why": "क्यों",
+    "howSure": "हमें कितना भरोसा है: {level}",
+    "impact": "असर",
+    "chooseAnother": "दूसरा विकल्प चुनें",
+    "goTo": "{title} पर जाएँ",
+    "recommendedChange": "सुझाया गया बदलाव",
+    "seeEveryChange": "अपनी योजना का हर बदलाव देखें",
+    "nothingUntilChoose": "जब तक आप नहीं चुनते, कुछ नहीं बदलता। मौजूदा योजना रखने पर वह जैसी है वैसी ही रहती है।",
+    "updatedTitle": "आपका यात्रा कार्यक्रम अपडेट हो गया",
+    "versionKept": "संस्करण {version} आपके इतिहास में सुरक्षित है।",
+    "appliedPill": "लागू",
+    "nothingChanged": "कुछ नहीं बदला",
+    "keptBody": "आपकी योजना जैसी है वैसी ही रहेगी। यह सुझाव आपको यात्रा के इतिहास में मिलेगा।",
+    "nothingApplied": "कुछ भी लागू नहीं हुआ",
+    "conflictBody": "यह सुझाव बनने के बाद आपका यात्रा कार्यक्रम बदल गया, इसलिए अब यह मेल नहीं खाता। अपनी योजना का नया संस्करण देखें।",
+    "expiredBody": "हालात बदलते रहते हैं, इसलिए सुझाव थोड़ी ही देर के लिए मान्य रहते हैं। आपकी मौजूदा योजना कायम है।"
+  },
+  "banner": {
+    "travelUpdate": "यात्रा अपडेट",
+    "reviewChange": "बदलाव जाँचें",
+    "validFor": "लगभग {minutes} मिनट और मान्य",
+    "aboutToExpire": "समय-सीमा खत्म होने वाली है",
+    "cannotReview": "यात्रा के मालिक या संपादक यह बदलाव जाँच सकते हैं।",
+    "announce": "यात्रा अपडेट: {summary}"
+  },
+  "replan": {
+    "presets": {
+      "more_relaxed": "ज़्यादा आरामदेह",
+      "less_walking": "कम पैदल चलना",
+      "avoid_crowds": "भीड़ से बचें",
+      "cheaper": "सस्ता",
+      "more_heritage": "ज़्यादा विरासत स्थल",
+      "more_food": "ज़्यादा खान-पान",
+      "improve_safety": "ज़्यादा सुरक्षित विकल्प"
+    },
+    "title": "मेरी योजना बदलें",
+    "description": "बताएँ कि क्या ठीक नहीं लग रहा। हम एक बदलाव सुझाएँगे, जिसे आप पहले जाँच सकेंगे।",
+    "finding": "बदलाव खोजा जा रहा है…",
+    "suggest": "बदलाव सुझाएँ",
+    "quickChanges": "झटपट बदलाव",
+    "describe": "या खुद बताएँ",
+    "placeholder": "जैसे मेरे माता-पिता थक गए हैं — दिन 2 हल्का कर दें",
+    "whichPart": "यात्रा का कौन-सा हिस्सा?",
+    "wholeTrip": "पूरी यात्रा",
+    "noChange": "कोई बदलाव नहीं सुझाया गया"
+  },
+  "history": {
+    "trigger": {
+      "generated": "बनाया गया",
+      "adaptation": "यात्रा अपडेट",
+      "user_edit": "बदला गया",
+      "replan": "आपका अनुरोध"
+    },
+    "title": "यात्रा का इतिहास",
+    "description": "आपके यात्रा कार्यक्रम का हर संस्करण, और सुझाया गया हर बदलाव।",
+    "versions": "संस्करण",
+    "loadingVersions": "संस्करण लोड हो रहे हैं",
+    "currentVersion": "मौजूदा",
+    "changes_one": "{count} बदलाव",
+    "changes_other": "{count} बदलाव",
+    "suggestions": "सुझाव",
+    "loadingSuggestions": "सुझाव लोड हो रहे हैं",
+    "none": "इस यात्रा के लिए कोई बदलाव नहीं सुझाया गया है।",
+    "createdVersion": "संस्करण {version} बना।"
+  },
+  "impact": {
+    "notCalculated": "इस बदलाव के असर का हिसाब नहीं लगाया गया है।",
+    "noChange": "कोई बदलाव नहीं",
+    "noKnownChange": "कोई ज्ञात बदलाव नहीं",
+    "unknown": "पता नहीं",
+    "mayIncrease": "बढ़ सकता है",
+    "mayDecrease": "घट सकता है",
+    "travelTime": "सफ़र का समय",
+    "distance": "दूरी",
+    "cost": "खर्च",
+    "safety": "सुरक्षा",
+    "safetyStatus": {
+      "improved": "बेहतर",
+      "unchanged": "कोई ज्ञात बदलाव नहीं",
+      "reduced": "कम",
+      "unknown": "पता नहीं"
+    }
+  },
+  "diff": {
+    "dayChanges": "दिन {day} के बदलाव"
+  }
+}

@@ -2,6 +2,7 @@
 
 import { scrollToChapter } from '@/animations/scroll';
 import { chapters } from '@/data/journey';
+import { useTranslation } from '@/i18n/react';
 import { useJourneyStore } from '@/store/journey';
 import { cn } from '@/utils/cn';
 
@@ -11,11 +12,12 @@ export function ProgressRail() {
   const phase = useJourneyStore((s) => s.loadPhase);
   const visible = useJourneyStore((s) => s.stageVisible);
   const hidden = phase !== 'entered' || !visible;
+  const { t } = useTranslation();
 
   return (
     <>
       <nav
-        aria-label="Journey chapters"
+        aria-label={t('journey.rail.label')}
         className={cn(
           'fixed right-[clamp(0.75rem,2vw,1.75rem)] top-1/2 z-40 hidden -translate-y-1/2 transition-opacity duration-700 md:block',
           hidden && 'pointer-events-none opacity-0',
@@ -30,11 +32,11 @@ export function ProgressRail() {
                   type="button"
                   onClick={() => scrollToChapter(i)}
                   aria-current={current ? 'step' : undefined}
-                  aria-label={`Chapter ${chapter.number}: ${chapter.name}`}
+                  aria-label={t('journey.rail.chapter', { number: chapter.number, name: t.dynamic(`journey.chapters.${chapter.id}.name`) })}
                   className="group flex items-center gap-3 rounded-full py-1 pl-3 text-paper"
                 >
                   <span className="label translate-x-1 opacity-0 transition-[opacity,transform] duration-300 group-hover:translate-x-0 group-hover:opacity-80 group-focus-visible:translate-x-0 group-focus-visible:opacity-80">
-                    {chapter.name}
+                    {t.dynamic(`journey.chapters.${chapter.id}.name`)}
                   </span>
                   <span
                     className={cn(

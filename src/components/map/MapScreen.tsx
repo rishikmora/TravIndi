@@ -13,7 +13,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth/provider';
 import { useCapabilities } from '@/lib/capabilities/useCapabilities';
 import { formatDistance } from '@/lib/format/dates';
-import { LOCATION_FRESHNESS_LABEL, locationFreshness } from '@/lib/format/freshness';
+import { locationFreshness, locationFreshnessLabel } from '@/lib/format/freshness';
 import { useDestinations } from '@/lib/query/hooks/destinations';
 import { useVisibleShares } from '@/lib/query/hooks/location';
 import { queryKeys } from '@/lib/query/keys';
@@ -64,7 +64,7 @@ export function MapScreen({ focus, destinationSlug }: { focus: { lat: number; ln
     for (const signal of layerData.data?.crowdSignals ?? []) list.push({ id: signal.signalId, lat: signal.coordinates.lat, lng: signal.coordinates.lng, label: signal.label, kind: 'crowd', detail: `Level: ${signal.level}` });
     if (layers.includes('people')) {
       for (const share of shares.data ?? []) {
-        if (share.lastLocation) list.push({ id: share.shareId, lat: share.lastLocation.latitude, lng: share.lastLocation.longitude, label: share.ownerName, kind: 'person', detail: now ? LOCATION_FRESHNESS_LABEL[locationFreshness(share.lastLocationAt, now)] : null });
+        if (share.lastLocation) list.push({ id: share.shareId, lat: share.lastLocation.latitude, lng: share.lastLocation.longitude, label: share.ownerName, kind: 'person', detail: now ? locationFreshnessLabel(locationFreshness(share.lastLocationAt, now)) : null });
       }
     }
     const zones: MapArea[] = (layerData.data?.safetyZones ?? []).map((zone) => ({ id: zone.zoneId, coordinates: zone.geometry.coordinates[0] ?? [], label: zone.label }));

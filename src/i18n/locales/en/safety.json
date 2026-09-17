@@ -1,0 +1,165 @@
+{
+  "incidentCategory": {
+    "theft": {
+      "label": "Theft",
+      "description": "Something was stolen, or someone tried."
+    },
+    "harassment": {
+      "label": "Harassment",
+      "description": "Unwanted attention, following or threats."
+    },
+    "scam": {
+      "label": "Scam or overcharging",
+      "description": "Fake services, tricks or unfair prices."
+    },
+    "accident": {
+      "label": "Accident",
+      "description": "A road, transport or other accident."
+    },
+    "medical": {
+      "label": "Medical",
+      "description": "Someone was unwell or injured."
+    },
+    "lost_item": {
+      "label": "Lost item",
+      "description": "You lost something and want it on record."
+    },
+    "unsafe_area": {
+      "label": "Unsafe place",
+      "description": "Poor lighting, hazards or a place that felt unsafe."
+    },
+    "other": {
+      "label": "Something else",
+      "description": "Anything that doesn’t fit above."
+    }
+  },
+  "severity": {
+    "low": "Low",
+    "moderate": "Moderate",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "incidentStatus": {
+    "reported": "Reported",
+    "verified": "Verified",
+    "resolved": "Resolved",
+    "dismissed": "Dismissed"
+  },
+  "level": {
+    "calm": "Calm",
+    "caution": "Caution",
+    "elevated": "Elevated",
+    "unknown": "No data"
+  },
+  "advisory": {
+    "info": "Info",
+    "caution": "Caution",
+    "warning": "Warning",
+    "critical": "Critical"
+  },
+  "helpKind": {
+    "police": "Police",
+    "hospital": "Hospital",
+    "tourist_help": "Tourist help",
+    "embassy": "Embassy",
+    "pharmacy": "Pharmacy"
+  },
+  "centre": {
+    "eyebrow": "Safety",
+    "title": "Safety centre",
+    "description": "What’s happening around you, help nearby, and the people who can reach you."
+  },
+  "context": {
+    "currentLocation": "Your current location",
+    "yourTrip": "Your trip · {name}",
+    "aroundYou": "Around you",
+    "title": "Safety around you",
+    "loading": "Loading safety information",
+    "advisories": "Advisories",
+    "issued": "issued {when}",
+    "helpNearby": "Help nearby",
+    "updateLocation": "Update my location",
+    "useLocation": "Use my location",
+    "locationFallback": "{message} Showing information for your trip instead.",
+    "noHelpPoints": "We don’t have help points for this area. Emergency numbers work anywhere in India.",
+    "distanceAway": "{distance} away (straight line)",
+    "shareForDistance": "Share your location to see distance",
+    "call": "Call",
+    "showingCurrent": "Showing safety information for your current location."
+  },
+  "incidents": {
+    "title": "Recent reports",
+    "description": "Verified reports near your trip. New reports stay private until they’re checked.",
+    "loading": "Loading reports",
+    "empty": "No recent verified reports for this area."
+  },
+  "sharing": {
+    "title": "Location sharing",
+    "active": "{count} active",
+    "notSharing": "You’re not sharing your location with anyone.",
+    "paused": "paused",
+    "until": "until {time}",
+    "manage": "Manage sharing",
+    "share": "Share my location",
+    "stopAll": "Stop all sharing",
+    "confirmTitle": "Stop sharing your location?",
+    "confirmDescription": "Everyone you’re sharing with will immediately stop seeing your location.",
+    "keep": "Keep sharing",
+    "stopped": "Location sharing stopped",
+    "stoppedDetail": "No one can see your location now."
+  },
+  "contactsSummary": {
+    "title": "Trusted contacts",
+    "empty": "Add someone who should hear from you in an emergency.",
+    "confirmed": "Confirmed",
+    "notConfirmed": "Not confirmed",
+    "manage": "Manage contacts",
+    "add": "Add a contact"
+  },
+  "checkIns": {
+    "title": "Check-ins",
+    "description": "A reminder to confirm you’re OK. TravIndi records whether you checked in on time.",
+    "fallbackName": "Check-in",
+    "missedDue": "Missed · was due {time}",
+    "due": "Due {time}",
+    "relative": "({when})",
+    "imOk": "I’m OK",
+    "checkedIn": "Checked in. Thanks for letting us know you’re OK.",
+    "inOneHour": "Check in 1 hour",
+    "inThreeHours": "In 3 hours",
+    "scheduled": "Check-in scheduled",
+    "scheduledDetail": "We’ll ask if you’re OK at {time}."
+  },
+  "signInPrompt": {
+    "title": "Sign in for personal safety tools",
+    "body": "Location sharing, trusted contacts and check-ins are tied to your account."
+  },
+  "tools": {
+    "label": "Safety tools",
+    "report": "Report an incident",
+    "reportDetail": "Theft, harassment, scams, unsafe places",
+    "verify": "Verify a guide or business",
+    "verifyDetail": "Check their evidence before you pay",
+    "routes": "Compare routes",
+    "routesDetail": "See trade-offs, not just the fastest way",
+    "fraud": "Report fraud",
+    "fraudDetail": "Fake listings, impersonation, payment scams"
+  },
+  "emergency": {
+    "title": "In immediate danger? Call 112.",
+    "call": "Call 112",
+    "ambulance": "Ambulance",
+    "touristHelpline": "Tourist helpline",
+    "notConnected": "TravIndi isn’t connected to emergency services. Calls go straight from your phone."
+  },
+  "location": {
+    "denied": "Location permission is turned off for this site.",
+    "unsupported": "This browser can’t share location.",
+    "timeout": "Finding your location took too long.",
+    "unavailable": "Your location isn’t available right now."
+  },
+  "trip": {
+    "shareWithTrip": "Share my location with this trip",
+    "trustedContacts": "Trusted contacts"
+  }
+}

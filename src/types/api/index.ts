@@ -14,4 +14,5 @@ export type * from './partner';
 export type * from './platform';
 export type * from './providers';
 export type * from './safety';
+export type * from './transport';
 export type * from './trips';

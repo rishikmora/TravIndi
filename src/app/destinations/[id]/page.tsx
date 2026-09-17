@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DestinationDetail } from '@/components/destinations/DestinationDetail';
+import en from '@/i18n/locales/en';
 import { getPublicDestination } from '@/lib/api/server';
 import { env } from '@/lib/config/env';
 import { isTrustedImageUrl } from '@/lib/media/trusted';
@@ -12,7 +13,7 @@ const SLUG = /^[a-z0-9-]{1,80}$/;
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const destination = SLUG.test(id) ? await getPublicDestination(id) : null;
-  if (!destination) return { title: 'Destination not found', robots: { index: false } };
+  if (!destination) return { title: en.destinations.detail.notFound, robots: { index: false } };
   const description = (destination.description[0] ?? destination.tagline).slice(0, 155);
   const title = `${destination.name}, ${destination.state}`;
   const image = destination.heroImage && isTrustedImageUrl(destination.heroImage.url) ? destination.heroImage : null;

@@ -1,0 +1,109 @@
+{
+  "itemStatus": {
+    "in_progress": "Now",
+    "done": "Done",
+    "skipped": "Skipped",
+    "changed": "Changed",
+    "at_risk": "At risk"
+  },
+  "walking": {
+    "low": "Little walking",
+    "moderate": "Some walking",
+    "high": "A lot of walking"
+  },
+  "stepFree": {
+    "yes": "Step-free",
+    "no": "Has steps",
+    "unknown": "Step-free access not confirmed"
+  },
+  "travelBy": {
+    "walk": "by walking",
+    "car": "by own car",
+    "taxi": "by taxi or cab",
+    "auto_rickshaw": "by auto-rickshaw",
+    "metro": "by metro",
+    "bus": "by bus",
+    "train": "by train",
+    "flight": "by flight",
+    "boat": "by boat"
+  },
+  "view": {
+    "loading": "Loading itinerary",
+    "offers": {
+      "stay_one": "{count} stay",
+      "stay_other": "{count} stays",
+      "package_one": "{count} package",
+      "package_other": "{count} packages",
+      "cab_one": "{count} cab",
+      "cab_other": "{count} cabs"
+    },
+    "offersMatched": "{list} matched to this plan.",
+    "version": "Version {version}",
+    "updated": "updated {when}",
+    "changePlan": "Change my plan",
+    "history": "History",
+    "worthChecking": "Worth checking",
+    "daysLabel": "Days",
+    "day": "Day {day}",
+    "today": "Today",
+    "stops_one": "{count} stop",
+    "stops_other": "{count} stops",
+    "nothingPlanned": "Nothing planned for this day — time to rest or explore at your own pace.",
+    "summaryLabel": "Trip summary",
+    "readyToBook": "Ready to book?",
+    "seeOffers": "See stays, packages and cabs",
+    "aboutPlan": "About this plan",
+    "timesNote": "Times are local. Travel times are estimates, not live traffic."
+  },
+  "item": {
+    "estimate": "(estimate)",
+    "whyThis": "Why this?",
+    "whyLabel": "Why is {title} in your plan?",
+    "booked": "Booked",
+    "bookedLabel": "{title}: booked. View booking",
+    "bookStay": "Book a stay",
+    "bookCab": "Book a cab"
+  },
+  "detail": {
+    "whyTitle": "Why this is in your plan",
+    "noReason": "No specific reason was recorded for this stop.",
+    "about": "About",
+    "gettingThere": "Getting there",
+    "fromPreviousEstimate": "{leg} from the previous stop (estimate)",
+    "access": "Access",
+    "walkingUnknown": "Walking level not confirmed",
+    "cost": "Cost",
+    "estimate": "Estimate",
+    "noPrice": "We don’t have reliable price information for this stop, so it isn’t counted in your budget.",
+    "safetyNote": "Safety note",
+    "seeOnMap": "See on the trip map"
+  },
+  "budget": {
+    "title": "Budget",
+    "confirmed": "Confirmed prices",
+    "estimates": "Estimates",
+    "none": "None",
+    "range": "{min}–{max}",
+    "unavailable": "Cost unavailable",
+    "yourBudget": "Your budget",
+    "left": "Left after confirmed prices",
+    "note": "Totals include only prices we know. Estimates and stops without cost information aren’t added to what’s left."
+  },
+  "generate": {
+    "emptyTitle": "No itinerary yet",
+    "canEdit": "Your trip details are saved. Build a day-by-day plan when you’re ready.",
+    "cannotEdit": "The trip owner hasn’t built an itinerary yet.",
+    "build": "Build itinerary",
+    "needMore": "We need a little more first"
+  },
+  "map": {
+    "dayLabel": "Day",
+    "orderLine": "Order of stops (straight lines, not routes)",
+    "showPeople": "Travellers sharing location",
+    "compareRoutes": "Compare routes",
+    "dashedNote": "Dashed lines show the order of stops, not the way to travel between them.",
+    "dayStops": "Day {day} stops",
+    "dayStopsInOrder": "Day {day} stops in order",
+    "noStops": "No mapped stops on this day."
+  }
+}

@@ -1,4 +1,12 @@
+import { translate } from '@/i18n/runtime';
+
 export type GeolocationFailure = 'unsupported' | 'denied' | 'unavailable' | 'timeout';
+
+/** What to tell the traveller about a failed location lookup, in their language. */
+export function geolocationMessage(error: unknown): string {
+  const reason: GeolocationFailure = error instanceof GeolocationError ? error.reason : 'unavailable';
+  return translate(`safety.location.${reason}`);
+}
 
 export class GeolocationError extends Error {
   constructor(readonly reason: GeolocationFailure) {

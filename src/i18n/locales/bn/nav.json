@@ -1,0 +1,20 @@
+{
+  "primary": "প্রধান",
+  "items": {
+    "home": "হোম",
+    "discover": "অন্বেষণ",
+    "trips": "ভ্রমণ",
+    "map": "মানচিত্র",
+    "messages": "বার্তা",
+    "safety": "নিরাপত্তা",
+    "profile": "প্রোফাইল"
+  },
+  "homeLink": "TravIndi হোম",
+  "search": "গন্তব্য, গাইড ও জায়গা খুঁজুন",
+  "notifications": "বিজ্ঞপ্তি",
+  "unreadMessages_one": ", {count}টি না-পড়া বার্তা",
+  "unreadMessages_other": ", {count}টি না-পড়া বার্তা",
+  "unreadNotifications_one": ", {count}টি না-পড়া বিজ্ঞপ্তি",
+  "unreadNotifications_other": ", {count}টি না-পড়া বিজ্ঞপ্তি",
+  "profile": "আপনার প্রোফাইল, {name}"
+}

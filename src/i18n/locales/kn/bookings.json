@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿದೆ",
+      "description": "ಸೇವಾ ಪೂರೈಕೆದಾರರ ದೃಢೀಕರಣಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ."
+    },
+    "confirmed": {
+      "label": "ದೃಢಪಟ್ಟಿದೆ",
+      "description": "ಸೇವಾ ಪೂರೈಕೆದಾರರು ಈ ಬುಕಿಂಗ್ ಅನ್ನು ದೃಢಪಡಿಸಿದ್ದಾರೆ."
+    },
+    "payment_pending": {
+      "label": "ಪಾವತಿ ಬಾಕಿ",
+      "description": "ಸೇವಾ ಪೂರೈಕೆದಾರರಿಗೆ ನೇರವಾಗಿ ಪಾವತಿಸಿ. TravIndiಯಲ್ಲಿ ಆನ್‌ಲೈನ್ ಪಾವತಿ ಇನ್ನೂ ಲಭ್ಯವಿಲ್ಲ."
+    },
+    "failed": {
+      "label": "ವಿಫಲವಾಗಿದೆ",
+      "description": "ಈ ಬುಕಿಂಗ್ ಪೂರ್ಣಗೊಳ್ಳಲಿಲ್ಲ. ಯಾವುದೇ ಪಾವತಿ ಪಡೆದಿಲ್ಲ."
+    },
+    "cancelled": {
+      "label": "ರದ್ದಾಗಿದೆ",
+      "description": "ಈ ಬುಕಿಂಗ್ ಅನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗಿದೆ."
+    }
+  },
+  "unitPrice": {
+    "person": "ಒಬ್ಬರಿಗೆ",
+    "room_night": "ಪ್ರತಿ ಕೊಠಡಿ, ಪ್ರತಿ ರಾತ್ರಿ",
+    "vehicle": "ಪ್ರತಿ ವಾಹನಕ್ಕೆ",
+    "group": "ಪ್ರತಿ ಬುಕಿಂಗ್‌ಗೆ"
+  },
+  "unitQuantity": {
+    "person": "ಪ್ರಯಾಣಿಕರು",
+    "room_night": "ಕೊಠಡಿಗಳು",
+    "vehicle": "ವಾಹನಗಳು",
+    "group": "ಗುಂಪಿನ ಗಾತ್ರ"
+  },
+  "quantity": {
+    "rooms_one": "{count} ಕೊಠಡಿ",
+    "rooms_other": "{count} ಕೊಠಡಿಗಳು",
+    "nights_one": "{count} ರಾತ್ರಿ",
+    "nights_other": "{count} ರಾತ್ರಿಗಳು",
+    "vehicles_one": "{count} ವಾಹನ",
+    "vehicles_other": "{count} ವಾಹನಗಳು",
+    "people_one": "{count} ವ್ಯಕ್ತಿ",
+    "people_other": "{count} ಜನರು",
+    "group": "{count} ಜನರ ಗುಂಪು"
+  }
+}

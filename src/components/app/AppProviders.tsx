@@ -2,6 +2,7 @@
 
 import { onlineManager, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useState } from 'react';
+import { LanguagePreferenceSync } from '@/components/app/LanguagePreferenceSync';
 import { LocationBroadcaster } from '@/components/location/LocationBroadcaster';
 import { AuthProvider, useAuth } from '@/lib/auth/provider';
 import { sessionEvents } from '@/lib/auth/session-events';
@@ -24,7 +25,7 @@ function SyncCoordinator() {
       try {
         await queryClient.invalidateQueries();
         const result = status === 'authenticated' ? await flushOutbox() : { rejected: 0, remaining: 0 };
-        if (result.remaining > 0) send('SYNC_FAILED', { error: `${result.remaining} saved action(s) are still waiting to send.` });
+        if (result.remaining > 0) send('SYNC_FAILED', { error: 'outbox_pending' });
         else send('SYNC_SUCCEEDED');
       } catch {
         send('SYNC_FAILED');
@@ -71,6 +72,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SyncCoordinator />
+        <LanguagePreferenceSync />
         <RealtimeBridge>{children}</RealtimeBridge>
       </AuthProvider>
     </QueryClientProvider>

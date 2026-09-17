@@ -1,5 +1,6 @@
 import type { CostDto, ID, ImageDto, ISODate, ISODateTime, ReasonDto } from './common';
 import type { AvailabilityDto, BusinessCategory, ServiceDto, ServiceUnit } from './providers';
+import type { TransportDetailsDto } from './transport';
 
 export interface ProviderRefDto {
   provider_id: ID;
@@ -34,6 +35,8 @@ export interface BookingQuoteDto {
   cancellation_policy: string | null;
   expires_at: ISODateTime;
   payment: { required: boolean; supported: boolean };
+  /** Set on quotes from `POST /v1/transport/quotes`: the journey being booked. */
+  transport?: TransportDetailsDto | null;
 }
 
 export interface CreateBookingRequestDto {
@@ -77,6 +80,8 @@ export interface BookingDto {
   failure_reason: string | null;
   created_at: ISODateTime;
   updated_at: ISODateTime;
+  /** Flights, buses, metro tickets and cab rides: the journey booked. Absent for other bookings. */
+  transport?: TransportDetailsDto | null;
 }
 
 export type RecommendedOfferKind = 'stay' | 'package' | 'cab';

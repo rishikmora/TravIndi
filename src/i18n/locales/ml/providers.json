@@ -1,0 +1,32 @@
+{
+  "trust": {
+    "evidence": {
+      "identity": "തിരിച്ചറിയൽ",
+      "business_registration": "സ്ഥാപന രജിസ്ട്രേഷൻ",
+      "credential": "ഗൈഡ് ലൈസൻസ്",
+      "review_authenticity": "അവലോകനങ്ങളുടെ ആധികാരികത",
+      "availability": "ലഭ്യത"
+    },
+    "evidenceStatus": {
+      "verified": "പരിശോധിച്ചുറപ്പിച്ചു",
+      "pending": "തീർപ്പാകാനുണ്ട്",
+      "expired": "കാലാവധി കഴിഞ്ഞു",
+      "unverified": "പരിശോധിച്ചിട്ടില്ല",
+      "rejected": "നിരസിച്ചു"
+    },
+    "summary": {
+      "verified": "പരിശോധിച്ചുറപ്പിച്ചത്",
+      "identity": "തിരിച്ചറിയൽ പരിശോധിച്ചു",
+      "pending": "പരിശോധന തീർപ്പാകാനുണ്ട്",
+      "unverified": "പരിശോധിച്ചിട്ടില്ല"
+    },
+    "reputation": {
+      "underReview": "അവലോകനങ്ങൾ പരിശോധിക്കുന്നു",
+      "notEnough": "റേറ്റിംഗ് നൽകാൻ ആവശ്യത്തിന് അവലോകനങ്ങൾ ഇതുവരെയില്ല ({count})",
+      "none": "ഇതുവരെ അവലോകനങ്ങളില്ല",
+      "rating_one": "{count} അവലോകനത്തിൽനിന്ന് {rating}",
+      "rating_other": "{count} അവലോകനങ്ങളിൽനിന്ന് {rating}",
+      "limited": "{base} · പരിമിതമായ ഡാറ്റ"
+    }
+  }
+}

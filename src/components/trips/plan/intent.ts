@@ -1,3 +1,5 @@
+import { getTranslator, translate } from '@/i18n/runtime';
+import { translatedLabels } from '@/i18n/vocabulary';
 import { formatDateRange } from '@/lib/format/dates';
 import { formatMoney } from '@/lib/format/money';
 import type { TransportMode, TripType } from '@/types/api';
@@ -10,56 +12,57 @@ import type { Ambiguity, IntentExtraction, Travellers, TripIntent, TripIntentFie
 
 export const INTEREST_OPTIONS = ['heritage', 'temples', 'food', 'nature', 'museums', 'shopping', 'art & crafts', 'photography', 'spiritual', 'wildlife', 'beaches', 'trekking', 'culture'] as const;
 
+/** Interest and avoid values stay in English on the wire; only their labels are translated. */
+const valueKey = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+export const interestLabel = (interest: string) =>
+  getTranslator().dynamic(`planner.interests.${valueKey(interest)}`, undefined, { fallback: interest[0]!.toUpperCase() + interest.slice(1) });
+
+export const avoidLabel = (value: string) => getTranslator().dynamic(`planner.avoid.${valueKey(value)}`, undefined, { fallback: value });
+
 export const AVOID_OPTIONS = [
-  { value: 'crowds', label: 'Crowds' },
-  { value: 'long drives', label: 'Long drives' },
-  { value: 'late-night travel', label: 'Late-night travel' },
+  {
+    value: 'crowds',
+    get label() {
+      return translate('planner.avoid.crowds');
+    },
+  },
+  {
+    value: 'long drives',
+    get label() {
+      return translate('planner.avoid.long_drives');
+    },
+  },
+  {
+    value: 'late-night travel',
+    get label() {
+      return translate('planner.avoid.late_night_travel');
+    },
+  },
 ] as const;
 
-export const PACE_LABEL = { relaxed: 'Relaxed pace', balanced: 'Balanced pace', active: 'Full days' } as const;
-export const SAFETY_LABEL = { standard: 'Standard care', high: 'Extra safety care', maximum: 'Maximum safety care' } as const;
+export const PACE_LABEL = translatedLabels(['relaxed', 'balanced', 'active'] as const, (pace) => `planner.pace.${pace}`);
+export const SAFETY_LABEL = translatedLabels(['standard', 'high', 'maximum'] as const, (level) => `planner.safety.${level}`);
 
-export const TRIP_TYPE_LABEL: Record<TripType, string> = {
-  leisure: 'Leisure',
-  family: 'Family trip',
-  heritage: 'Heritage trip',
-  pilgrimage: 'Pilgrimage',
-  adventure: 'Adventure',
-  honeymoon: 'Honeymoon',
-  solo: 'Solo',
-  friends: 'With friends',
-  business: 'Business',
-};
+export const TRIP_TYPE_LABEL: Record<TripType, string> = translatedLabels(
+  ['leisure', 'family', 'heritage', 'pilgrimage', 'adventure', 'honeymoon', 'solo', 'friends', 'business'] as const,
+  (type) => `planner.tripType.${type}`,
+);
 
-export const DIET_LABEL = {
-  vegetarian: 'Vegetarian',
-  vegan: 'Vegan',
-  jain: 'Jain',
-  non_vegetarian: 'Non-vegetarian',
-  eggetarian: 'Eggetarian',
-  halal: 'Halal',
-  no_preference: 'No food preference',
-} as const;
+export const DIET_LABEL = translatedLabels(
+  ['vegetarian', 'vegan', 'jain', 'non_vegetarian', 'eggetarian', 'halal', 'no_preference'] as const,
+  (diet) => `planner.diet.${diet}`,
+);
 
-export const TRANSPORT_LABEL: Record<TransportMode, string> = {
-  walk: 'Walking',
-  car: 'Own car',
-  taxi: 'Taxi or cab',
-  auto_rickshaw: 'Auto-rickshaw',
-  metro: 'Metro',
-  bus: 'Bus',
-  train: 'Train',
-  flight: 'Flight',
-  boat: 'Boat',
-};
+export const TRANSPORT_LABEL: Record<TransportMode, string> = translatedLabels(
+  ['walk', 'car', 'taxi', 'auto_rickshaw', 'metro', 'bus', 'train', 'flight', 'boat'] as const,
+  (mode) => `planner.transport.${mode}`,
+);
 
-export const ACCOMMODATION_LABEL = {
-  budget: 'Budget stays',
-  mid_range: 'Mid-range hotels',
-  premium: 'Premium hotels',
-  heritage: 'Heritage stays',
-  homestay: 'Homestays',
-} as const;
+export const ACCOMMODATION_LABEL = translatedLabels(
+  ['budget', 'mid_range', 'premium', 'heritage', 'homestay'] as const,
+  (kind) => `planner.accommodation.${kind}`,
+);
 
 /** Wire field names ("start_date") → intent keys ("startDate"). */
 export const toIntentKey = (field: string) => field.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase()) as TripIntentField;
@@ -67,17 +70,21 @@ export const toIntentKey = (field: string) => field.replace(/_([a-z])/g, (_, c: 
 export function travellersLabel(t: Travellers | null | undefined) {
   if (!t) return null;
   const parts = [
-    t.adults ? `${t.adults} adult${t.adults === 1 ? '' : 's'}` : null,
-    t.seniors ? `${t.seniors} senior${t.seniors === 1 ? '' : 's'}` : null,
-    t.children ? `${t.children} child${t.children === 1 ? '' : 'ren'}` : null,
+    t.adults ? translate('planner.travellers.adults', { count: t.adults }) : null,
+    t.seniors ? translate('planner.travellers.seniors', { count: t.seniors }) : null,
+    t.children ? translate('planner.travellers.children', { count: t.children }) : null,
   ].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
 }
 
 export function durationLabel(intent: TripIntent) {
   const range = formatDateRange(intent.startDate, intent.endDate);
-  const days = intent.days ? `${intent.days} day${intent.days === 1 ? '' : 's'}` : intent.nights ? `${intent.nights} nights` : null;
-  if (range && days) return `${range} (${days})`;
+  const days = intent.days
+    ? translate('planner.duration.days', { count: intent.days })
+    : intent.nights
+      ? translate('planner.duration.nights', { count: intent.nights })
+      : null;
+  if (range && days) return translate('planner.duration.withRange', { range, days });
   return range ?? days;
 }
 
@@ -102,38 +109,42 @@ export function intentChips(intent: TripIntent, extraction?: IntentExtraction | 
   const chips: IntentChip[] = [];
   const push = (chip: Omit<IntentChip, 'fromProfile'>) => chips.push({ ...chip, fromProfile: profileFields.has(chip.field) });
 
-  if (intent.destination) push({ id: 'destination', field: 'destination', kind: 'Destination', label: intent.destination, remove: (i) => ({ ...i, destination: null, destinationId: null }) });
+  if (intent.destination) push({ id: 'destination', field: 'destination', kind: translate('planner.chips.destination'), label: intent.destination, remove: (i) => ({ ...i, destination: null, destinationId: null }) });
   const duration = durationLabel(intent);
-  if (duration) push({ id: 'duration', field: 'days', kind: 'When', label: duration, remove: (i) => ({ ...i, days: null, nights: null, startDate: null, endDate: null }) });
+  if (duration) push({ id: 'duration', field: 'days', kind: translate('planner.chips.when'), label: duration, remove: (i) => ({ ...i, days: null, nights: null, startDate: null, endDate: null }) });
   const travellers = travellersLabel(intent.travellers);
-  if (travellers) push({ id: 'travellers', field: 'travellers', kind: 'Who', label: travellers, remove: without('travellers') });
-  if (intent.tripType) push({ id: 'tripType', field: 'tripType', kind: 'Trip type', label: TRIP_TYPE_LABEL[intent.tripType], remove: without('tripType') });
-  if (intent.pace) push({ id: 'pace', field: 'pace', kind: 'Pace', label: PACE_LABEL[intent.pace], remove: without('pace') });
+  if (travellers) push({ id: 'travellers', field: 'travellers', kind: translate('planner.chips.who'), label: travellers, remove: without('travellers') });
+  if (intent.tripType) push({ id: 'tripType', field: 'tripType', kind: translate('planner.chips.tripType'), label: TRIP_TYPE_LABEL[intent.tripType], remove: without('tripType') });
+  if (intent.pace) push({ id: 'pace', field: 'pace', kind: translate('planner.chips.pace'), label: PACE_LABEL[intent.pace], remove: without('pace') });
   for (const interest of intent.interests ?? []) {
-    push({ id: `interest-${interest}`, field: 'interests', kind: 'Interest', label: interest[0]!.toUpperCase() + interest.slice(1), remove: withoutItem('interests', interest) });
+    push({ id: `interest-${interest}`, field: 'interests', kind: translate('planner.chips.interest'), label: interestLabel(interest), remove: withoutItem('interests', interest) });
   }
   const access = intent.accessibility;
-  if (access?.lowWalking) push({ id: 'lowWalking', field: 'accessibility', kind: 'Access', label: 'Less walking', remove: (i) => ({ ...i, accessibility: { ...i.accessibility!, lowWalking: false } }) });
-  if (access?.wheelchair) push({ id: 'wheelchair', field: 'accessibility', kind: 'Access', label: 'Wheelchair access', remove: (i) => ({ ...i, accessibility: { ...i.accessibility!, wheelchair: false } }) });
-  if (access?.stepFreeAccess) push({ id: 'stepFree', field: 'accessibility', kind: 'Access', label: 'Step-free access', remove: (i) => ({ ...i, accessibility: { ...i.accessibility!, stepFreeAccess: false } }) });
+  if (access?.lowWalking) push({ id: 'lowWalking', field: 'accessibility', kind: translate('planner.chips.access'), label: translate('planner.chips.lessWalking'), remove: (i) => ({ ...i, accessibility: { ...i.accessibility!, lowWalking: false } }) });
+  if (access?.wheelchair) push({ id: 'wheelchair', field: 'accessibility', kind: translate('planner.chips.access'), label: translate('planner.chips.wheelchair'), remove: (i) => ({ ...i, accessibility: { ...i.accessibility!, wheelchair: false } }) });
+  if (access?.stepFreeAccess) push({ id: 'stepFree', field: 'accessibility', kind: translate('planner.chips.access'), label: translate('planner.chips.stepFree'), remove: (i) => ({ ...i, accessibility: { ...i.accessibility!, stepFreeAccess: false } }) });
   for (const avoid of intent.avoid ?? []) {
-    push({ id: `avoid-${avoid}`, field: 'avoid', kind: 'Avoid', label: `Avoid ${avoid}`, remove: withoutItem('avoid', avoid) });
+    push({ id: `avoid-${avoid}`, field: 'avoid', kind: translate('planner.chips.avoid'), label: translate('planner.avoid.chip', { value: avoidLabel(avoid) }), remove: withoutItem('avoid', avoid) });
   }
   if (intent.budget) {
     const amount = formatMoney(intent.budget.ceiling);
-    const label = amount ? `Up to ${amount} per ${intent.budget.per}` : intent.budget.level ? `${intent.budget.level[0]!.toUpperCase()}${intent.budget.level.slice(1)} budget` : null;
-    if (label) push({ id: 'budget', field: 'budget', kind: 'Budget', label, remove: without('budget') });
+    const label = amount
+      ? translate('planner.chips.upTo', { amount, per: translate(`planner.chips.per.${intent.budget.per}`) })
+      : intent.budget.level
+        ? translate(`planner.chips.budgetLevel.${intent.budget.level}`)
+        : null;
+    if (label) push({ id: 'budget', field: 'budget', kind: translate('planner.chips.budget'), label, remove: without('budget') });
   }
   if (intent.safetyPreference && intent.safetyPreference !== 'standard') {
-    push({ id: 'safety', field: 'safetyPreference', kind: 'Safety', label: SAFETY_LABEL[intent.safetyPreference], remove: without('safetyPreference') });
+    push({ id: 'safety', field: 'safetyPreference', kind: translate('planner.chips.safety'), label: SAFETY_LABEL[intent.safetyPreference], remove: without('safetyPreference') });
   }
-  if (intent.food?.diet && intent.food.diet !== 'no_preference') push({ id: 'diet', field: 'food', kind: 'Food', label: DIET_LABEL[intent.food.diet], remove: without('food') });
+  if (intent.food?.diet && intent.food.diet !== 'no_preference') push({ id: 'diet', field: 'food', kind: translate('planner.chips.food'), label: DIET_LABEL[intent.food.diet], remove: without('food') });
   for (const mode of intent.transport ?? []) {
-    push({ id: `transport-${mode}`, field: 'transport', kind: 'Getting around', label: TRANSPORT_LABEL[mode], remove: withoutItem('transport', mode) });
+    push({ id: `transport-${mode}`, field: 'transport', kind: translate('planner.chips.gettingAround'), label: TRANSPORT_LABEL[mode], remove: withoutItem('transport', mode) });
   }
-  if (intent.accommodation) push({ id: 'accommodation', field: 'accommodation', kind: 'Stay', label: ACCOMMODATION_LABEL[intent.accommodation], remove: without('accommodation') });
+  if (intent.accommodation) push({ id: 'accommodation', field: 'accommodation', kind: translate('planner.chips.stay'), label: ACCOMMODATION_LABEL[intent.accommodation], remove: without('accommodation') });
   if (intent.bookingPreferences?.verifiedProvidersOnly) {
-    push({ id: 'verified', field: 'bookingPreferences', kind: 'Bookings', label: 'Verified providers only', remove: without('bookingPreferences') });
+    push({ id: 'verified', field: 'bookingPreferences', kind: translate('planner.chips.bookings'), label: translate('planner.chips.verifiedOnly'), remove: without('bookingPreferences') });
   }
   return chips;
 }

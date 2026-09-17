@@ -22,6 +22,7 @@ import {
   type TrustRepository,
 } from './providers';
 import { createSafetyRepository, createSosRepository, type SafetyRepository, type SosRepository } from './safety';
+import { createTransportRepository, type TransportRepository } from './transport';
 import { createTripRepository, type TripRepository } from './trips';
 
 /**
@@ -42,6 +43,7 @@ export interface Repositories {
   location: LocationRepository;
   chat: ChatRepository;
   bookings: BookingRepository;
+  transport: TransportRepository;
   businesses: BusinessRepository;
   guides: GuideRepository;
   trust: TrustRepository;
@@ -66,6 +68,7 @@ export function createRepositories(transport: Transport): Repositories {
     location: createLocationRepository(client),
     chat: createChatRepository(client),
     bookings: createBookingRepository(client),
+    transport: createTransportRepository(client),
     businesses: createBusinessRepository(client),
     guides: createGuideRepository(client),
     trust: createTrustRepository(client),
@@ -93,6 +96,7 @@ export type {
   ProfileRepository,
   SafetyRepository,
   SosRepository,
+  TransportRepository,
   TripRepository,
   TrustRepository,
 };

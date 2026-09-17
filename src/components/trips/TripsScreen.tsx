@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { PlusIcon, SuitcaseIcon } from '@/components/ui/icons';
 import { LoadingBlock, Skeleton } from '@/components/ui/Skeleton';
 import { EmptyState, ErrorState } from '@/components/ui/States';
+import { useTranslation } from '@/i18n/react';
 import { useTrips } from '@/lib/query/hooks/trips';
 import type { TripSummary } from '@/types/domain';
 import { TripCard } from './TripCard';
@@ -23,11 +24,12 @@ function Grid({ trips }: { trips: TripSummary[] }) {
 }
 
 function TripsContent() {
+  const { t } = useTranslation();
   const trips = useTrips();
 
   if (trips.isPending) {
     return (
-      <LoadingBlock label="Loading your trips" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <LoadingBlock label={t('trips.list.loading')} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }, (_, i) => (
           <Skeleton key={i} className="aspect-[4/3] w-full rounded-[1.25rem]" />
         ))}
@@ -39,19 +41,19 @@ function TripsContent() {
     return <ErrorState error={trips.error} context="trip.load" onRetry={() => void trips.refetch()} retrying={trips.isFetching} />;
   }
 
-  const upcoming = trips.data.filter((t) => ['active', 'ready', 'planning'].includes(t.status));
-  const drafts = trips.data.filter((t) => t.status === 'draft');
-  const past = trips.data.filter((t) => t.status === 'completed' || t.status === 'cancelled');
+  const upcoming = trips.data.filter((trip) => ['active', 'ready', 'planning'].includes(trip.status));
+  const drafts = trips.data.filter((trip) => trip.status === 'draft');
+  const past = trips.data.filter((trip) => trip.status === 'completed' || trip.status === 'cancelled');
 
   if (trips.data.length === 0) {
     return (
       <EmptyState
         icon={<SuitcaseIcon />}
-        title="No trips yet"
-        description="Tell us where you’d like to go and who’s coming. We’ll build a plan you can change at any time."
+        title={t('trips.list.emptyTitle')}
+        description={t('trips.list.emptyDescription')}
         action={
           <ButtonLink href="/trips/new" variant="accent">
-            Plan my journey
+            {t('trips.list.planMyJourney')}
           </ButtonLink>
         }
         className="surface-card"
@@ -62,17 +64,17 @@ function TripsContent() {
   return (
     <div className="grid gap-12">
       {upcoming.length > 0 && (
-        <Section title="Current and upcoming" id="upcoming">
+        <Section title={t('trips.list.upcoming')} id="upcoming">
           <Grid trips={upcoming} />
         </Section>
       )}
       {drafts.length > 0 && (
-        <Section title="Drafts" description="Finish the details and we’ll build the itinerary." id="drafts">
+        <Section title={t('trips.list.drafts')} description={t('trips.list.draftsDescription')} id="drafts">
           <Grid trips={drafts} />
         </Section>
       )}
       {past.length > 0 && (
-        <Section title="Past trips" id="past">
+        <Section title={t('trips.list.past')} id="past">
           <Grid trips={past} />
         </Section>
       )}
@@ -81,19 +83,20 @@ function TripsContent() {
 }
 
 export function TripsScreen() {
+  const { t } = useTranslation();
   return (
     <PageShell width="wide">
       <PageHeader
-        eyebrow="Trips"
-        title="Your journeys"
+        eyebrow={t('trips.list.eyebrow')}
+        title={t('trips.list.title')}
         actions={
           <ButtonLink href="/trips/new" variant="accent">
             <PlusIcon size={18} />
-            Plan a journey
+            {t('trips.list.planJourney')}
           </ButtonLink>
         }
       />
-      <RequireAuth description="Sign in to see your trips, itineraries and travel updates.">
+      <RequireAuth description={t('trips.list.signIn')}>
         <TripsContent />
       </RequireAuth>
     </PageShell>

@@ -1,0 +1,47 @@
+{
+  "status": {
+    "processing": {
+      "label": "Processing",
+      "description": "Waiting for the provider to confirm."
+    },
+    "confirmed": {
+      "label": "Confirmed",
+      "description": "The provider confirmed this booking."
+    },
+    "payment_pending": {
+      "label": "Payment pending",
+      "description": "Pay the provider directly. Online payment isn’t available in TravIndi yet."
+    },
+    "failed": {
+      "label": "Failed",
+      "description": "This booking couldn’t be completed. No payment was taken."
+    },
+    "cancelled": {
+      "label": "Cancelled",
+      "description": "This booking was cancelled."
+    }
+  },
+  "unitPrice": {
+    "person": "per person",
+    "room_night": "per room, per night",
+    "vehicle": "per vehicle",
+    "group": "per booking"
+  },
+  "unitQuantity": {
+    "person": "Travellers",
+    "room_night": "Rooms",
+    "vehicle": "Vehicles",
+    "group": "Group size"
+  },
+  "quantity": {
+    "rooms_one": "{count} room",
+    "rooms_other": "{count} rooms",
+    "nights_one": "{count} night",
+    "nights_other": "{count} nights",
+    "vehicles_one": "{count} vehicle",
+    "vehicles_other": "{count} vehicles",
+    "people_one": "{count} person",
+    "people_other": "{count} people",
+    "group": "Group of {count}"
+  }
+}

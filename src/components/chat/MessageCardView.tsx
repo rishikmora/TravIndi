@@ -6,7 +6,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { useNow } from '@/hooks/useNow';
 import { isApiError } from '@/lib/api/errors';
 import { formatLocalTime } from '@/lib/format/dates';
-import { LOCATION_FRESHNESS_LABEL, locationFreshness } from '@/lib/format/freshness';
+import { locationFreshness, locationFreshnessLabel } from '@/lib/format/freshness';
 import { useShare } from '@/lib/query/hooks/location';
 import type { MessageCard } from '@/types/domain';
 import { cn } from '@/utils/cn';
@@ -48,7 +48,7 @@ function LiveLocationCard({ card, own }: { card: Extract<MessageCard, { cardType
         {share.isPending ? (
           <span className="text-[0.875rem] opacity-80">Checking…</span>
         ) : live ? (
-          <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{freshness ? LOCATION_FRESHNESS_LABEL[freshness] : 'Live'}</StatusPill>
+          <StatusPill tone={freshness === 'live' || freshness === 'recent' ? 'live' : 'warning'}>{freshness ? locationFreshnessLabel(freshness) : 'Live'}</StatusPill>
         ) : status === 'paused' ? (
           <StatusPill tone="warning">Paused</StatusPill>
         ) : (

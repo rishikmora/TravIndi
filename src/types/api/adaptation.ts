@@ -1,4 +1,4 @@
-import type { DataSourceKind, ID, ISODateTime, LocalTime, MoneyDto, ReasonDto } from './common';
+import type { DataSourceKind, ID, ISODateTime, JourneyContextDto, LocalTime, MoneyDto, ReasonDto } from './common';
 import type { ItineraryDto } from './itinerary';
 
 export type AdaptationTrigger =
@@ -104,6 +104,7 @@ export type ReplanPreset =
   | 'improve_safety';
 
 export interface ReplanRequestDto {
+  journey_context?: JourneyContextDto;
   based_on_version: number;
   presets: ReplanPreset[];
   instruction: string | null;

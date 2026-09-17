@@ -14,6 +14,7 @@ import {
   seedVerificationRequests,
 } from './operations';
 import { seedConversations, seedNotifications, seedShares, seedTrustedContacts } from './social';
+import { seedTransportBookings } from './transport';
 import { seedTrips } from './trips';
 import { seedConsents, seedProfiles, seedUsers } from './users';
 
@@ -56,7 +57,7 @@ export function createSeed(): MockState {
     advisories: seedAdvisories(),
     crowd_reports: seedCrowdReports(),
     quotes: [],
-    bookings: seedBookings(),
+    bookings: [...seedBookings(), ...seedTransportBookings()],
     notifications: seedNotifications(),
     community_posts: seedCommunityPosts(),
     helpful: {},

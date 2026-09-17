@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { RoutesScreen } from '@/components/map/RoutesScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Compare routes',
+  title: en.meta.titles.routes,
   robots: { index: false, follow: true },
 };
 

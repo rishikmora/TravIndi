@@ -1,5 +1,6 @@
 import type { AuthMode } from '@/lib/config/env';
 import { normalizeHttpError, normalizeThrown } from './errors';
+import { acceptLanguageHeader } from './language';
 import { type ApiRequest, buildQueryString, type Transport } from './transport';
 
 export interface FetchTransportOptions {
@@ -39,7 +40,7 @@ export function createFetchTransport(options: FetchTransportOptions): Transport 
     const abortUpstream = () => controller.abort();
     request.signal?.addEventListener('abort', abortUpstream, { once: true });
 
-    const headers = new Headers({ Accept: 'application/json' });
+    const headers = new Headers({ Accept: 'application/json', 'Accept-Language': acceptLanguageHeader() });
     if (request.body !== undefined) headers.set('Content-Type', 'application/json');
     if (request.idempotencyKey) headers.set('Idempotency-Key', request.idempotencyKey);
     if (options.authMode === 'bearer') {

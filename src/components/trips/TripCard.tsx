@@ -1,6 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
 import { formatDateRange } from '@/lib/format/dates';
 import { isRemoteImage, isTrustedImageUrl } from '@/lib/media/trusted';
 import type { TripSummary } from '@/types/domain';
@@ -8,6 +11,7 @@ import { cn } from '@/utils/cn';
 import { TRIP_STATUS } from './tripStatus';
 
 export function TripCard({ trip, className }: { trip: TripSummary; className?: string }) {
+  const { t } = useTranslation();
   const status = TRIP_STATUS[trip.status];
   const dates = formatDateRange(trip.startDate, trip.endDate);
   const image = trip.coverImage;
@@ -40,16 +44,14 @@ export function TripCard({ trip, className }: { trip: TripSummary; className?: s
           </Link>
         </h3>
         <p className="text-[0.9375rem] text-[var(--text-muted)]">
-          {[trip.destination?.name, dates ?? 'Dates not set', trip.days ? `${trip.days} days` : null].filter(Boolean).join(' · ')}
+          {[trip.destination?.name, dates ?? t('trips.card.datesNotSet'), trip.days ? t('planner.duration.days', { count: trip.days }) : null].filter(Boolean).join(' · ')}
         </p>
         <div className="mt-auto flex flex-wrap gap-2 pt-2">
           {trip.pendingAdaptations > 0 && (
-            <StatusPill tone="warning">
-              {trip.pendingAdaptations} travel update{trip.pendingAdaptations === 1 ? '' : 's'} to review
-            </StatusPill>
+            <StatusPill tone="warning">{t('trips.card.updatesToReview', { count: trip.pendingAdaptations })}</StatusPill>
           )}
-          {trip.unreadMessages > 0 && <StatusPill tone="info">{trip.unreadMessages} unread</StatusPill>}
-          {trip.membersCount > 1 && <StatusPill>{trip.membersCount} travellers</StatusPill>}
+          {trip.unreadMessages > 0 && <StatusPill tone="info">{t('trips.card.unread', { count: trip.unreadMessages })}</StatusPill>}
+          {trip.membersCount > 1 && <StatusPill>{t('trips.card.travellers', { count: trip.membersCount })}</StatusPill>}
         </div>
       </div>
     </article>

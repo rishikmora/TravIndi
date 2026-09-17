@@ -18,9 +18,11 @@ import {
   UserIcon,
 } from '@/components/ui/icons';
 import { type PrimaryNavId, site } from '@/data/site';
+import { useTranslation } from '@/i18n/react';
 import { useAuth } from '@/lib/auth/provider';
 import { useJourneyStore } from '@/store/journey';
 import { cn } from '@/utils/cn';
+import { LanguageSelector } from './LanguageSelector';
 
 type NavTheme = 'dark' | 'light';
 
@@ -113,9 +115,7 @@ function Badge({ count, label }: { count: number; label: string }) {
       >
         {count > 99 ? '99+' : count}
       </span>
-      <span className="sr-only">
-        , {count} {label}
-      </span>
+      <span className="sr-only">{label}</span>
     </>
   );
 }
@@ -126,6 +126,7 @@ export function Navigation() {
   const { status, user } = useAuth();
   const unread = useUnreadCounts();
   const { theme, scrolled } = useSurfaceUnderNav(pathname);
+  const { t } = useTranslation();
 
   const hidden = pathname === '/' && loadPhase !== 'entered';
   const light = theme === 'light';
@@ -157,12 +158,14 @@ export function Navigation() {
             scrolled ? 'h-14' : 'h-[4.5rem]',
           )}
         >
-          <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-full" aria-label={`${site.name} home`}>
+          <Link href="/" className="flex shrink-0 items-center gap-2.5 rounded-full" aria-label={t('nav.homeLink')}>
             <LogoMark className={cn('transition-[width,height] duration-500', scrolled ? 'size-6' : 'size-7')} />
-            <span className="text-[1.0625rem] font-semibold tracking-[-0.03em]">{site.name}</span>
+            <span lang="en" className="text-[1.0625rem] font-semibold tracking-[-0.03em]">
+              {site.name}
+            </span>
           </Link>
 
-          <nav aria-label="Primary" className="hidden lg:block">
+          <nav aria-label={t('nav.primary')} className="hidden lg:block">
             <ul
               className={cn(
                 'flex items-center gap-0.5 rounded-full p-1 ring-1 ring-inset transition-colors duration-500',
@@ -181,8 +184,8 @@ export function Navigation() {
                         active ? (light ? 'bg-navy text-ivory' : 'bg-paper text-ink') : 'opacity-80 hover:bg-current/10 hover:opacity-100',
                       )}
                     >
-                      {item.label}
-                      {item.id === 'messages' && <Badge count={unread.messages} label="unread messages" />}
+                      {t(`nav.items.${item.id}`)}
+                      {item.id === 'messages' && <Badge count={unread.messages} label={t('nav.unreadMessages', { count: unread.messages })} />}
                     </Link>
                   </li>
                 );
@@ -191,7 +194,7 @@ export function Navigation() {
           </nav>
 
           <div className="flex items-center gap-0.5">
-            <Link href="/search" className={cn(iconButton, 'gap-2 px-3')} aria-label="Search destinations, guides and places">
+            <Link href="/search" className={cn(iconButton, 'gap-2 px-3')} aria-label={t('nav.search')}>
               <SearchIcon size={19} />
             </Link>
             <Link
@@ -200,19 +203,20 @@ export function Navigation() {
               className={cn(iconButton, 'gap-1.5 px-3 lg:hidden')}
             >
               <ShieldIcon size={19} />
-              <span className="text-[0.8125rem] font-medium">Safety</span>
+              <span className="text-[0.8125rem] font-medium">{t('nav.items.safety')}</span>
             </Link>
+            <LanguageSelector className={iconButton} />
             {signedIn && (
-              <Link href="/notifications" className={iconButton} aria-label="Notifications">
+              <Link href="/notifications" className={iconButton} aria-label={t('nav.notifications')}>
                 <BellIcon size={19} />
-                <Badge count={unread.notifications} label="unread notifications" />
+                <Badge count={unread.notifications} label={t('nav.unreadNotifications', { count: unread.notifications })} />
               </Link>
             )}
             {signedIn ? (
               <Link
                 href="/profile"
                 className={cn(iconButton, 'ml-1 lg:hidden')}
-                aria-label={`Your profile, ${user.displayName}`}
+                aria-label={t('nav.profile', { name: user.displayName })}
                 aria-current={isActive(pathname, 'profile') ? 'page' : undefined}
               >
                 <Avatar name={user.displayName} src={user.avatarUrl} size="sm" decorative />
@@ -227,7 +231,7 @@ export function Navigation() {
                   light ? 'bg-navy text-ivory hover:bg-navy-3' : 'bg-paper text-ink hover:bg-white',
                 )}
               >
-                Sign in
+                {t('common.actions.signIn')}
               </Link>
             )}
           </div>
@@ -235,7 +239,7 @@ export function Navigation() {
       </header>
 
       <nav
-        aria-label="Primary"
+        aria-label={t('nav.primary')}
         className={cn(
           'theme-app fixed inset-x-0 bottom-0 z-50 border-t border-[var(--hairline)] bg-ivory/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl transition-[transform,opacity] duration-500 lg:hidden',
           hidden && 'pointer-events-none translate-y-full opacity-0',
@@ -258,9 +262,9 @@ export function Navigation() {
                 >
                   <span className="relative">
                     <Icon size={22} strokeWidth={active ? 2 : 1.6} />
-                    {id === 'messages' && <Badge count={unread.messages} label="unread messages" />}
+                    {id === 'messages' && <Badge count={unread.messages} label={t('nav.unreadMessages', { count: unread.messages })} />}
                   </span>
-                  {item.label}
+                  {t(`nav.items.${id}`)}
                 </Link>
               </li>
             );

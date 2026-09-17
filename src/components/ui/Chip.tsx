@@ -1,4 +1,7 @@
+'use client';
+
 import type { ReactNode } from 'react';
+import { useTranslation } from '@/i18n/react';
 import { cn } from '@/utils/cn';
 
 const base =
@@ -54,10 +57,11 @@ interface RemovableChipProps extends ChipProps {
 
 /** An extracted value the traveller can edit or remove ("HERE'S WHAT WE UNDERSTOOD"). */
 export function RemovableChip({ label, onRemove, onEdit, source, children, className }: RemovableChipProps) {
+  const { t } = useTranslation();
   return (
     <span className={cn(base, 'bg-[var(--surface-raised)] pr-1 text-[var(--text)] ring-[var(--hairline-strong)]', className)}>
       {onEdit ? (
-        <button type="button" onClick={onEdit} className="rounded-full text-left underline-offset-4 hover:underline" aria-label={`Edit ${label}`}>
+        <button type="button" onClick={onEdit} className="rounded-full text-left underline-offset-4 hover:underline" aria-label={t('common.a11y.editValue', { label })}>
           {children}
         </button>
       ) : (
@@ -67,7 +71,7 @@ export function RemovableChip({ label, onRemove, onEdit, source, children, class
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove ${label}`}
+        aria-label={t('common.a11y.removeValue', { label })}
         className="inline-flex size-7 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--tone-neutral-bg)] hover:text-[var(--text)]"
       >
         <span aria-hidden="true">×</span>

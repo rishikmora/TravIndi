@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { PlanJourneyScreen } from '@/components/trips/plan/PlanJourneyScreen';
+import en from '@/i18n/locales/en';
 
 export const metadata: Metadata = {
-  title: 'Plan a journey',
+  title: en.meta.titles.planJourney,
   robots: { index: false, follow: true },
 };
 

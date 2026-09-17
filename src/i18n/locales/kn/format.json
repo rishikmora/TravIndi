@@ -1,0 +1,41 @@
+{
+  "duration": {
+    "minutes": "{minutes} ನಿ.",
+    "hours": "{hours} ಗಂ.",
+    "hoursMinutes": "{hours} ಗಂ. {minutes} ನಿ."
+  },
+  "distance": {
+    "meters": "{value} ಮೀ",
+    "kilometers": "{value} ಕಿ.ಮೀ"
+  },
+  "relative": {
+    "justNow": "ಈಗಷ್ಟೇ",
+    "minutesAgo": "{count} ನಿಮಿಷಗಳ ಹಿಂದೆ",
+    "hoursAgo": "{count} ಗಂಟೆಗಳ ಹಿಂದೆ",
+    "daysAgo": "{count} ದಿನಗಳ ಹಿಂದೆ",
+    "inMinutes": "{count} ನಿಮಿಷಗಳಲ್ಲಿ",
+    "inHours": "{count} ಗಂಟೆಗಳಲ್ಲಿ"
+  },
+  "freshness": {
+    "live": "ನೇರ",
+    "application": "ಆ್ಯಪ್ ಡೇಟಾ",
+    "estimate": "ಅಂದಾಜು",
+    "snapshot": "ಆಫ್‌ಲೈನ್ ಪ್ರತಿ",
+    "unavailable": "ಲಭ್ಯವಿಲ್ಲ",
+    "stale": "ಹಳೆಯದು",
+    "updated": "{when} ಅಪ್‌ಡೇಟ್ ಆಗಿದೆ"
+  },
+  "locationFreshness": {
+    "live": "ನೇರ",
+    "recent": "ಇತ್ತೀಚಿನದು",
+    "stale": "ಹಳೆಯದು",
+    "last_known": "ಕೊನೆಯದಾಗಿ ತಿಳಿದದ್ದು",
+    "none": "ಇನ್ನೂ ಸ್ಥಳ ಬಂದಿಲ್ಲ"
+  },
+  "cost": {
+    "unavailable": "ವೆಚ್ಚದ ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ",
+    "about": "ಸುಮಾರು {amount}",
+    "range": "{min}–{max}",
+    "estimate": "ಅಂದಾಜು"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "primary": "Primary",
+  "items": {
+    "home": "Home",
+    "discover": "Discover",
+    "trips": "Trips",
+    "map": "Map",
+    "messages": "Messages",
+    "safety": "Safety",
+    "profile": "Profile"
+  },
+  "homeLink": "TravIndi home",
+  "search": "Search destinations, guides and places",
+  "notifications": "Notifications",
+  "unreadMessages_one": ", {count} unread message",
+  "unreadMessages_other": ", {count} unread messages",
+  "unreadNotifications_one": ", {count} unread notification",
+  "unreadNotifications_other": ", {count} unread notifications",
+  "profile": "Your profile, {name}"
+}

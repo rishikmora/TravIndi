@@ -1,0 +1,14 @@
+{
+  "offline": "You’re offline",
+  "offlineDetail": "Showing what’s saved on this device.",
+  "pending_one": "{count} saved action waiting to send.",
+  "pending_other": "{count} saved actions waiting to send.",
+  "reconnecting": "Reconnecting…",
+  "syncing": "Syncing…",
+  "synced": "Back online",
+  "syncedDetail": "Everything is up to date.",
+  "syncError": "Some changes haven’t synced",
+  "syncErrorDetail": "Some changes could not be synced.",
+  "liveUpdatesPaused": "Live updates paused",
+  "liveUpdatesPausedDetail": "Messages, locations and trip changes may be delayed."
+}

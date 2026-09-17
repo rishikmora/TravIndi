@@ -1,4 +1,7 @@
+'use client';
+
 import { StatusPill } from '@/components/ui/StatusPill';
+import { useTranslation } from '@/i18n/react';
 import { formatLocalTime } from '@/lib/format/dates';
 import type { AdaptationChange } from '@/types/domain';
 import { cn } from '@/utils/cn';
@@ -11,14 +14,15 @@ function timeRange(ref: AdaptationChange['before']) {
 
 /** UNCHANGED · MOVED · REMOVED · ADDED, grouped by day, in plan order. */
 export function ChangeDiff({ changes, showUnchanged = true, className }: { changes: AdaptationChange[]; showUnchanged?: boolean; className?: string }) {
+  const { t } = useTranslation();
   const visible = showUnchanged ? changes : changes.filter((c) => c.changeType !== 'unchanged');
   const days = [...new Set(visible.map((c) => c.dayNumber))].sort((a, b) => a - b);
 
   return (
     <div className={cn('grid gap-5', className)}>
       {days.map((day) => (
-        <section key={day} aria-label={`Day ${day} changes`} className="grid gap-2">
-          <h4 className="label text-[var(--text-subtle)]">Day {day}</h4>
+        <section key={day} aria-label={t('adaptation.diff.dayChanges', { day })} className="grid gap-2">
+          <h4 className="label text-[var(--text-subtle)]">{t('itinerary.view.day', { day })}</h4>
           <ol className="grid gap-2">
             {visible
               .filter((c) => c.dayNumber === day)
